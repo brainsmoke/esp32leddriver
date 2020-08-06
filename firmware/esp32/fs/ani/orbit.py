@@ -22,7 +22,7 @@ class Orbit:
         )
 
     def update(self, n):
-        cball.orbit_update_flat(self.objects, self.Gmdt2, n)
+        cball.orbit_update(self.objects, self.Gmdt2, n)
         for i in range(0, len(self.shader_flat), 6):
             self.shader_flat[i  ] = self.objects[i  ]
             self.shader_flat[i+1] = self.objects[i+1]
@@ -31,5 +31,5 @@ class Orbit:
     def next_frame(self, fbuf):
         self.update(10)
         cball.bytearray_memset(fbuf, 0)
-        cball.shader_flat(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
 

@@ -1,10 +1,12 @@
 
-import machine, network, utime
+import machine, network, utime, gc
 
 import config, model, uartpixel
 
-from ani.orbit import Orbit
+#from ani.orbit import Orbit
 from ani.lorenz import Lorenz
+#from ani.fire import Fire
+#from ani.gradient import Gradient, Spiral, Wobble
 
 def wifi_connect(essid, password):
 
@@ -35,8 +37,7 @@ config.load()
 #if config.essid != None:
 #    wifi_connect(config.essid, config.password)
 
-leds = model.load('/leds.json')
-
+leds = model.load("/conf/leds.json")
 
 driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              rx       = config.uart_rx,
@@ -44,18 +45,31 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds)
 
 fb = bytearray(leds.n_leds * 3)
-ani0 = Orbit(leds)
+#ani0 = Orbit(leds)
 ani1 = Lorenz(leds)
+#ani2 = Fire(leds)
+#ani3 = Gradient(leds)
+#ani4 = Spiral(leds)
+#ani5 = Wobble(leds)
+cur_ani = ani1
 
-t_next = utime.ticks_add(utime.ticks_us(), 16666)
-while True:
-    ani1.next_frame(fb)
-    if utime.ticks_diff(utime.ticks_us(),t_next) > 0:
-        print("slow")
-        t_next = utime.ticks_add(utime.ticks_us(), 16666)
-    else:
-        while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
-            pass
-        t_next = utime.ticks_add(t_next, 16666)
+try:
+
+    t_next = utime.ticks_add(utime.ticks_us(), 16666)
+    while True:
+        cur_ani.next_frame(fb)
+        dt = utime.ticks_diff(utime.ticks_us(),t_next)
+        if dt > 0:
+            print("slow")
+            print(dt)
+            t_next = utime.ticks_add(utime.ticks_us(), 16666)
+        else:
+            while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
+                pass
+            t_next = utime.ticks_add(t_next, 16666)
+        driver.writefrom(fb)
+finally:
+    for i in range(len(fb)):
+        fb[i] = 0
     driver.writefrom(fb)
 

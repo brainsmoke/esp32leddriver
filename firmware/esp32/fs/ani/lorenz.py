@@ -7,13 +7,13 @@ class Lorenz:
     def __init__(self, leds):
         self.leds = leds
         self.attractors = uarray.array('f',
-        #  position        sigma, rho, beta
-        [  1,  2, .5,       10., 28., 8./3,
-           1, .5,  1,       10., 28., 8./3,
-          .5,  1,  1,       10., 28., 8./3,
-           1,  2, .6,       10., 28., 8./3,
-           1, .6,  2,       10., 28., 8./3,
-          .6,  2,  1,       10., 28., 8./3 ]
+        #             position                  sigma, rho, beta
+        [  -8.268262, -5.752763, 29.76239,       10., 28., 8./3,
+           -10.43131, -8.260322, 31.83801,       10., 28., 8./3,
+           -10.51103, -8.488544, 31.78154,       10., 28., 8./3,
+           -8.401729, -5.768218, 30.03114,       10., 28., 8./3,
+           -11.96497, -12.55917, 30.83265,       10., 28., 8./3,
+           -9.486767, -6.589458, 31.48488,       10., 28., 8./3 ]
         )
 
         self.shader_flat = uarray.array('f',
@@ -27,7 +27,7 @@ class Lorenz:
         )
 
     def update(self, n):
-        cball.lorenz_update_flat(self.attractors, 1/5000., n)
+        cball.lorenz_update(self.attractors, 1/10000., n)
         # copy positions, rotate axes for nicer effects
         self.shader_flat[0] = -self.attractors[0]*.11
         self.shader_flat[1] =  self.attractors[1]*.11
@@ -56,5 +56,5 @@ class Lorenz:
     def next_frame(self, fbuf):
         self.update(10)
         cball.bytearray_memset(fbuf, 0)
-        cball.shader_flat(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
 

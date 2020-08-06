@@ -10,7 +10,7 @@ def reload():
 
     global essid, password, port, uart_baudrate, uart_rx, uart_tx
 
-    with uio.open("/config.json") as f:
+    with uio.open("/conf/network.json") as f:
         config = ujson.load(f)
 
     gc.collect()
@@ -25,7 +25,7 @@ def reload():
 
     gc.collect()
 
-    with uio.open("/board.json") as f:
+    with uio.open("/conf/board.json") as f:
         config = ujson.load(f)
 
     gc.collect()
