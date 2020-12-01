@@ -1,0 +1,5 @@
+(fp_lib_table
+  (lib (name esp32-wrover)(type KiCad)(uri ${KIPRJMOD}/libs/esp32-wrover.pretty)(options "")(descr ""))
+  (lib (name outline)(type KiCad)(uri ${KIPRJMOD}/libs/outline.pretty)(options "")(descr ""))
+  (lib (name footprints)(type KiCad)(uri ${KIPRJMOD}/libs/footprints.pretty)(options "")(descr ""))
+)
