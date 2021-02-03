@@ -48,3 +48,33 @@ class TestPatternA:
                 fbuf[edge_base+d] = val
                 fbuf[edge_base+d+2] = val//2
 
+class TestPatternB:
+
+    def __init__(self, leds):
+        self.edge_count = leds.n_leds//4//4
+        self.led_ix = list(256*(i%self.edge_count) for i in range(self.edge_count))
+        self.phase = 0
+        self.phase_max = self.edge_count*16
+        self.wave = get_wave(size=self.phase_max)#, wavesize=self.phase_max//6)
+        print(self.wave)
+
+    def next_frame(self, fbuf):
+        cball.bytearray_memset(fbuf, 0)
+        self.phase = (self.phase-1)%self.phase_max
+        a, b, c, d = 0, self.edge_count*4*3, self.edge_count*4*3*2, self.edge_count*4*3*3
+        for i in range(self.edge_count):
+            val = self.wave[ (self.led_ix[i]+self.phase)%self.phase_max ]
+            for j in range(4):
+                edge_base = (i*4*3+j*3)
+                fbuf[edge_base+a] = val//2
+                fbuf[edge_base+a+1] = val//4
+
+                fbuf[edge_base+b+2] = val//2
+                fbuf[edge_base+b] = val//4
+
+                fbuf[edge_base+c+1] = val//2
+                fbuf[edge_base+c+2] = val//4
+
+                fbuf[edge_base+d] = val//2
+                fbuf[edge_base+d+2] = val//4
+

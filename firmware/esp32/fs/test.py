@@ -3,7 +3,7 @@ import machine, network, utime, gc
 
 import config, model, uartpixel
 
-from ani.testpattern import TestPatternA
+from ani.testpattern import TestPatternA, TestPatternB
 
 config.load()
 
@@ -15,7 +15,7 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds)
 
 fb = bytearray(leds.n_leds * 3)
-cur_ani = TestPatternA(leds)
+cur_ani = TestPatternB(leds)
 
 try:
 
