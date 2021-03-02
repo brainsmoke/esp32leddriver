@@ -8,7 +8,7 @@ class UartPixel:
     def set_gamma(self, gamma, cutoff=0x18):
         max_val = 0xff00
         factor = max_val / (255.**gamma)
-        self.gamma_map = bytearray(512)
+        self.gamma_map = uarray.array('H', 0 for _ in range(256))
         for i in range(256):
             v = int(factor * i**gamma)
             lo, hi = v&0xff, v>>8
@@ -20,15 +20,14 @@ class UartPixel:
                 lo, hi = 0, min(hi+1, max_val>>8)
             elif lo > 256-cutoff:
                 lo = 256-cutoff
-            self.gamma_map[i*2  ] = lo
-            self.gamma_map[i*2+1] = hi
+            self.gamma_map[i] = lo | (hi<<8)
 
-    def __init__(self, baudrate, rx, tx, n, gamma=2.5, cutoff=0x18, framebuf=True):
+    def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, framebuf=True):
         self.n = n
         if framebuf:
             self.buf = bytearray(n*3)
-        self.outbuf = bytearray(n*3*2 + 4)
-        self.outbuf[-4:] = b'\xff\xff\xff\xf0'
+        self.outbuf = uarray.array('H', 0 for _ in range(n*3 + 2))
+        self.led_order = led_order
         self.set_gamma(gamma, cutoff)
         self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf))
 
@@ -50,5 +49,5 @@ class UartPixel:
         writefrom(self, self.buf)
 
     def writefrom(self, buf):
-        cball.framebuf8to16(buf, self.outbuf, self.gamma_map)
+        cball.fillbuffer_gamma(self.outbuf, buf, self.led_order, self.gamma_map)
         self.uart.write(self.outbuf)

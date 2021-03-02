@@ -1,51 +1,653 @@
 
-#include <math.h>
-#include <string.h>
-#include <stdlib.h>
-
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "py/builtin.h"
+#include "py/binary.h"
 
-STATIC mp_obj_t cball_framebuf8to16(mp_obj_t in, mp_obj_t out, mp_obj_t table)
+#include <math.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <endian.h>
+
+static size_t cball_get_buffer(const mp_obj_t buf_obj, int typecode, size_t elem_size, void **buf, mp_uint_t flags, const char *error_msg)
 {
-	mp_buffer_info_t src_info;
-	mp_get_buffer_raise(in, &src_info, MP_BUFFER_READ);
-	size_t src_len = src_info.len;
-	uint8_t *src = src_info.buf;
+	mp_buffer_info_t info;
+	mp_get_buffer_raise(buf_obj, &info, flags);
 
-	if (src_len%3 != 0)
-		mp_raise_ValueError("source array must be a multiple of 3");
+	if (info.typecode != typecode)
+		mp_raise_ValueError(error_msg);
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(out, &dest_info, MP_BUFFER_WRITE);
-	if (dest_info.len < src_len*2)
-		mp_raise_ValueError("destination array too small");
+	*buf = info.buf;
+	return info.len/elem_size;
+}
 
-	uint16_t *dest = dest_info.buf;
+static size_t cball_get_float_array(const mp_obj_t buf_obj, float **buf, mp_uint_t flags, const char *error_msg)
+{
+	return cball_get_buffer(buf_obj, 'f', sizeof(float), (void **)buf, flags, error_msg);
+}
 
-	mp_buffer_info_t lookup_info;
-	mp_get_buffer_raise(table, &lookup_info, MP_BUFFER_READ);
-	if (lookup_info.len != 512)
-		mp_raise_ValueError("lookup array needs to be 256 * 2 bytes");
+static size_t cball_get_uint16_array(const mp_obj_t buf_obj, uint16_t **buf, mp_uint_t flags, const char *error_msg)
+{
+	return cball_get_buffer(buf_obj, 'H', sizeof(uint16_t), (void **)buf, flags, error_msg);
+}
 
-	uint16_t *lookup = lookup_info.buf;
+static size_t cball_get_bytearray(const mp_obj_t buf_obj, uint8_t **buf, mp_uint_t flags, const char *error_msg)
+{
+	return cball_get_buffer(buf_obj, BYTEARRAY_TYPECODE, sizeof(uint8_t), (void **)buf, flags, error_msg);
+}
 
-	size_t i;
-	for (i=0; i<src_len; i+=3)
+static int cball_get_led_order(int led_order[4], mp_obj_t order_str)
+{
+	size_t len;
+	const char *str = mp_obj_str_get_data(order_str, &len);
+	int i;
+
+	led_order[0] = led_order[1] = led_order[2] = led_order[3] = -1;
+
+	if ( len == 3 || len == 4 )
+		for (i=0; i<len; i++)
+			switch ( str[i]&~0x20 )
+			{
+				case 'R':
+					led_order[0] = i;
+					break;
+				case 'G':
+					led_order[1] = i;
+					break;
+				case 'B':
+					led_order[2] = i;
+					break;
+				case 'W':
+					led_order[3] = i;
+					break;
+				default:
+					break;
+			}
+
+	if ( led_order[0] == -1 ||
+	     led_order[1] == -1 ||
+	     led_order[2] == -1 ||
+	     ( len == 4 && led_order[3] == -1 ) )
+		mp_raise_ValueError("bad led_order");
+
+	return len;
+}
+
+static int cball_rgb_8to16(uint16_t dest[], const uint8_t src[], size_t led_count, const int led_order[3], const uint16_t gamma_map[256])
+{
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
+	const uint8_t *p_src = src;
+	uint16_t *p_dest = dest;
+
+	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
 	{
-		dest[i  ] = lookup[src[i+1]];
-		dest[i+1] = lookup[src[i  ]];
-		dest[i+2] = lookup[src[i+2]];
+		p_dest[r_ix] = htole16(gamma_map[*p_src++]);
+		p_dest[g_ix] = htole16(gamma_map[*p_src++]);
+		p_dest[b_ix] = htole16(gamma_map[*p_src++]);
+		p_dest += 3;
 	}
+
+	return 1;
+}
+
+static int cball_rgbw_8to16(uint16_t dest[], const uint8_t src[], size_t led_count, const int led_order[4], const uint16_t gamma_map[256])
+{
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
+	const uint8_t *p_src = src;
+	uint16_t *p_dest = dest;
+
+	if ( (r_ix|g_ix|b_ix|w_ix) != 3 ||
+	     (r_ix+g_ix+b_ix+w_ix) != 6 ||
+	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) != 24 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int r, g, b, w;
+		r = gamma_map[*p_src++];
+		g = gamma_map[*p_src++];
+		b = gamma_map[*p_src++];
+
+		w = r;
+		if (g < w)
+			w = g;
+		if (b < w)
+			w = b;
+
+		r -= w;
+		g -= w;
+		b -= w;
+
+		p_dest[r_ix] = htole16(r);
+		p_dest[g_ix] = htole16(g);
+		p_dest[b_ix] = htole16(b);
+		p_dest[w_ix] = htole16(w);
+		p_dest += 4;
+	}
+
+	return 1;
+}
+
+
+STATIC mp_obj_t cball_fillbuffer_gamma(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     dest             [n_leds*3+2]  uint16,
+	 * -     src              [n_leds*3]    uint8,
+	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
+	 * -     gamma_map        [256]         uint16,
+	 */
+
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
+
+	uint8_t *src;
+	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a bytearray");
+
+	if ( src_len % 3 != 0 )
+		mp_raise_ValueError("size of src needs to be a multiple of 3");
+
+	size_t led_count = src_len/3;
+
+	int led_order[4];
+	int n_components = cball_get_led_order(led_order, args[2]);
+
+	if ( led_count*n_components+2 > dest_len )
+		mp_raise_ValueError("dest array too small");
+
+	uint16_t *gamma_map;
+	size_t gamma_map_len = cball_get_uint16_array(args[3], &gamma_map, MP_BUFFER_READ,
+	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	if ( gamma_map_len != 256 )
+		mp_raise_ValueError("gamma_map array needs to have 256 elements");
+
+	if ( n_components == 4 )
+	{
+		if ( !cball_rgbw_8to16(dest, src, led_count, led_order, gamma_map) )
+			mp_raise_ValueError("remap index out of range");
+	}
+	else
+	{
+		if ( !cball_rgb_8to16(dest, src, led_count, led_order, gamma_map) )
+			mp_raise_ValueError("remap index out of range");
+	}
+
+	dest[led_count*n_components  ] = htole16(0xffff);
+	dest[led_count*n_components+1] = htole16(0xf0ff);
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_framebuf8to16_obj, cball_framebuf8to16);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_gamma_obj, 4, 4, cball_fillbuffer_gamma);
+
+static int cball_rgb_floatto16(uint16_t dest[], const float src[], size_t led_count, const int led_order[3], int max)
+{
+	if (max > UINT16_MAX)
+		max = UINT16_MAX;
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
+	const float *p_src = src;
+	uint16_t *p_dest = dest;
+	float f_max = (float)max;
+
+	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int h;
+		float v;
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		p_dest[r_ix] = htole16(h);
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		p_dest[g_ix] = htole16(h);
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		p_dest[b_ix] = htole16(h);
+
+		p_dest += 3;
+	}
+
+	return 1;
+}
+
+static int cball_rgbw_floatto16(uint16_t dest[], const float src[], size_t led_count, const int led_order[4], int max)
+{
+	if (max > UINT16_MAX)
+		max = UINT16_MAX;
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
+	const float *p_src = src;
+	uint16_t *p_dest = dest;
+	float f_max = (float)max;
+
+	if ( (r_ix|g_ix|b_ix|w_ix) == 3 &&
+	     (r_ix+g_ix+b_ix+w_ix) == 6 &&
+	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) == 24 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		float v;
+
+		int r, g, b, w;
+
+		v = *p_src++ * f_max;
+
+		                    r = (int)v;
+		     if (v < 0.f)   r = 0;
+		else if (v > f_max) r = max;
+
+		v = *p_src++ * f_max;
+
+		                    g = (int)v;
+		     if (v < 0.f)   g = 0;
+		else if (v > f_max) g = max;
+
+		v = *p_src++ * f_max;
+
+		                    b = (int)v;
+		     if (v < 0.f)   b = 0;
+		else if (v > f_max) b = max;
+
+		w = r;
+		if (g < w)
+			w = g;
+		if (b < w)
+			w = b;
+
+		r -= w;
+		g -= w;
+		b -= w;
+
+		p_dest[r_ix] = htole16(r);
+		p_dest[g_ix] = htole16(g);
+		p_dest[b_ix] = htole16(b);
+		p_dest[w_ix] = htole16(w);
+		p_dest += 4;
+	}
+
+	return 1;
+}
+
+STATIC mp_obj_t cball_fillbuffer_float(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     dest             [n_leds*3+2]  uint16,
+	 * -     src              [n_leds*3]    float,
+	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
+	 * -     max                            float,
+	 */
+
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
+
+	float *src;
+	size_t src_len  = cball_get_float_array(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a uarray.array('f',...)");
+
+	if ( src_len % 3 != 0 )
+		mp_raise_ValueError("size of src needs to be a multiple of 3");
+
+	size_t led_count = src_len/3;
+
+	int led_order[4];
+	int n_components = cball_get_led_order(led_order, args[2]);
+
+	if ( led_count*n_components+2 > dest_len )
+		mp_raise_ValueError("dest array too small");
+
+	int max = mp_obj_get_int(args[3]);
+
+	if ( n_components == 4 )
+	{
+		if ( !cball_rgbw_floatto16(dest, src, led_count, led_order, max) )
+			mp_raise_ValueError("remap index out of range");
+	}
+	else
+	{
+		if ( !cball_rgb_floatto16(dest, src, led_count, led_order, max) )
+			mp_raise_ValueError("remap index out of range");
+	}
+
+	dest[led_count*n_components  ] = htole16(0xffff);
+	dest[led_count*n_components+1] = htole16(0xf0ff);
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_float_obj, 4, 4, cball_fillbuffer_float);
+
+
+static int cball_remap_rgb_8to16(uint16_t dest[], const uint8_t src[], const uint16_t remap[], size_t led_count, const int led_order[3], const uint16_t gamma_map[256])
+{
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
+	const uint8_t *p_src = src;
+
+	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int index = remap[i];
+
+		if ( !(index < led_count) )
+			return 0;
+
+		index *= 3;
+		dest[index+r_ix] = htole16(gamma_map[*p_src++]);
+		dest[index+g_ix] = htole16(gamma_map[*p_src++]);
+		dest[index+b_ix] = htole16(gamma_map[*p_src++]);
+	}
+
+	return 1;
+}
+
+
+static int cball_remap_rgbw_8to16(uint16_t dest[], const uint8_t src[], const uint16_t remap[], size_t led_count, const int led_order[4], const uint16_t gamma_map[256])
+{
+
+	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
+	const uint8_t *p_src = src;
+
+	if ( (r_ix|g_ix|b_ix|w_ix) != 3 ||
+	     (r_ix+g_ix+b_ix+w_ix) != 6 ||
+	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) != 24 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int index = remap[i];
+
+		if ( !(index < led_count) )
+			return 0;
+
+		index *= 4;
+		int r, g, b, w;
+		r = gamma_map[*p_src++];
+		g = gamma_map[*p_src++];
+		b = gamma_map[*p_src++];
+
+		w = r;
+		if (g < w)
+			w = g;
+		if (b < w)
+			w = b;
+
+		r -= w;
+		g -= w;
+		b -= w;
+
+		dest[index+r_ix] = htole16(r);
+		dest[index+g_ix] = htole16(g);
+		dest[index+b_ix] = htole16(b);
+		dest[index+w_ix] = htole16(w);
+	}
+
+	return 1;
+}
+
+STATIC mp_obj_t cball_fillbuffer_remap_gamma(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     dest             [n_leds*3+2]  uint16,
+	 * -     src              [n_leds*3]    uint8,
+	 * -     remap            [n_leds]      uint16,
+	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
+	 * -     gamma_map        [256]         uint16,
+	 */
+
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
+
+	uint8_t *src;
+	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a bytearray");
+
+	uint16_t *remap;
+	size_t led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
+	                   "remap needs to be a uarray.array('H',...)");
+
+	if ( led_count != 3*src_len )
+		mp_raise_ValueError("size of src needs to be 3x size of remap array");
+
+	int led_order[4];
+	int n_components = cball_get_led_order(led_order, args[3]);
+
+	if ( led_count*n_components+2 > dest_len )
+		mp_raise_ValueError("dest array too small");
+
+	uint16_t *gamma_map;
+	size_t gamma_map_len = cball_get_uint16_array(args[4], &gamma_map, MP_BUFFER_READ,
+	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	if ( gamma_map_len != 256 )
+		mp_raise_ValueError("gamma_map array needs to have 256 elements");
+
+	if ( n_components == 4 )
+	{
+		if ( !cball_remap_rgbw_8to16(dest, src, remap, led_count, led_order, gamma_map) )
+			mp_raise_ValueError("remap index out of range");
+	}
+	else
+	{
+		if ( !cball_remap_rgb_8to16(dest, src, remap, led_count, led_order, gamma_map) )
+			mp_raise_ValueError("remap index out of range");
+	}
+
+	dest[led_count*n_components  ] = htole16(0xffff);
+	dest[led_count*n_components+1] = htole16(0xf0ff);
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_remap_gamma_obj, 5, 5, cball_fillbuffer_remap_gamma);
+
+static int cball_remap_rgb_floatto16(uint16_t dest[], const float src[], const uint16_t remap[], size_t led_count, const int led_order[3], int max)
+{
+	if (max > UINT16_MAX)
+		max = UINT16_MAX;
+
+	size_t i, r_ix = led_order[0], g_ix = led_order[1], b_ix=led_order[2];
+	const float *p_src = src;
+	float f_max = (float)max;
+
+	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int index = remap[i], h;
+		float v;
+
+		if ( !(index < led_count) )
+			return 0;
+
+		index *= 3;
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		dest[index+r_ix] = htole16(h);
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		dest[index+g_ix] = htole16(h);
+
+		v = *p_src++ * f_max;
+
+		                    h = (int)v;
+		     if (v < 0.f)   h = 0;
+		else if (v > f_max) h = max;
+
+		dest[index+b_ix] = htole16(h);
+	}
+
+	return 1;
+}
+
+
+static int cball_remap_rgbw_floatto16(uint16_t dest[], const float src[], const uint16_t remap[], size_t led_count, const int led_order[4], int max)
+{
+	if (max > UINT16_MAX)
+		max = UINT16_MAX;
+
+	size_t i, r_ix = led_order[0], g_ix = led_order[1], b_ix=led_order[2], w_ix=led_order[3];
+	const float *p_src = src;
+	float f_max = (float)max;
+
+	if ( (r_ix|g_ix|b_ix|w_ix) == 3 &&
+	     (r_ix+g_ix+b_ix+w_ix) == 6 &&
+	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) == 24 )
+		return 0;
+
+	for (i=0; i<led_count; i++)
+	{
+		int index = remap[i];
+		float v;
+
+		if ( !(index < led_count) )
+			return 0;
+
+		index *= 4;
+
+		int r, g, b, w;
+
+		v = *p_src++ * f_max;
+
+		                    r = (int)v;
+		     if (v < 0.f)   r = 0;
+		else if (v > f_max) r = max;
+
+		v = *p_src++ * f_max;
+
+		                    g = (int)v;
+		     if (v < 0.f)   g = 0;
+		else if (v > f_max) g = max;
+
+		v = *p_src++ * f_max;
+
+		                    b = (int)v;
+		     if (v < 0.f)   b = 0;
+		else if (v > f_max) b = max;
+
+		w = r;
+		if (g < w)
+			w = g;
+		if (b < w)
+			w = b;
+
+		r -= w;
+		g -= w;
+		b -= w;
+
+		dest[index+r_ix] = htole16(r);
+		dest[index+g_ix] = htole16(g);
+		dest[index+b_ix] = htole16(b);
+		dest[index+w_ix] = htole16(w);
+	}
+
+	return 1;
+}
+
+STATIC mp_obj_t cball_fillbuffer_remap_float(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     dest             [n_leds*3+2]  uint16,
+	 * -     src              [n_leds*3]    float,
+	 * -     remap            [n_leds]      uint16,
+	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
+	 * -     max                            int,
+	 */
+
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
+
+	float *src;
+	size_t src_len  = cball_get_float_array(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a uarray.array('f',...)");
+
+	uint16_t *remap;
+	size_t led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
+	                   "remap needs to be a uarray.array('H',...)");
+
+	if ( led_count != 3*src_len )
+		mp_raise_ValueError("size of src needs to be 3x size of remap array");
+
+	int led_order[4];
+	int n_components = cball_get_led_order(led_order, args[3]);
+
+	if ( led_count*n_components+2 > dest_len )
+		mp_raise_ValueError("dest array too small");
+
+	int max = mp_obj_get_int(args[4]);
+
+	if ( n_components == 4 )
+	{
+		if ( !cball_remap_rgbw_floatto16(dest, src, remap, led_count, led_order, max) )
+			mp_raise_ValueError("remap index out of range");
+	}
+	else
+	{
+		if ( !cball_remap_rgb_floatto16(dest, src, remap, led_count, led_order, max) )
+			mp_raise_ValueError("remap index out of range");
+	}
+
+	dest[led_count*n_components  ] = htole16(0xffff);
+	dest[led_count*n_components+1] = htole16(0xf0ff);
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_remap_float_obj, 5, 5, cball_fillbuffer_remap_float);
 
 STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
 {
+	/* args:
+	 * -     out [...]  uint8,
+	 * -     in  [...]  uint8,
+	 *
+	 * memcpy(out, in, max(out_len, in_len))
+	 *
+	 */
+
 	mp_buffer_info_t dest_info;
 	mp_get_buffer_raise(out, &dest_info, MP_BUFFER_WRITE);
 	mp_buffer_info_t src_info;
@@ -62,7 +664,7 @@ STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memcpy_obj, cball_bytearray_memcpy);
 
-STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_out, mp_obj_t buf_in, mp_obj_t palette)
+STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_dest, mp_obj_t buf_src, mp_obj_t palette)
 {
 	/* args:
 	 * -     framebuffer_out  [pixels*3]  uint8,
@@ -70,29 +672,26 @@ STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_out, mp_obj_t buf_in, mp_obj_t 
 	 * -     palette          [n*3]       uint8,
 	 */
 
-	mp_buffer_info_t buf_out_info;
-	mp_get_buffer_raise(buf_out, &buf_out_info, MP_BUFFER_WRITE);
-	size_t dest_len = buf_out_info.len;
-	uint8_t *dest = buf_out_info.buf;
+	uint8_t *dest;
+	size_t dest_len  = cball_get_bytearray(buf_dest, &dest, MP_BUFFER_WRITE,
+	                   "dest needs to be a bytearray");
 
 	if (dest_len%3 != 0)
-		mp_raise_ValueError("dest array must be a multiple of 3");
+		mp_raise_ValueError("dest array size must be a multiple of 3");
 
-	mp_buffer_info_t buf_in_info;
-	mp_get_buffer_raise(buf_in, &buf_in_info, MP_BUFFER_READ);
-	size_t src_len = buf_in_info.len;
-	uint8_t *src = buf_in_info.buf;
+	uint8_t *src;
+	size_t src_len  = cball_get_bytearray(buf_src, &src, MP_BUFFER_READ,
+	                  "src needs to be a bytearray");
 
-	if (dest_len < src_len*3)
-		src_len = dest_len/3;
-
-	mp_buffer_info_t table_info;
-	mp_get_buffer_raise(palette, &table_info, MP_BUFFER_READ);
-	size_t table_len = table_info.len;
-	uint8_t *table = table_info.buf;
+	uint8_t *table;
+	size_t table_len  = cball_get_bytearray(palette, &table, MP_BUFFER_READ,
+	                    "palette needs to be a bytearray");
 
 	if (table_len%3 != 0)
 		mp_raise_ValueError("palette array must be a multiple of 3");
+
+	if (dest_len < src_len*3)
+		src_len = dest_len/3;
 
 	size_t i;
 	int r,g,b,c;
@@ -129,40 +728,31 @@ STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 	 * -     total_weight     [n_leds]    float32,
 	 * -     tmp_buf          [n_leds*3]  float32,
 	 */
-	mp_buffer_info_t buf_out_info;
-	mp_get_buffer_raise(args[0], &buf_out_info, MP_BUFFER_WRITE);
-	size_t dest_len = buf_out_info.len;
-	uint8_t *dest = buf_out_info.buf;
+
+	uint8_t *dest;
+	size_t dest_len  = cball_get_bytearray(args[0], &dest, MP_BUFFER_WRITE,
+	                   "dest needs to be a bytearray");
 
 	if (dest_len%3 != 0)
-		mp_raise_ValueError("dest array must be a multiple of 3");
+		mp_raise_ValueError("dest array size must be a multiple of 3");
 
-	mp_buffer_info_t buf_in_info;
-	mp_get_buffer_raise(args[1], &buf_in_info, MP_BUFFER_READ);
-	size_t src_len = buf_in_info.len;
-	uint8_t *src = buf_in_info.buf;
+	uint8_t *src;
+	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a bytearray");
 
 	if (src_len%3 != 0)
 		mp_raise_ValueError("src array must be a multiple of 3");
 
-	mp_buffer_info_t voronoi_map_info;
-	mp_get_buffer_raise(args[2], &voronoi_map_info, MP_BUFFER_READ);
-	size_t voronoi_map_len = voronoi_map_info.len/sizeof(uint16_t);
-	uint16_t *voronoi_map = voronoi_map_info.buf;
-
-	if (voronoi_map_info.typecode != 'H')
-		mp_raise_ValueError("voronoi_map needs to be a uarray.array('H',...)");
+	uint16_t *voronoi_map;
+	size_t voronoi_map_len = cball_get_uint16_array(args[2], &voronoi_map, MP_BUFFER_READ,
+	                         "voronoi_map needs to be a uarray.array('H',...)");
 
 	if (src_len != voronoi_map_len*3)
 		mp_raise_ValueError("voronoi and source array sizes don't match");
 
-	mp_buffer_info_t latt_weight_info;
-	mp_get_buffer_raise(args[3], &latt_weight_info, MP_BUFFER_READ);
-	size_t latt_weight_len = latt_weight_info.len/sizeof(float);
-	float *latt_weight = latt_weight_info.buf;
-
-	if (latt_weight_info.typecode != 'f')
-		mp_raise_ValueError("latt_weight needs to be a uarray.array('f',...)");
+	float *latt_weight;
+	size_t latt_weight_len  = cball_get_float_array(args[3], &latt_weight, MP_BUFFER_READ,
+	                          "latt_weight needs to be a uarray.array('f',...)");
 
 	if ( voronoi_map_len % latt_weight_len != 0 )
 		mp_raise_ValueError("wrong height");
@@ -170,24 +760,16 @@ STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 	size_t h = latt_weight_len;
 	size_t w = voronoi_map_len/latt_weight_len;
 
-	mp_buffer_info_t total_weight_info;
-	mp_get_buffer_raise(args[4], &total_weight_info, MP_BUFFER_READ);
-	size_t total_weight_len = total_weight_info.len/sizeof(float);
-	float *total_weight = total_weight_info.buf;
-
-	if (total_weight_info.typecode != 'f')
-		mp_raise_ValueError("total_weight needs to be a uarray.array('f',...)");
+	float *total_weight;
+	size_t total_weight_len  = cball_get_float_array(args[4], &total_weight, MP_BUFFER_READ,
+	                          "total_weight needs to be a uarray.array('f',...)");
 
 	if (total_weight_len*3 != dest_len)
 		mp_raise_ValueError("dest and weight array sizes don't match");
 
-	mp_buffer_info_t tmp_buf_info;
-	mp_get_buffer_raise(args[5], &tmp_buf_info, MP_BUFFER_WRITE);
-	size_t tmp_len = tmp_buf_info.len/sizeof(float);
-	float *tmp = tmp_buf_info.buf;
-
-	if (tmp_buf_info.typecode != 'f')
-		mp_raise_ValueError("tmp_buf needs to be a uarray.array('f',...)");
+	float *tmp;
+	size_t tmp_len  = cball_get_float_array(args[5], &tmp, MP_BUFFER_WRITE,
+	                  "tmp_buf needs to be a uarray.array('f',...)");
 
 	if (dest_len > tmp_len)
 		mp_raise_ValueError("tmp_buf too small");
@@ -232,6 +814,11 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_latt_long_map_obj, 6, 6, cball_
 
 STATIC mp_obj_t cball_bytearray_memset(mp_obj_t array, mp_obj_t c)
 {
+	/* args:
+	 * -     array [...]  uint8,
+	 * -     c            int,
+	 */
+
 	mp_buffer_info_t buf_info;
 	mp_get_buffer_raise(array, &buf_info, MP_BUFFER_WRITE);
 	memset(buf_info.buf, mp_obj_get_int(c), buf_info.len);
@@ -242,6 +829,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memset_obj, cball_bytearray_mem
 
 STATIC mp_obj_t cball_bytearray_blend(size_t n_args, const mp_obj_t *args)
 {
+	/* args:
+	 * -     out           [n]  uint8,
+	 * -     in1           [n]  uint8,
+	 * -     in2           [n]  uint8,
+	 * -     interpolation      float
+	 *
+	 */
+
 	int mulb = (int)(256.f *mp_obj_get_float(args[3]));
 
 	if (mulb < 0)
@@ -280,6 +875,7 @@ STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 	 * -     h               int,
 	 * -     cap_map  [511]  uint8,
 	 */
+
 	mp_buffer_info_t cells_info;
 	mp_get_buffer_raise(args[0], &cells_info, MP_BUFFER_WRITE);
 	uint8_t *cells = cells_info.buf;
@@ -339,13 +935,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_ca_update_obj, 4, 4, cball_ca_u
 
 STATIC mp_obj_t cball_orbit_update(mp_obj_t object_list, mp_obj_t obj_gmdt2, mp_obj_t count)
 {
-	mp_buffer_info_t objects_info;
-	mp_get_buffer_raise(object_list, &objects_info, MP_BUFFER_WRITE);
-	if (objects_info.typecode != 'f')
-		mp_raise_ValueError("object_list needs to be a uarray.array('f',...)");
+	/* args:
+	 * -     objects     [n_objects*6]    float
+	 * -     gmdt2                        float
+	 * -     n_iterations                 int
+	 */
 
-	size_t object_data_len=objects_info.len/sizeof(float);
-	float *object_data = objects_info.buf;
+	float *object_data;
+	size_t object_data_len = cball_get_float_array(object_list, &object_data, MP_BUFFER_WRITE,
+	                                              "object_list needs to be a uarray.array('f',...)");
 
 	if (object_data_len % 6 != 0)
 		mp_raise_ValueError("length of object_list not a multiple of 6");
@@ -390,26 +988,31 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_orbit_update_obj, cball_orbit_update);
 
 STATIC mp_obj_t cball_lorenz_update(mp_obj_t attractors, mp_obj_t delta_time, mp_obj_t iterations)
 {
-	mp_buffer_info_t attractors_info;
-	mp_get_buffer_raise(attractors, &attractors_info, MP_BUFFER_WRITE);
-	if (attractors_info.typecode != 'f')
-		mp_raise_ValueError("attractors needs to be a uarray.array('f',...)");
+	/* args:
+	 * -     attractors  [n_attractors*6]    float
+	 * -     dt                              float
+	 * -     n_iterations                    int
+	 */
 
-	size_t attractors_data_len=attractors_info.len/sizeof(float);
-	float *attractors_data = attractors_info.buf;
+	float *data_flat;
+	size_t data_flat_len = cball_get_float_array(attractors, &data_flat, MP_BUFFER_WRITE,
+	                                             "attractors needs to be a uarray.array('f',...)");
+
+	if (data_flat_len % 6 != 0)
+		mp_raise_ValueError("length of attractors not a multiple of 6");
 
 	float dt = (float)mp_obj_get_float(delta_time);
 	int    n = mp_obj_get_int(iterations);
 
 	size_t i,j;
-	for (i=0; i<attractors_data_len; i+=6)
+	for (i=0; i<data_flat_len; i+=6)
 	{
-		float x     = attractors_data[i  ],
-		      y     = attractors_data[i+1],
-		      z     = attractors_data[i+2],
-		      sigma = attractors_data[i+3],
-		      rho   = attractors_data[i+4],
-		      beta  = attractors_data[i+5];
+		float x     = data_flat[i  ],
+		      y     = data_flat[i+1],
+		      z     = data_flat[i+2],
+		      sigma = data_flat[i+3],
+		      rho   = data_flat[i+4],
+		      beta  = data_flat[i+5];
 
 		for (j=0; j<n; j++)
 		{
@@ -418,9 +1021,9 @@ STATIC mp_obj_t cball_lorenz_update(mp_obj_t attractors, mp_obj_t delta_time, mp
 			z += (x*y-beta*z)*dt;
 		}
 
-		attractors_data[i  ] = x;
-		attractors_data[i+1] = y;
-		attractors_data[i+2] = z;
+		data_flat[i  ] = x;
+		data_flat[i+1] = y;
+		data_flat[i+2] = z;
 	}
 
 	return mp_const_none;
@@ -430,29 +1033,26 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_lorenz_update_obj, cball_lorenz_update);
 
 STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lights_flat)
 {
-	mp_buffer_info_t fb_info;
-	mp_get_buffer_raise(framebuf, &fb_info, MP_BUFFER_WRITE);
-	size_t fb_len = fb_info.len;
-	uint8_t *fb_buf = fb_info.buf;
+	/* args:
+	 * -     framebuffer  [n_leds*3]    uint8,
+	 * -     led_data     [n_leds*6]    float
+	 * -     lights_flat  [n_lights*6]  float
+	 */
 
-	mp_buffer_info_t leds_info;
-	mp_get_buffer_raise(leds_flat, &leds_info, MP_BUFFER_READ);
-	if (leds_info.typecode != 'f')
-		mp_raise_ValueError("leds_flat needs to be a uarray.array('f',...)");
+	uint8_t *fb;
+	size_t fb_len = cball_get_bytearray(framebuf, &fb, MP_BUFFER_WRITE,
+	                "framebuffer needs to be a bytearray");
 
-	size_t led_data_len = leds_info.len / sizeof(float);
-	float *led_data = leds_info.buf;
+	float *led_data;
+	size_t led_data_len = cball_get_float_array(leds_flat, &led_data, MP_BUFFER_READ,
+	                      "led_data needs to be a uarray.array('f',...)");
 
-	if (led_data_len != fb_len*2)
-		mp_raise_ValueError("Array sizes don't match");
+	if ( led_data_len%3 != 0 || led_data_len != fb_len*2)
+		mp_raise_ValueError("Incorrect array sizes");
 
-	mp_buffer_info_t lights_info;
-	mp_get_buffer_raise(lights_flat, &lights_info, MP_BUFFER_READ);
-	if (lights_info.typecode != 'f')
-		mp_raise_ValueError("lights_flat needs to be a uarray.array('f',...)");
-
-	size_t lights_data_len = lights_info.len / sizeof(float);
-	float *lights_data = lights_info.buf;
+	float *lights_data;
+	size_t lights_data_len = cball_get_float_array(lights_flat, &lights_data, MP_BUFFER_READ,
+	                         "lights_flat needs to be a uarray.array('f',...)");
 
 	if (lights_data_len % 6 != 0)
 		mp_raise_ValueError("length of lights_flat not a multiple of 6");
@@ -460,9 +1060,9 @@ STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lig
 	size_t i,j;
 	for (i=0; i<fb_len; i+=3)
 	{
-		mp_float_t r=(float)fb_buf[i],
-		           g=(float)fb_buf[i+1],
-		           b=(float)fb_buf[i+2];
+		mp_float_t r=(float)fb[i],
+		           g=(float)fb[i+1],
+		           b=(float)fb[i+2];
 
 		mp_float_t ledx = led_data[i*2],
 		           ledy = led_data[i*2+1],
@@ -493,9 +1093,9 @@ STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lig
 		if (r>255.f) r = 255.f;
 		if (g>255.f) g = 255.f;
 		if (b>255.f) b = 255.f;
-		fb_buf[i] = (uint8_t)r;
-		fb_buf[i+1] = (uint8_t)g;
-		fb_buf[i+2] = (uint8_t)b;
+		fb[i] = (uint8_t)r;
+		fb[i+1] = (uint8_t)g;
+		fb[i+2] = (uint8_t)b;
 	}
 
 	return mp_const_none;
@@ -505,32 +1105,39 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_shader_obj, cball_shader);
 
 STATIC mp_obj_t cball_gradient(size_t n_args, const mp_obj_t *args)
 {
-	mp_buffer_info_t fb_info;
-	mp_get_buffer_raise(args[0], &fb_info, MP_BUFFER_WRITE);
-	size_t fb_len = fb_info.len;
-	uint8_t *fb = fb_info.buf;
+	/* args:
+	 * -     framebuffer  [pixels*3]  uint8,
+	 * -     rotations    [pixels*3]  uint16,
+	 * -     rwave        [...]       uint16,
+	 * -     gwave        [...]       uint16,
+	 * -     bwave        [...]       uint16,
+	 * -     rphi                     int,
+	 * -     gphi                     int,
+	 * -     bphi                     int,
+	 */
 
-	mp_buffer_info_t rotations_info;
-	mp_get_buffer_raise(args[1], &rotations_info, MP_BUFFER_READ);
-	if (rotations_info.typecode != 'H')
-		mp_raise_ValueError("rotations needs to be a uarray.array('H',...)");
+	uint8_t *fb;
+	size_t fb_len = cball_get_bytearray(args[0], &fb, MP_BUFFER_WRITE,
+	                "framebuffer needs to be a bytearray");
 
-	size_t rot_len = rotations_info.len / sizeof(uint16_t);
-	uint16_t *rot = rotations_info.buf;
+	uint16_t *rot;
+	size_t rot_len = cball_get_uint16_array(args[1], &rot, MP_BUFFER_READ,
+	                 "rotations needs to be a uarray.array('H',...)");
 
 	if (fb_len != rot_len)
 		mp_raise_ValueError("Array sizes don't match");
 
-	mp_buffer_info_t wave_info;
-	mp_get_buffer_raise(args[2], &wave_info, MP_BUFFER_READ);
-	size_t rwave_len = wave_info.len;
-	uint8_t *rwave = wave_info.buf;
-	mp_get_buffer_raise(args[3], &wave_info, MP_BUFFER_READ);
-	size_t gwave_len = wave_info.len;
-	uint8_t *gwave = wave_info.buf;
-	mp_get_buffer_raise(args[4], &wave_info, MP_BUFFER_READ);
-	size_t bwave_len = wave_info.len;
-	uint8_t *bwave = wave_info.buf;
+	uint8_t *rwave;
+	size_t rwave_len = cball_get_bytearray(args[2], &rwave, MP_BUFFER_READ,
+	                   "rwave needs to be a bytearray");
+
+	uint8_t *gwave;
+	size_t gwave_len = cball_get_bytearray(args[3], &gwave, MP_BUFFER_READ,
+	                   "gwave needs to be a bytearray");
+
+	uint8_t *bwave;
+	size_t bwave_len = cball_get_bytearray(args[4], &bwave, MP_BUFFER_READ,
+	                   "bwave needs to be a bytearray");
 
 	int phi_r = (rwave_len+(mp_obj_get_int(args[5])%rwave_len))%rwave_len,
 	    phi_g = (gwave_len+(mp_obj_get_int(args[6])%gwave_len))%gwave_len,
@@ -552,18 +1159,20 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_gradient_obj, 8, 8, cball_gradi
 /* needed for the wobble animation, couldn't really mould it into a generic computation */
 STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 {
-	mp_buffer_info_t fb_info;
-	mp_get_buffer_raise(args[0], &fb_info, MP_BUFFER_WRITE);
-	size_t fb_len = fb_info.len;
-	uint8_t *fb = fb_info.buf;
+	/* args:
+	 * -     framebuffer  [pixels*3]  uint8,
+	 * -     rotations    [pixels*3]  uint16,
+	 * -     n_components             int,
+	 * -     phase                    float,
+	 */
 
-	mp_buffer_info_t rotations_info;
-	mp_get_buffer_raise(args[1], &rotations_info, MP_BUFFER_READ);
-	if (rotations_info.typecode != 'H')
-		mp_raise_ValueError("rotations needs to be a uarray.array('H',...)");
+	uint8_t *fb;
+	size_t fb_len  = cball_get_bytearray(args[0], &fb, MP_BUFFER_WRITE,
+	                 "framebuffer needs to be a bytearray");
 
-	size_t rot_len = rotations_info.len / sizeof(uint16_t);
-	uint16_t *rot = rotations_info.buf;
+	uint16_t *rot;
+	size_t rot_len = cball_get_uint16_array(args[1], &rot, MP_BUFFER_READ,
+	                 "rotations needs to be a uarray.array('H',...)");
 
 	if (fb_len != rot_len)
 		mp_raise_ValueError("Array sizes don't match");
@@ -580,7 +1189,7 @@ STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 	for (i=component; i<fb_len; i+=3)
 	{
 		float w = 1.f+cosf( phi+(float)rot[i]*((float)M_PI*2.f/1024.f) )*tide;
-        int b = (int)(w*w*64.);
+		int b = (int)(w*w*64.);
 		if (b<0) b=0;
 		else if (b>255) b=255;
 		fb[i] = b;
@@ -591,11 +1200,13 @@ STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_wobble_obj, 4, 4, cball_wobble);
 
-
 STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_cball) },
-	{ MP_ROM_QSTR(MP_QSTR_framebuf8to16), MP_ROM_PTR(&cball_framebuf8to16_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_gamma), MP_ROM_PTR(&cball_fillbuffer_gamma_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_float), MP_ROM_PTR(&cball_fillbuffer_float_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_gamma), MP_ROM_PTR(&cball_fillbuffer_remap_gamma_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_float), MP_ROM_PTR(&cball_fillbuffer_remap_float_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_apply_palette), MP_ROM_PTR(&cball_apply_palette_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_latt_long_map), MP_ROM_PTR(&cball_latt_long_map_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_memset), MP_ROM_PTR(&cball_bytearray_memset_obj) },
