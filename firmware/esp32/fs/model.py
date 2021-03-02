@@ -1,6 +1,11 @@
 
 import uarray
 
+def load_json(name):
+    import config
+    config.load()
+    return config.load_json(config.model_dir + '/' + name)
+
 class Model:
     def __init__(self, n_leds, positions, normals, inside):
         self.n_leds = n_leds
@@ -8,20 +13,15 @@ class Model:
         self.normals = normals
         self.flat_data = uarray.array('f')
         for p, n in zip(positions, normals):
-            for x in p:
-                self.flat_data.append(x)
-            for x in n:
-                self.flat_data.append(x)
+            self.flat_data.extend(p)
+            self.flat_data.extend(n)
 
         self.inside = inside
 
-def load(filename):
-    import uio, ujson, gc
+def load():
 
-    with uio.open(filename) as f:
-        json = ujson.load(f)
-
-    gc.collect()
+    import gc
+    json = load_json('/leds.json')
 
     n_leds    = len(json['leds'])
     positions = tuple( tuple(led['position']) for led in json['leds'] )

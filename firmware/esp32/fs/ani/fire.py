@@ -5,16 +5,14 @@ import cball
 class Fire:
 
     def __init__(self, leds):
-        import uio, ujson
+        import model
 
         self.ca_map = bytes(min(255, int(((i/64)**1.25)/3.7*64.)) for i in range(512))
 
-        with uio.open("/conf/fire.json") as f:
-            json = ujson.load(f)
+        with model.load_json("fire.json") as json:
             self.width = int(json['width'])
             self.height = int(json['height'])
             self.voronoi_map = uarray.array('H', json['voronoi'])
-            del json
 
         self.cells = bytearray(self.width * (self.height+1))
         self.fbuf_2d = bytearray(self.width * self.height * 3)

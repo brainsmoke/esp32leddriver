@@ -37,7 +37,7 @@ config.load()
 #if config.essid != None:
 #    wifi_connect(config.essid, config.password)
 
-leds = model.load("/conf/leds.json")
+leds = model.load()
 
 driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              rx       = config.uart_rx,

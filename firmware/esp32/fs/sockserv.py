@@ -35,7 +35,7 @@ config.load()
 if config.essid != None:
     wifi_connect(config.essid, config.password)
 
-leds = model.load("/conf/leds.json")
+leds = model.load()
 
 outbuf = bytearray(leds.n_leds * 3 * 2 + 4)
 outbuf[-4:] = b"\xff\xff\xff\xf0"
