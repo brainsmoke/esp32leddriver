@@ -698,7 +698,7 @@ static mp_obj_t esphttpd_server_stop(mp_obj_t self_in)
 }
 static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_stop_obj, esphttpd_server_stop);
 
-static const mp_rom_map_elem_t esphttpd_server_locals_dict[] =
+static const mp_rom_map_elem_t esphttpd_server_locals_dict_table[] =
 {
 	{ MP_ROM_QSTR(MP_QSTR_register),   MP_ROM_PTR(&esphttpd_server_register_obj)   },
 	{ MP_ROM_QSTR(MP_QSTR_unregister), MP_ROM_PTR(&esphttpd_server_unregister_obj) },
@@ -707,6 +707,8 @@ static const mp_rom_map_elem_t esphttpd_server_locals_dict[] =
 	{ MP_ROM_QSTR(MP_QSTR_event_loop), MP_ROM_PTR(&esphttpd_server_event_loop_obj) },
 	{ MP_ROM_QSTR(MP_QSTR___del__),    MP_ROM_PTR(&esphttpd_server_deinit_obj)     },
 };
+
+static MP_DEFINE_CONST_DICT(esphttpd_server_locals_dict, esphttpd_server_locals_dict_table);
 
 const mp_obj_type_t esphttpd_server_type =
 {
@@ -746,5 +748,5 @@ const mp_obj_module_t esphttpd_user_cmodule =
 	.globals = (mp_obj_dict_t*)&esphttpd_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_esphttpd, esphttpd_user_cmodule, MODULE_ESPHTTP_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR__esphttpd, esphttpd_user_cmodule, MODULE_ESPHTTPD_ENABLED);
 
