@@ -15,6 +15,8 @@
 #include <stdlib.h>
 #include <endian.h>
 
+
+#include "esp_log.h"
 #include "esp_http_server.h"
 
 /*
@@ -509,7 +511,8 @@ static esphttpd_server_obj_t *get_server_obj(httpd_req_t *r)
 static esp_err_t handler_wrapper(httpd_req_t *r)
 {
 	esphttpd_server_obj_t *self = get_server_obj(r);
-	xQueueSend(self->request_queue, r, portMAX_DELAY);
+	httpd_req_t *buf = r;
+	xQueueSend(self->request_queue, &buf, portMAX_DELAY);
 	esp_err_t err = 0;
 	xQueueReceive(self->return_queue, &err, portMAX_DELAY);
 	return err;
@@ -644,8 +647,9 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 			{
 				esp_err_t ret = ESP_OK;
 
-				mp_obj_t callback = MP_OBJ_FROM_PTR(req_obj.req->user_ctx),
+				mp_obj_t callback = (mp_obj_t)req_obj.req->user_ctx,
 				         request  = MP_OBJ_FROM_PTR(&req_obj);
+//ESP_LOGD("_esphttpd", "callback %lx request %lx", (long unsigned int)callback, (long unsigned int)request);
 
 				mp_obj_t handler_ret = mp_call_function_1( callback, request );
 
