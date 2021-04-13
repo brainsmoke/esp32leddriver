@@ -9,6 +9,7 @@ _loaded = False
 
 def load_json(filename):
 
+    import uio, ujson
     config = None
 
     try:
