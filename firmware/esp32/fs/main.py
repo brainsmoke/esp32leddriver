@@ -34,8 +34,8 @@ def get_connection(socket):
 
 config.load()
 
-#if config.essid != None:
-#    wifi_connect(config.essid, config.password)
+if config.essid != None:
+    wifi_connect(config.essid, config.password)
 
 leds = model.load()
 

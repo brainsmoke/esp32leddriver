@@ -13,8 +13,8 @@ class Model:
         self.normals = normals
         self.flat_data = uarray.array('f')
         for p, n in zip(positions, normals):
-            self.flat_data.extend(p)
-            self.flat_data.extend(n)
+            for x in p+n:
+                self.flat_data.append(x)
 
         self.inside = inside
 

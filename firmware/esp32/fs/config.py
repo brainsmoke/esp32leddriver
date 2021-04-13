@@ -9,13 +9,14 @@ _loaded = False
 
 def load_json(filename):
 
-    import uio, ujson
+    import uio, ujson, gc
     config = None
 
     try:
         with uio.open(filename) as f:
             config = ujson.load(f)
     except OSError:
+        print ("meh.")
         pass
 
     gc.collect()
@@ -24,9 +25,9 @@ def load_json(filename):
 
 
 def reload():
-    import uio, ujson, gc
+    import gc
 
-    global essid, password, port, uart_baudrate, uart_rx, uart_tx
+    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir
 
     config = load_json("/conf/network.json")
 
