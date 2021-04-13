@@ -1,0 +1,750 @@
+
+#include "py/obj.h"
+#include "py/runtime.h"
+#include "py/builtin.h"
+#include "py/binary.h"
+#include "py/mpthread.h"
+
+#include "mphalport.h"
+
+#include "freertos/queue.h"
+
+#include <math.h>
+#include <ctype.h>
+#include <string.h>
+#include <stdlib.h>
+#include <endian.h>
+
+#include "esp_http_server.h"
+
+/*
+ * Shadow list to store callback contexts in a GC-reachable location
+ * to avoid use-after-GC.
+ *
+ * stored in the server object for now :-/
+ */
+
+static mp_obj_t get_no_free_list(void)
+{
+	static mp_obj_t no_free_list = mp_const_none;
+
+	if (no_free_list == mp_const_none)
+		no_free_list = mp_obj_new_list(0, NULL);
+
+	return no_free_list;
+}
+
+static void garbage_collect_retain(mp_obj_t ctx)
+{
+	if (mp_obj_is_obj(ctx))
+		mp_obj_list_append(get_no_free_list(), ctx);
+}
+
+static void garbage_collect_discard(mp_obj_t ctx)
+{
+	if (mp_obj_is_obj(ctx))
+		mp_obj_list_remove(get_no_free_list(), ctx);
+}
+
+/* _esphttpd.Request helpers
+ *
+ */
+
+typedef struct
+{
+	int code;
+	const char *desc;
+
+} int_str_map_t;
+
+static const int_str_map_t status_code_map[] =
+{
+	{ 200, "200 OK"                    },
+	{ 301, "301 Moved Permanently"     },
+	{ 303, "303 See Other"             },
+	{ 304, "304 Not Modified"          },
+	{ 400, "400 Bad Request"           },
+	{ 401, "401 Unauthorized"          },
+	{ 403, "403 Forbidden"             },
+	{ 404, "404 File Not Found"        },
+	{ 500, "500 Internal Server Error" },
+};
+
+typedef struct
+{
+	int num;
+	const char *str;
+	mp_obj_t obj;
+
+} int_str_obj_map_t;
+
+static const int_str_obj_map_t methods[] =
+{
+	{ HTTP_GET,  "GET",  MP_OBJ_NEW_QSTR(MP_QSTR_GET)   },
+	{ HTTP_POST, "POST", MP_OBJ_NEW_QSTR(MP_QSTR_POST)  },
+	{ -1,         NULL,  mp_const_none                  },
+};
+
+static const char *status_code(int num)
+{
+	int base = 0, size = ( sizeof(status_code_map)/sizeof(status_code_map[0]) );
+
+	while (size > 0)
+	{
+		int mid = size/2;
+		if (status_code_map[base+mid].code == num)
+			return status_code_map[base+mid].desc;
+		else if (status_code_map[base+mid].code < num)
+			size = mid;
+		else
+		{
+			base += mid + 1;
+			size -= mid + 1;
+		}
+	}
+	return NULL;
+}
+
+static int method_const(const char *name)
+{
+	const int_str_obj_map_t *m;
+
+	for (m = &methods[0]; m->str; m += 1)
+		if ( strcasecmp(name, m->str) == 0 )
+			return m->num;
+
+	return -1;
+}
+
+static mp_obj_t method_str(int esp_const)
+{
+	const int_str_obj_map_t *m;
+
+	for (m = &methods[0]; m->str; m += 1)
+		if ( m->num == esp_const )
+			return m->obj;
+
+	return mp_const_none;
+}
+
+/* */
+
+static void set_session_ctx(httpd_req_t *r, mp_obj_t sess_ctx)
+{
+	if (!r->ignore_sess_ctx_changes)
+	{
+		r->ignore_sess_ctx_changes = true;
+		r->free_ctx = garbage_collect_discard;
+		r->sess_ctx = mp_const_none;
+	}
+
+	/* Keep an extra reference to callback context objects that escape
+	 * from the garbage collector's radar because they are stored in the
+	 * http server's internal datastructures.
+	 */
+	garbage_collect_retain(sess_ctx);
+	garbage_collect_discard(r->sess_ctx);
+
+	r->sess_ctx = sess_ctx;
+}
+
+static mp_obj_t get_session_ctx(httpd_req_t *r)
+{
+	if (!r->ignore_sess_ctx_changes)
+		set_session_ctx(r, mp_const_none);
+
+	return MP_OBJ_FROM_PTR(r->sess_ctx);
+}
+
+/* _esphttpd.Request
+ *
+ */
+
+typedef struct
+{
+	mp_obj_base_t base;
+	httpd_req_t *req;
+	int chunk_sent;
+	int all_sent;
+	mp_obj_t *no_gc_objects;
+	int n_alloc;
+	int n_used;
+
+} esphttpd_request_obj_t;
+
+
+static void request_prevent_gc(esphttpd_request_obj_t *req, mp_obj_t obj)
+{
+	if (req->n_alloc == req->n_used)
+		mp_raise_ValueError(MP_ERROR_TEXT("Too many response headers"));
+
+	req->no_gc_objects[req->n_used++] = obj;
+}
+
+static void clear_request_obj(esphttpd_request_obj_t *req)
+{
+	for (int i=0; i<req->n_alloc; i++)
+		req->no_gc_objects[i] = mp_const_none;
+
+	req->n_used = 0;
+	req->req = NULL;
+	req->chunk_sent = 0;
+	req->all_sent = 0;
+}
+
+static void esphttpd_request_print(const mp_print_t *print,
+                                   mp_obj_t self_in,
+                                   mp_print_kind_t kind)
+{
+	mp_printf(print, "<_esphttpd.Request XXX TODO Description XXX>");
+}
+
+/* _esphttpd.Request.set_status(int) */
+static mp_obj_t esphttpd_request_set_status(mp_obj_t self_in, mp_obj_t num)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	const char *status = status_code(mp_obj_get_int(num));
+
+	if (!status)
+		mp_raise_ValueError(MP_ERROR_TEXT("Unknown status"));
+
+	check_esp_err(httpd_resp_set_status(self->req, status));
+
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_status_obj, esphttpd_request_set_status );
+
+/* _esphttpd.Request.set_session_ctx(ctx) */
+static mp_obj_t esphttpd_request_set_session_ctx(mp_obj_t self_in, mp_obj_t sess_ctx)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	set_session_ctx(self->req, sess_ctx);
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_session_ctx_obj, esphttpd_request_set_session_ctx );
+
+/* _esphttpd.Request.get_session_ctx() */
+static mp_obj_t esphttpd_request_get_session_ctx(mp_obj_t self_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	return get_session_ctx(self->req);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_session_ctx_obj, esphttpd_request_get_session_ctx );
+
+/* _esphttpd.Request.recv(buf) */
+static mp_obj_t esphttpd_request_recv(mp_obj_t self_in, mp_obj_t buf_out)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	mp_buffer_info_t bufinfo;
+	mp_get_buffer_raise(buf_out, &bufinfo, MP_BUFFER_WRITE);
+	int n_read = httpd_req_recv(self->req, bufinfo.buf, bufinfo.len);
+
+	if (n_read < 0)
+		check_esp_err(n_read);
+
+	return mp_obj_new_int(n_read);
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_recv_obj, esphttpd_request_recv );
+
+static void end_request(esphttpd_request_obj_t *req)
+{
+	if (!req->all_sent)
+	{
+		char c[1];
+		esp_err_t err;
+		if (req->chunk_sent)
+			err = httpd_resp_send_chunk(req->req, &c[0], 0);
+		else
+			err = httpd_resp_send(req->req, &c[0], 0);
+
+		req->all_sent = 1;
+
+		check_esp_err(err);
+	}
+}
+
+/* _esphttpd.Request.write(buf) */
+static mp_obj_t esphttpd_request_write(mp_obj_t self_in, mp_obj_t buf_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->all_sent)
+		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write() already finished sending document"));
+
+	self->chunk_sent = 1;
+
+	mp_buffer_info_t bufinfo;
+	mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
+	check_esp_err(httpd_resp_send_chunk(self->req, bufinfo.buf, bufinfo.len));
+
+	if (bufinfo.len == 0)
+		self->all_sent = 1;
+
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_obj, esphttpd_request_write );
+
+/* _esphttpd.Request.write_all(buf) */
+static mp_obj_t esphttpd_request_write_all(mp_obj_t self_in, mp_obj_t buf_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->all_sent)
+		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write_all() already finished sending document"));
+
+	if (self->chunk_sent)
+	{
+		esphttpd_request_write(self_in, buf_in);
+		end_request(self);
+	}
+	else
+	{
+		mp_buffer_info_t bufinfo;
+		mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
+		check_esp_err(httpd_resp_send(self->req, bufinfo.buf, bufinfo.len));
+		self->all_sent = 1;
+	}
+
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_all_obj, esphttpd_request_write_all );
+
+/* _esphttpd.Request.get_header(field) */
+static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	vstr_t vstr;
+	const char *field_name = mp_obj_str_get_str(field_in);
+	size_t field_len = httpd_req_get_hdr_value_len(self->req, field_name);
+
+	if (field_len == 0)
+		return MP_OBJ_NEW_QSTR(MP_QSTR_);
+
+	vstr_init(&vstr, field_len+1);
+	httpd_req_get_hdr_value_str(self->req, field_name, vstr.buf, field_len+1);
+	vstr.len = field_len;
+	return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_get_header_obj, esphttpd_request_get_header );
+
+/* _esphttpd.Request.get_query_string() */
+static mp_obj_t esphttpd_request_get_query_string(mp_obj_t self_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	vstr_t vstr;
+	size_t len = httpd_req_get_url_query_len(self->req);
+	vstr_init(&vstr, len+1);
+	httpd_req_get_url_query_str(self->req, vstr.buf, len+1);
+	vstr.len = len;
+	return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_query_string_obj, esphttpd_request_get_query_string );
+
+/* _esphttpd.Request.content_len() */
+static mp_obj_t esphttpd_request_content_len(mp_obj_t self_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	return mp_obj_new_int(self->req->content_len);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_content_len_obj, esphttpd_request_content_len );
+
+/* _esphttpd.Request.method() */
+static mp_obj_t esphttpd_request_method(mp_obj_t self_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	return method_str(self->req->method);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_method_obj, esphttpd_request_method );
+
+/* _esphttpd.Request.set_content_type(mime) */
+static mp_obj_t esphttpd_request_set_content_type(mp_obj_t self_in, mp_obj_t type_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	const char *type = mp_obj_str_get_str(type_in);
+	check_esp_err(httpd_resp_set_type(self->req, type));
+	request_prevent_gc(self, type_in);
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_content_type_obj, esphttpd_request_set_content_type );
+
+/* _esphttpd.Request.add_header(field, value) */
+static mp_obj_t esphttpd_request_add_header(mp_obj_t self_in, mp_obj_t field_in, mp_obj_t value_in)
+{
+    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	const char *field = mp_obj_str_get_str(field_in);
+	const char *value = mp_obj_str_get_str(value_in);
+	check_esp_err(httpd_resp_set_hdr(self->req, field, value));
+	request_prevent_gc(self, field_in);
+	request_prevent_gc(self, value_in);
+	return mp_const_none;
+}
+MP_DEFINE_CONST_FUN_OBJ_3( esphttpd_request_add_header_obj, esphttpd_request_add_header );
+
+static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
+{
+    { MP_ROM_QSTR(MP_QSTR_set_status),       MP_ROM_PTR(&esphttpd_request_set_status_obj)        },
+    { MP_ROM_QSTR(MP_QSTR_recv),             MP_ROM_PTR(&esphttpd_request_recv_obj)              },
+    { MP_ROM_QSTR(MP_QSTR_write),            MP_ROM_PTR(&esphttpd_request_write_obj)             },
+    { MP_ROM_QSTR(MP_QSTR_write_all),        MP_ROM_PTR(&esphttpd_request_write_all_obj)         },
+	{ MP_ROM_QSTR(MP_QSTR_content_len),      MP_ROM_PTR(&esphttpd_request_content_len_obj)       },
+	{ MP_ROM_QSTR(MP_QSTR_method),           MP_ROM_PTR(&esphttpd_request_method_obj)            },
+    { MP_ROM_QSTR(MP_QSTR_get_header),       MP_ROM_PTR(&esphttpd_request_get_header_obj)        },
+    { MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
+	{ MP_ROM_QSTR(MP_QSTR_set_content_type), MP_ROM_PTR(&esphttpd_request_set_content_type_obj)  },
+	{ MP_ROM_QSTR(MP_QSTR_add_header),       MP_ROM_PTR(&esphttpd_request_add_header_obj)        },
+    { MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
+    { MP_ROM_QSTR(MP_QSTR_get_session_ctx),  MP_ROM_PTR(&esphttpd_request_get_session_ctx_obj)   },
+};
+
+static MP_DEFINE_CONST_DICT(esphttpd_request_locals_dict, esphttpd_request_locals_dict_table);
+
+const mp_obj_type_t esphttpd_request_type =
+{
+	{ &mp_type_type },
+	.name = MP_QSTR_Request,
+	.print = esphttpd_request_print,
+	.locals_dict = (mp_obj_dict_t *)&esphttpd_request_locals_dict,
+};
+
+static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc)
+{
+	*req = (esphttpd_request_obj_t)
+	{
+		.base          = { &esphttpd_request_type },
+		.chunk_sent    = 0,
+		.all_sent      = 0,
+		.no_gc_objects = m_new(mp_obj_t, n_alloc),
+	};
+
+	clear_request_obj(req);
+}
+
+/* Server object
+ *
+ */
+
+typedef struct
+{
+	mp_obj_base_t base;
+	httpd_handle_t handle;
+	mp_obj_t no_free_list;
+	QueueHandle_t request_queue,
+				  return_queue;
+
+	int max_headers;
+
+} esphttpd_server_obj_t;
+
+
+static void esphttpd_server_print(const mp_print_t *print,
+                                  mp_obj_t self_in,
+                                  mp_print_kind_t kind)
+{
+	mp_printf(print, "<_esphttpd.Server XXX TODO Description XXX>");
+}
+
+
+/* FreeRTOS queue ops
+ *
+ */
+
+static void alloc_queues(esphttpd_server_obj_t *self)
+{
+	self->request_queue = xQueueCreate( 1, sizeof( httpd_req_t * ) );
+	if (!self->request_queue)
+		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Cannot allocate FreeRTOS queue"));
+
+	self->return_queue = xQueueCreate( 1, sizeof( esp_err_t ) );
+	if (!self->return_queue)
+	{
+		vQueueDelete(self->request_queue);
+		self->request_queue = NULL;
+		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Cannot allocate FreeRTOS queue"));
+	}
+}
+
+static void free_queues(esphttpd_server_obj_t *self)
+{
+	if (self->request_queue)
+	{
+		vQueueDelete(self->request_queue);
+		self->request_queue = NULL;
+	}
+	if (self->return_queue)
+	{
+		vQueueDelete(self->return_queue);
+		self->return_queue = NULL;
+	}
+}
+
+static httpd_req_t *wait_for_request(esphttpd_server_obj_t *self)
+{
+	MP_THREAD_GIL_EXIT();
+	httpd_req_t *r;
+	xQueueReceive(self->request_queue, &r, portMAX_DELAY);
+	MP_THREAD_GIL_ENTER();
+
+	if (!r->ignore_sess_ctx_changes)
+		set_session_ctx(r, mp_const_none);
+
+	return r;
+}
+
+static void handler_done(esphttpd_server_obj_t *self, esp_err_t err)
+{
+	MP_THREAD_GIL_EXIT();
+	esp_err_t buf = err;
+	xQueueSend(self->return_queue, &buf, portMAX_DELAY);
+	MP_THREAD_GIL_ENTER();
+}
+
+static esphttpd_server_obj_t *get_server_obj(httpd_req_t *r)
+{
+	return (esphttpd_server_obj_t *)httpd_get_global_user_ctx(r->handle);
+}
+
+
+/* runs in http server thread */
+static esp_err_t handler_wrapper(httpd_req_t *r)
+{
+	esphttpd_server_obj_t *self = get_server_obj(r);
+	xQueueSend(self->request_queue, r, portMAX_DELAY);
+	esp_err_t err = 0;
+	xQueueReceive(self->return_queue, &err, portMAX_DELAY);
+	return err;
+}
+
+/* runs in http server thread */
+static void global_user_ctx_free(void *ctx)
+{
+	esphttpd_server_obj_t *self = (esphttpd_server_obj_t *)ctx;
+	void *null = NULL;
+	xQueueSend(self->request_queue, &null, portMAX_DELAY);
+	esp_err_t err = 0;
+	xQueueReceive(self->return_queue, &err, portMAX_DELAY);
+	free_queues(self);
+	self->handle = NULL;
+}
+
+/*
+ * register request handlers
+ */
+
+static mp_obj_t esphttpd_server_register(size_t n_args, const mp_obj_t *args)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+	if (self->handle == NULL)
+		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
+
+	const char *uri = mp_obj_str_get_str(args[1]);
+	int method = method_const(mp_obj_str_get_str(args[2]));
+	mp_obj_t handler = args[3];
+
+	if (method == -1)
+		mp_raise_ValueError(MP_ERROR_TEXT("Unknown method"));
+
+	if (!mp_obj_is_callable(handler))
+		mp_raise_ValueError(MP_ERROR_TEXT("handler must be callable"));
+
+	httpd_uri_t uri_handler =
+	{
+		.uri      = uri,
+		.method   = method,
+		.handler  = handler_wrapper,
+		.user_ctx = (void *)handler,
+	};
+
+	check_esp_err(httpd_register_uri_handler(self->handle, &uri_handler));
+
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esphttpd_server_register_obj, 4, 4, esphttpd_server_register);
+
+static mp_obj_t esphttpd_server_unregister(size_t n_args, const mp_obj_t *args)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+	if (self->handle == NULL)
+		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
+
+	const char *uri = mp_obj_str_get_str(args[1]);
+	esp_err_t err;
+
+	if (n_args > 2)
+	{
+		int method = method_const(mp_obj_str_get_str(args[2]));
+		if (method == -1)
+			mp_raise_ValueError(MP_ERROR_TEXT("Unknown method"));
+
+		err = httpd_unregister_uri_handler(self->handle, uri, method);
+	}
+	else
+		err = httpd_unregister_uri(self->handle, uri);
+
+	check_esp_err(err);
+
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esphttpd_server_unregister_obj, 2, 3, esphttpd_server_unregister);
+
+
+/*
+ *
+ */
+
+static mp_obj_t esphttpd_server_start(mp_obj_t self_in)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->handle != NULL)
+		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server already running"));
+
+	alloc_queues(self);
+
+	httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
+	config.global_user_ctx = self;
+	config.global_user_ctx_free_fn = global_user_ctx_free;
+	config.uri_match_fn = httpd_uri_match_wildcard;
+	self->max_headers = config.max_resp_headers;
+	esp_err_t err = httpd_start(&self->handle, &config);
+
+	if (err != ESP_OK)
+	{
+		free_queues(self);
+		self->handle = NULL;
+	}
+
+	check_esp_err(err);
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_start_obj, esphttpd_server_start);
+
+
+static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	if (self->handle == NULL)
+		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
+
+
+	esphttpd_request_obj_t req_obj;
+
+	/* gc 'retainer' pointers for headers {field,value} + status & mime */
+	init_request_obj(&req_obj, self->max_headers*2 + 2);
+
+	/* print & ignore exceptions, outside of the inner loop to speed things up */
+	for (;;)
+	{
+		nlr_buf_t nlr;
+		if (nlr_push(&nlr) == 0)
+		{
+			while ( (req_obj.req = wait_for_request(self) ) )
+			{
+				esp_err_t ret = ESP_OK;
+
+				mp_obj_t callback = MP_OBJ_FROM_PTR(req_obj.req->user_ctx),
+				         request  = MP_OBJ_FROM_PTR(&req_obj);
+
+				mp_obj_t handler_ret = mp_call_function_1( callback, request );
+
+				if (!mp_obj_is_true(handler_ret))
+					ret = ESP_FAIL;
+				else
+					end_request(&req_obj);
+
+				clear_request_obj(&req_obj);
+				handler_done(self, ret);
+			}
+
+			nlr_pop();
+			break;
+		}
+		else
+		{
+			mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
+			clear_request_obj(&req_obj);
+			handler_done(self, ESP_FAIL);
+		}
+	}
+
+	handler_done(self, -1); /* sync with stop/deinit */
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_event_loop_obj, esphttpd_server_event_loop);
+
+static mp_obj_t esphttpd_server_deinit(mp_obj_t self_in)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->handle != NULL)
+		check_esp_err(httpd_stop(self->handle));
+
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_deinit_obj, esphttpd_server_deinit);
+
+static mp_obj_t esphttpd_server_stop(mp_obj_t self_in)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->handle == NULL)
+		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
+
+	check_esp_err(httpd_stop(self->handle));
+
+	return mp_const_none;
+}
+static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_stop_obj, esphttpd_server_stop);
+
+static const mp_rom_map_elem_t esphttpd_server_locals_dict[] =
+{
+	{ MP_ROM_QSTR(MP_QSTR_register),   MP_ROM_PTR(&esphttpd_server_register_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_unregister), MP_ROM_PTR(&esphttpd_server_unregister_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_start),      MP_ROM_PTR(&esphttpd_server_start_obj)      },
+	{ MP_ROM_QSTR(MP_QSTR_stop),       MP_ROM_PTR(&esphttpd_server_stop_obj)       },
+	{ MP_ROM_QSTR(MP_QSTR_event_loop), MP_ROM_PTR(&esphttpd_server_event_loop_obj) },
+	{ MP_ROM_QSTR(MP_QSTR___del__),    MP_ROM_PTR(&esphttpd_server_deinit_obj)     },
+};
+
+const mp_obj_type_t esphttpd_server_type =
+{
+	{ &mp_type_type },
+	.name = MP_QSTR_server,
+	.print = esphttpd_server_print,
+	.locals_dict = (mp_obj_dict_t *)&esphttpd_server_locals_dict,
+};
+
+static mp_obj_t esphttpd_http_server(void)
+{
+	esphttpd_server_obj_t *self = m_new_obj_with_finaliser(esphttpd_server_obj_t);
+	*self = (esphttpd_server_obj_t)
+	{
+		.base          = { &esphttpd_server_type },
+		.handle        = NULL,
+		.no_free_list  = get_no_free_list(),
+		.request_queue = NULL,
+		.return_queue  = NULL,
+	};
+	return MP_OBJ_FROM_PTR(self);
+}
+
+static MP_DEFINE_CONST_FUN_OBJ_0(esphttpd_http_server_obj, esphttpd_http_server);
+
+static const mp_rom_map_elem_t esphttpd_module_globals_table[] =
+{
+	{ MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR__esphttpd)        },
+	{ MP_ROM_QSTR(MP_QSTR_http_server), MP_ROM_PTR(&esphttpd_http_server_obj) },
+};
+
+static MP_DEFINE_CONST_DICT(esphttpd_module_globals, esphttpd_module_globals_table);
+
+const mp_obj_module_t esphttpd_user_cmodule =
+{
+	.base = { &mp_type_module },
+	.globals = (mp_obj_dict_t*)&esphttpd_module_globals,
+};
+
+MP_REGISTER_MODULE(MP_QSTR_esphttpd, esphttpd_user_cmodule, MODULE_ESPHTTP_ENABLED);
+
