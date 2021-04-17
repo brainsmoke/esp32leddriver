@@ -106,7 +106,7 @@ static const char *status_code(int num)
 		int mid = size/2;
 		if (status_code_map[base+mid].code == num)
 			return status_code_map[base+mid].desc;
-		else if (status_code_map[base+mid].code < num)
+		else if (status_code_map[base+mid].code > num)
 			size = mid;
 		else
 		{
@@ -497,6 +497,7 @@ static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc,
 		.chunk_sent    = 0,
 		.all_sent      = 0,
 		.no_gc_objects = m_new(mp_obj_t, n_alloc),
+		.n_alloc       = n_alloc,
 		.server        = server,
 	};
 
