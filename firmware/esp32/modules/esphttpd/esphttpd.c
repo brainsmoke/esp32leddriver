@@ -16,7 +16,7 @@
 #include "esp_http_server.h"
 
 static const char *TAG = "_esphttpd";
-#define LOG_FMT(x)      "%s: " x, __func__
+#define LOG_FMT(x) "%s: " x, __func__
 
 /* message passing micropython thread <-> server thread */
 
@@ -299,7 +299,7 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_session_ctx_obj, esphttpd_reques
 /* _esphttpd.Request.get_session_ctx() */
 static mp_obj_t esphttpd_request_get_session_ctx(mp_obj_t self_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	return get_session_ctx(self->req);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_session_ctx_obj, esphttpd_request_get_session_ctx );
@@ -307,7 +307,7 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_session_ctx_obj, esphttpd_reques
 /* _esphttpd.Request.recv(buf) */
 static mp_obj_t esphttpd_request_recv(mp_obj_t self_in, mp_obj_t buf_out)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	mp_buffer_info_t bufinfo;
 	mp_get_buffer_raise(buf_out, &bufinfo, MP_BUFFER_WRITE);
 	int n_read = httpd_req_recv(self->req, bufinfo.buf, bufinfo.len);
@@ -351,7 +351,7 @@ static void end_request(esphttpd_request_obj_t *req)
 /* _esphttpd.Request.write(buf) */
 static mp_obj_t esphttpd_request_write(mp_obj_t self_in, mp_obj_t buf_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
 	if (self->all_sent)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write() already finished sending document"));
@@ -372,7 +372,7 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_obj, esphttpd_request_write );
 /* _esphttpd.Request.write_all(buf) */
 static mp_obj_t esphttpd_request_write_all(mp_obj_t self_in, mp_obj_t buf_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
 	if (self->all_sent)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write_all() already finished sending document"));
@@ -394,7 +394,7 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_all_obj, esphttpd_request_writ
 /* _esphttpd.Request.get_header(field) */
 static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	vstr_t vstr;
 	const char *field_name = mp_obj_str_get_str(field_in);
 	size_t field_len = httpd_req_get_hdr_value_len(self->req, field_name);
@@ -412,7 +412,7 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_get_header_obj, esphttpd_request_get
 /* _esphttpd.Request.get_query_string() */
 static mp_obj_t esphttpd_request_get_query_string(mp_obj_t self_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	vstr_t vstr;
 	size_t len = httpd_req_get_url_query_len(self->req);
 	vstr_init(&vstr, len+1);
@@ -425,7 +425,7 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_query_string_obj, esphttpd_reque
 /* _esphttpd.Request.content_len() */
 static mp_obj_t esphttpd_request_content_len(mp_obj_t self_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	return mp_obj_new_int(self->req->content_len);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_content_len_obj, esphttpd_request_content_len );
@@ -433,7 +433,7 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_content_len_obj, esphttpd_request_co
 /* _esphttpd.Request.method() */
 static mp_obj_t esphttpd_request_method(mp_obj_t self_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	return method_str(self->req->method);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_method_obj, esphttpd_request_method );
@@ -441,7 +441,7 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_method_obj, esphttpd_request_method 
 /* _esphttpd.Request.set_content_type(mime) */
 static mp_obj_t esphttpd_request_set_content_type(mp_obj_t self_in, mp_obj_t type_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	const char *type = mp_obj_str_get_str(type_in);
 	check_esp_err(httpd_resp_set_type(self->req, type));
 	request_prevent_gc(self, type_in);
@@ -452,7 +452,7 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_content_type_obj, esphttpd_reque
 /* _esphttpd.Request.add_header(field, value) */
 static mp_obj_t esphttpd_request_add_header(mp_obj_t self_in, mp_obj_t field_in, mp_obj_t value_in)
 {
-    esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 	const char *field = mp_obj_str_get_str(field_in);
 	const char *value = mp_obj_str_get_str(value_in);
 	check_esp_err(httpd_resp_set_hdr(self->req, field, value));
@@ -464,18 +464,18 @@ MP_DEFINE_CONST_FUN_OBJ_3( esphttpd_request_add_header_obj, esphttpd_request_add
 
 static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
 {
-    { MP_ROM_QSTR(MP_QSTR_set_status),       MP_ROM_PTR(&esphttpd_request_set_status_obj)        },
-    { MP_ROM_QSTR(MP_QSTR_recv),             MP_ROM_PTR(&esphttpd_request_recv_obj)              },
-    { MP_ROM_QSTR(MP_QSTR_write),            MP_ROM_PTR(&esphttpd_request_write_obj)             },
-    { MP_ROM_QSTR(MP_QSTR_write_all),        MP_ROM_PTR(&esphttpd_request_write_all_obj)         },
+	{ MP_ROM_QSTR(MP_QSTR_set_status),       MP_ROM_PTR(&esphttpd_request_set_status_obj)        },
+	{ MP_ROM_QSTR(MP_QSTR_recv),             MP_ROM_PTR(&esphttpd_request_recv_obj)              },
+	{ MP_ROM_QSTR(MP_QSTR_write),            MP_ROM_PTR(&esphttpd_request_write_obj)             },
+	{ MP_ROM_QSTR(MP_QSTR_write_all),        MP_ROM_PTR(&esphttpd_request_write_all_obj)         },
 	{ MP_ROM_QSTR(MP_QSTR_content_len),      MP_ROM_PTR(&esphttpd_request_content_len_obj)       },
 	{ MP_ROM_QSTR(MP_QSTR_method),           MP_ROM_PTR(&esphttpd_request_method_obj)            },
-    { MP_ROM_QSTR(MP_QSTR_get_header),       MP_ROM_PTR(&esphttpd_request_get_header_obj)        },
-    { MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
+	{ MP_ROM_QSTR(MP_QSTR_get_header),       MP_ROM_PTR(&esphttpd_request_get_header_obj)        },
+	{ MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_set_content_type), MP_ROM_PTR(&esphttpd_request_set_content_type_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_add_header),       MP_ROM_PTR(&esphttpd_request_add_header_obj)        },
-    { MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
-    { MP_ROM_QSTR(MP_QSTR_get_session_ctx),  MP_ROM_PTR(&esphttpd_request_get_session_ctx_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_get_session_ctx),  MP_ROM_PTR(&esphttpd_request_get_session_ctx_obj)   },
 };
 
 static MP_DEFINE_CONST_DICT(esphttpd_request_locals_dict, esphttpd_request_locals_dict_table);
