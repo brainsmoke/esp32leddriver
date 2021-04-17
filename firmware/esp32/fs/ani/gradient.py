@@ -12,7 +12,7 @@ smooth_wave = None
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
-        smooth_wave = bytes( smooth_wave_point(i/1024) for i in range(1024) )
+        smooth_wave = bytearray( smooth_wave_point(i/1024) for i in range(1024) )
     return smooth_wave
 
 class BaseGradient:

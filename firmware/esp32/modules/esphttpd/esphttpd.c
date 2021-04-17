@@ -2,51 +2,61 @@
 #include "py/obj.h"
 #include "py/runtime.h"
 #include "py/builtin.h"
-#include "py/binary.h"
 #include "py/mpthread.h"
 
 #include "mphalport.h"
 
 #include "freertos/queue.h"
 
-#include <math.h>
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
-#include <endian.h>
-
 
 #include "esp_log.h"
 #include "esp_http_server.h"
 
-/*
- * Shadow list to store callback contexts in a GC-reachable location
- * to avoid use-after-GC.
- *
- * stored in the server object for now :-/
- */
+static const char *TAG = "_esphttpd";
+#define LOG_FMT(x)      "%s: " x, __func__
 
-static mp_obj_t get_no_free_list(void)
+/* message passing micropython thread <-> server thread */
+
+enum
 {
-	static mp_obj_t no_free_list = mp_const_none;
+	/* (request_msg_t).type */
+	REQ_NEW,
+	REQ_RETURN,
+	REQ_QUIT,
 
-	if (no_free_list == mp_const_none)
-		no_free_list = mp_obj_new_list(0, NULL);
+	/* (response_msg_t).type */
+	RESP_DONE,
+	RESP_SEND,
+	RESP_SEND_CHUNK,
+/*	RESP_SEND_FILE, */
+};
 
-	return no_free_list;
-}
-
-static void garbage_collect_retain(mp_obj_t ctx)
+typedef struct
 {
-	if (mp_obj_is_obj(ctx))
-		mp_obj_list_append(get_no_free_list(), ctx);
-}
+	int type;
+	httpd_req_t *req;
+	esp_err_t err;
+	int pad;
 
-static void garbage_collect_discard(mp_obj_t ctx)
+} request_msg_t;
+
+#define REQUEST_NEW(r)      (request_msg_t) { .type = REQ_NEW,    .req = (r)    }
+#define REQUEST_QUIT()      (request_msg_t) { .type = REQ_QUIT,                 }
+#define REQUEST_RETURN(ret) (request_msg_t) { .type = REQ_RETURN, .err = (ret), }
+
+typedef struct
 {
-	if (mp_obj_is_obj(ctx))
-		mp_obj_list_remove(get_no_free_list(), ctx);
-}
+	int type;
+	const char *buf;
+	size_t size;
+	esp_err_t err;
+
+} response_msg_t;
+
+#define RESPONSE_DONE(error) (response_msg_t) { .type = RESP_DONE, .err = (error), }
 
 /* _esphttpd.Request helpers
  *
@@ -129,33 +139,91 @@ static mp_obj_t method_str(int esp_const)
 	return mp_const_none;
 }
 
-/* */
+/*  */
+
+typedef struct
+{
+	mp_obj_t ctx;
+	int allocated;
+
+} context_slot_t;
 
 static void set_session_ctx(httpd_req_t *r, mp_obj_t sess_ctx)
 {
-	if (!r->ignore_sess_ctx_changes)
-	{
-		r->ignore_sess_ctx_changes = true;
-		r->free_ctx = garbage_collect_discard;
-		r->sess_ctx = mp_const_none;
-	}
-
-	/* Keep an extra reference to callback context objects that escape
-	 * from the garbage collector's radar because they are stored in the
-	 * http server's internal datastructures.
-	 */
-	garbage_collect_retain(sess_ctx);
-	garbage_collect_discard(r->sess_ctx);
-
-	r->sess_ctx = sess_ctx;
+	context_slot_t *slot = r->sess_ctx;
+	slot->ctx = sess_ctx;
 }
 
 static mp_obj_t get_session_ctx(httpd_req_t *r)
 {
-	if (!r->ignore_sess_ctx_changes)
-		set_session_ctx(r, mp_const_none);
+	context_slot_t *slot = r->sess_ctx;
+	return slot->ctx;
+}
 
-	return MP_OBJ_FROM_PTR(r->sess_ctx);
+/* _esphttpd.Server struct declared here, since it is referenced in _esphttpd.Request
+ *
+ */
+
+typedef struct
+{
+	mp_obj_base_t base;
+	httpd_handle_t handle;
+
+	QueueHandle_t request_queue,
+				  response_queue;
+
+	int max_headers;
+
+	context_slot_t *slots;
+	int n_slots;
+
+} esphttpd_server_obj_t;
+
+static context_slot_t *new_context_slot_array(int n_slots)
+{
+	context_slot_t *arr = m_new(context_slot_t, n_slots);
+
+	for (int i=0; i<n_slots; i++)
+		arr[i] = (context_slot_t)
+		{
+			.ctx       = mp_const_none,
+			.allocated = 0,
+		};
+
+	return arr;
+}
+
+static context_slot_t *alloc_context_slot(esphttpd_server_obj_t *server)
+{
+	ESP_LOGD(TAG, LOG_FMT("new session ctx"));
+	for (int i=0; i<server->n_slots; i++)
+	{
+		context_slot_t *slot = &server->slots[i];
+
+		if (!slot->allocated)
+		{
+			*slot = (context_slot_t)
+			{
+				.ctx       = mp_const_none,
+				.allocated = 1,
+			};
+			return slot;
+		}
+	}
+
+	ESP_LOGE(TAG, LOG_FMT("too many session contexts"));
+	return NULL;
+}
+
+static void free_context_slot(void *ctx)
+{
+	ESP_LOGD(TAG, LOG_FMT("free session ctx"));
+	context_slot_t *slot = ctx;
+	*slot = (context_slot_t)
+	{
+		.ctx       = mp_const_none,
+		.allocated = 0,
+	};
 }
 
 /* _esphttpd.Request
@@ -171,6 +239,8 @@ typedef struct
 	mp_obj_t *no_gc_objects;
 	int n_alloc;
 	int n_used;
+
+	esphttpd_server_obj_t *server;
 
 } esphttpd_request_obj_t;
 
@@ -249,20 +319,32 @@ static mp_obj_t esphttpd_request_recv(mp_obj_t self_in, mp_obj_t buf_out)
 }
 MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_recv_obj, esphttpd_request_recv );
 
+static esp_err_t write_offload(esphttpd_request_obj_t *req, const char *buf, size_t len, int is_chunked)
+{
+	MP_THREAD_GIL_EXIT();
+	response_msg_t out_msg = (response_msg_t)
+	{
+		.type = is_chunked ? RESP_SEND_CHUNK : RESP_SEND,
+		.buf  = buf,
+		.size = len,
+	};
+	xQueueSend(req->server->response_queue, &out_msg, portMAX_DELAY);
+	request_msg_t in_msg;
+	xQueueReceive(req->server->request_queue, &in_msg, portMAX_DELAY);
+	if (in_msg.type != REQ_RETURN)
+		ESP_LOGE(TAG, LOG_FMT("desynchonized queue, in_msg.type = %d"), in_msg.type);
+
+	MP_THREAD_GIL_ENTER();
+	return in_msg.err;
+}
+
 static void end_request(esphttpd_request_obj_t *req)
 {
 	if (!req->all_sent)
 	{
-		char c[1];
-		esp_err_t err;
-		if (req->chunk_sent)
-			err = httpd_resp_send_chunk(req->req, &c[0], 0);
-		else
-			err = httpd_resp_send(req->req, &c[0], 0);
-
 		req->all_sent = 1;
-
-		check_esp_err(err);
+		char c[1];
+		check_esp_err( write_offload(req, &c[0], 0, req->chunk_sent ) );
 	}
 }
 
@@ -278,7 +360,7 @@ static mp_obj_t esphttpd_request_write(mp_obj_t self_in, mp_obj_t buf_in)
 
 	mp_buffer_info_t bufinfo;
 	mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
-	check_esp_err(httpd_resp_send_chunk(self->req, bufinfo.buf, bufinfo.len));
+	check_esp_err( write_offload(self, bufinfo.buf, bufinfo.len, true) );
 
 	if (bufinfo.len == 0)
 		self->all_sent = 1;
@@ -295,18 +377,15 @@ static mp_obj_t esphttpd_request_write_all(mp_obj_t self_in, mp_obj_t buf_in)
 	if (self->all_sent)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write_all() already finished sending document"));
 
+	mp_buffer_info_t bufinfo;
+	mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
+
+	check_esp_err( write_offload(self, bufinfo.buf, bufinfo.len, self->chunk_sent) );
+
 	if (self->chunk_sent)
-	{
-		esphttpd_request_write(self_in, buf_in);
 		end_request(self);
-	}
-	else
-	{
-		mp_buffer_info_t bufinfo;
-		mp_get_buffer_raise(buf_in, &bufinfo, MP_BUFFER_READ);
-		check_esp_err(httpd_resp_send(self->req, bufinfo.buf, bufinfo.len));
-		self->all_sent = 1;
-	}
+
+	self->all_sent = 1;
 
 	return mp_const_none;
 }
@@ -409,7 +488,8 @@ const mp_obj_type_t esphttpd_request_type =
 	.locals_dict = (mp_obj_dict_t *)&esphttpd_request_locals_dict,
 };
 
-static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc)
+static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc,
+                             esphttpd_server_obj_t *server)
 {
 	*req = (esphttpd_request_obj_t)
 	{
@@ -417,6 +497,7 @@ static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc)
 		.chunk_sent    = 0,
 		.all_sent      = 0,
 		.no_gc_objects = m_new(mp_obj_t, n_alloc),
+		.server        = server,
 	};
 
 	clear_request_obj(req);
@@ -425,18 +506,6 @@ static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc)
 /* Server object
  *
  */
-
-typedef struct
-{
-	mp_obj_base_t base;
-	httpd_handle_t handle;
-	mp_obj_t no_free_list;
-	QueueHandle_t request_queue,
-				  return_queue;
-
-	int max_headers;
-
-} esphttpd_server_obj_t;
 
 
 static void esphttpd_server_print(const mp_print_t *print,
@@ -453,12 +522,12 @@ static void esphttpd_server_print(const mp_print_t *print,
 
 static void alloc_queues(esphttpd_server_obj_t *self)
 {
-	self->request_queue = xQueueCreate( 1, sizeof( httpd_req_t * ) );
+	self->request_queue = xQueueCreate( 1, sizeof( request_msg_t ) );
 	if (!self->request_queue)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Cannot allocate FreeRTOS queue"));
 
-	self->return_queue = xQueueCreate( 1, sizeof( esp_err_t ) );
-	if (!self->return_queue)
+	self->response_queue = xQueueCreate( 1, sizeof( response_msg_t ) );
+	if (!self->response_queue)
 	{
 		vQueueDelete(self->request_queue);
 		self->request_queue = NULL;
@@ -473,31 +542,37 @@ static void free_queues(esphttpd_server_obj_t *self)
 		vQueueDelete(self->request_queue);
 		self->request_queue = NULL;
 	}
-	if (self->return_queue)
+	if (self->response_queue)
 	{
-		vQueueDelete(self->return_queue);
-		self->return_queue = NULL;
+		vQueueDelete(self->response_queue);
+		self->response_queue = NULL;
 	}
 }
 
 static httpd_req_t *wait_for_request(esphttpd_server_obj_t *self)
 {
 	MP_THREAD_GIL_EXIT();
-	httpd_req_t *r;
-	xQueueReceive(self->request_queue, &r, portMAX_DELAY);
+	request_msg_t msg;
+	xQueueReceive(self->request_queue, &msg, portMAX_DELAY);
 	MP_THREAD_GIL_ENTER();
 
-	if (!r->ignore_sess_ctx_changes)
-		set_session_ctx(r, mp_const_none);
+	if (msg.type == REQ_QUIT)
+		return NULL;
 
-	return r;
+	if (msg.type != REQ_NEW)
+	{
+		ESP_LOGE(TAG, LOG_FMT("desynchonized queue, msg.type = %d"), msg.type);
+		return NULL;
+	}
+
+	return msg.req;
 }
 
 static void handler_done(esphttpd_server_obj_t *self, esp_err_t err)
 {
 	MP_THREAD_GIL_EXIT();
-	esp_err_t buf = err;
-	xQueueSend(self->return_queue, &buf, portMAX_DELAY);
+	response_msg_t msg = RESPONSE_DONE(err);
+	xQueueSend(self->response_queue, &msg, portMAX_DELAY);
 	MP_THREAD_GIL_ENTER();
 }
 
@@ -511,21 +586,44 @@ static esphttpd_server_obj_t *get_server_obj(httpd_req_t *r)
 static esp_err_t handler_wrapper(httpd_req_t *r)
 {
 	esphttpd_server_obj_t *self = get_server_obj(r);
-	httpd_req_t *buf = r;
-	xQueueSend(self->request_queue, &buf, portMAX_DELAY);
-	esp_err_t err = 0;
-	xQueueReceive(self->return_queue, &err, portMAX_DELAY);
-	return err;
+	request_msg_t out_msg = REQUEST_NEW(r);
+	xQueueSend(self->request_queue, &out_msg, portMAX_DELAY);
+
+	for (;;)
+	{
+		response_msg_t in_msg;
+		xQueueReceive(self->response_queue, &in_msg, portMAX_DELAY);
+		switch (in_msg.type)
+		{
+			case RESP_DONE:
+				return in_msg.err;
+
+			case RESP_SEND:
+				out_msg = REQUEST_RETURN( httpd_resp_send(r, in_msg.buf, in_msg.size) );
+				break;
+			case RESP_SEND_CHUNK:
+				out_msg = REQUEST_RETURN( httpd_resp_send_chunk(r, in_msg.buf, in_msg.size) );
+				break;
+			default:
+				ESP_LOGE(TAG, LOG_FMT("unimplemented message in_msg.type = %d"), in_msg.type);
+				out_msg = REQUEST_RETURN( ESP_FAIL );
+		}
+
+		xQueueSend(self->request_queue, &out_msg, portMAX_DELAY);
+	}
 }
 
 /* runs in http server thread */
 static void global_user_ctx_free(void *ctx)
 {
 	esphttpd_server_obj_t *self = (esphttpd_server_obj_t *)ctx;
-	void *null = NULL;
-	xQueueSend(self->request_queue, &null, portMAX_DELAY);
-	esp_err_t err = 0;
-	xQueueReceive(self->return_queue, &err, portMAX_DELAY);
+	request_msg_t req_msg = REQUEST_QUIT();
+	ESP_LOGD(__func__, "sending msg");
+	xQueueSend(self->request_queue, &req_msg, portMAX_DELAY);
+	ESP_LOGD(__func__, "sent");
+	response_msg_t resp_msg;
+	xQueueReceive(self->response_queue, &resp_msg, portMAX_DELAY);
+	ESP_LOGD(__func__, "got reply");
 	free_queues(self);
 	self->handle = NULL;
 }
@@ -607,10 +705,20 @@ static mp_obj_t esphttpd_server_start(mp_obj_t self_in)
 	alloc_queues(self);
 
 	httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
-	config.global_user_ctx = self;
-	config.global_user_ctx_free_fn = global_user_ctx_free;
+
+	config.global_user_ctx = self;                         /* used by handler to get queue handles */
+	config.global_user_ctx_free_fn = global_user_ctx_free; /* only called when global_user_ctx is non-NULL */
 	config.uri_match_fn = httpd_uri_match_wildcard;
+	config.max_resp_headers = 16;
+
+	config.core_id = 1-MP_TASK_COREID;
+
 	self->max_headers = config.max_resp_headers;
+
+	/* gc managed user controlled session contexts */
+	self->n_slots = config.max_open_sockets;
+	self->slots = new_context_slot_array(self->n_slots);
+
 	esp_err_t err = httpd_start(&self->handle, &config);
 
 	if (err != ESP_OK)
@@ -635,7 +743,7 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 	esphttpd_request_obj_t req_obj;
 
 	/* gc 'retainer' pointers for headers {field,value} + status & mime */
-	init_request_obj(&req_obj, self->max_headers*2 + 2);
+	init_request_obj(&req_obj, self->max_headers*2 + 2, self);
 
 	/* print & ignore exceptions, outside of the inner loop to speed things up */
 	for (;;)
@@ -643,21 +751,30 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 		nlr_buf_t nlr;
 		if (nlr_push(&nlr) == 0)
 		{
-			while ( (req_obj.req = wait_for_request(self) ) )
+			httpd_req_t *req;
+
+			while ( (req = wait_for_request(self) ) )
 			{
 				esp_err_t ret = ESP_OK;
 
-				mp_obj_t callback = (mp_obj_t)req_obj.req->user_ctx,
+				if (!req->ignore_sess_ctx_changes)
+				{
+					req->sess_ctx = alloc_context_slot(self);
+					req->free_ctx = free_context_slot;
+					req->ignore_sess_ctx_changes = true;
+				}
+
+				req_obj.req = req;
+
+				mp_obj_t callback = (mp_obj_t)req->user_ctx,
 				         request  = MP_OBJ_FROM_PTR(&req_obj);
-//ESP_LOGD("_esphttpd", "callback %lx request %lx", (long unsigned int)callback, (long unsigned int)request);
 
 				mp_obj_t handler_ret = mp_call_function_1( callback, request );
 
-				if (!mp_obj_is_true(handler_ret))
+				if (handler_ret == mp_const_false)
 					ret = ESP_FAIL;
-				else
-					end_request(&req_obj);
 
+				end_request(&req_obj);
 				clear_request_obj(&req_obj);
 				handler_done(self, ret);
 			}
@@ -683,7 +800,14 @@ static mp_obj_t esphttpd_server_deinit(mp_obj_t self_in)
 	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
 	if (self->handle != NULL)
-		check_esp_err(httpd_stop(self->handle));
+	{
+		MP_THREAD_GIL_EXIT();
+		ESP_LOGD(__func__, "httpd_stop()");
+		esp_err_t err = httpd_stop(self->handle);
+		ESP_LOGD(__func__, "httpd_stop() done");
+		MP_THREAD_GIL_ENTER();
+		check_esp_err(err);
+	}
 
 	return mp_const_none;
 }
@@ -696,7 +820,10 @@ static mp_obj_t esphttpd_server_stop(mp_obj_t self_in)
 	if (self->handle == NULL)
 		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
 
-	check_esp_err(httpd_stop(self->handle));
+	MP_THREAD_GIL_EXIT();
+	esp_err_t err = httpd_stop(self->handle);
+	MP_THREAD_GIL_ENTER();
+	check_esp_err(err);
 
 	return mp_const_none;
 }
@@ -727,11 +854,10 @@ static mp_obj_t esphttpd_http_server(void)
 	esphttpd_server_obj_t *self = m_new_obj_with_finaliser(esphttpd_server_obj_t);
 	*self = (esphttpd_server_obj_t)
 	{
-		.base          = { &esphttpd_server_type },
-		.handle        = NULL,
-		.no_free_list  = get_no_free_list(),
-		.request_queue = NULL,
-		.return_queue  = NULL,
+		.base           = { &esphttpd_server_type },
+		.handle         = NULL,
+		.request_queue  = NULL,
+		.response_queue = NULL,
 	};
 	return MP_OBJ_FROM_PTR(self);
 }

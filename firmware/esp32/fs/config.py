@@ -29,7 +29,7 @@ def reload():
 
     global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir
 
-    config = load_json("/conf/network.json")
+    config = load_json("/secret/network.json")
 
     if config != None:
         if 'wifi' in config and 'essid' in config['wifi'] and 'password' in config['wifi']:
