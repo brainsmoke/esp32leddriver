@@ -14,6 +14,7 @@
 
 #include "esp_log.h"
 #include "esp_http_server.h"
+#include "esp_https_server.h"
 
 static const char *TAG = "_esphttpd";
 #define LOG_FMT(x) "%s: " x, __func__
@@ -696,31 +697,60 @@ static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esphttpd_server_unregister_obj, 2, 3,
  *
  */
 
-static mp_obj_t esphttpd_server_start(mp_obj_t self_in)
+static void init_httpd_config(esphttpd_server_obj_t *self, httpd_config_t *config)
 {
-	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	config->global_user_ctx = self;                         /* used by handler to get queue handles */
+	config->global_user_ctx_free_fn = global_user_ctx_free; /* only called when global_user_ctx is non-NULL */
+	config->uri_match_fn = httpd_uri_match_wildcard;
+	config->max_resp_headers = 16;
+
+	config->core_id = 1-MP_TASK_COREID;
+
+	self->max_headers = config->max_resp_headers;
+
+	/* gc managed user controlled session contexts */
+	self->n_slots = config->max_open_sockets;
+	self->slots = new_context_slot_array(self->n_slots);
+}
+
+static mp_obj_t esphttpd_server_start(size_t n_args, const mp_obj_t *args)
+{
+	esphttpd_server_obj_t *self = MP_OBJ_TO_PTR(args[0]);
+
+	mp_obj_t key_in = n_args >= 2 ? args[1] : mp_const_none;
+	mp_obj_t cert_in = n_args >= 3 ? args[2] : mp_const_none;
+
+	size_t key_len, cert_len;
+	const char unsigned *key = NULL, *cert = NULL;
+
+	if (key_in != mp_const_none)
+		key  = (const unsigned char *)mp_obj_str_get_data(key_in, &key_len);
+	if (cert_in != mp_const_none)
+		cert = (const unsigned char *)mp_obj_str_get_data(cert_in, &cert_len);
 
 	if (self->handle != NULL)
 		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server already running"));
 
 	alloc_queues(self);
 
-	httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
+	esp_err_t err;
 
-	config.global_user_ctx = self;                         /* used by handler to get queue handles */
-	config.global_user_ctx_free_fn = global_user_ctx_free; /* only called when global_user_ctx is non-NULL */
-	config.uri_match_fn = httpd_uri_match_wildcard;
-	config.max_resp_headers = 16;
-
-	config.core_id = 1-MP_TASK_COREID;
-
-	self->max_headers = config.max_resp_headers;
-
-	/* gc managed user controlled session contexts */
-	self->n_slots = config.max_open_sockets;
-	self->slots = new_context_slot_array(self->n_slots);
-
-	esp_err_t err = httpd_start(&self->handle, &config);
+	if (key && cert)
+	{
+		httpd_ssl_config_t config = (httpd_ssl_config_t)HTTPD_SSL_CONFIG_DEFAULT();
+		init_httpd_config(self, &config.httpd);
+		config.prvtkey_pem = key;
+		config.prvtkey_len = key_len;
+		config.cacert_pem = cert;
+		config.cacert_len = cert_len;
+		err = httpd_ssl_start(&self->handle, &config);
+	}
+	else
+	{
+		httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
+		init_httpd_config(self, &config);
+		err = httpd_start(&self->handle, &config);
+	}
 
 	if (err != ESP_OK)
 	{
@@ -731,7 +761,7 @@ static mp_obj_t esphttpd_server_start(mp_obj_t self_in)
 	check_esp_err(err);
 	return mp_const_none;
 }
-static MP_DEFINE_CONST_FUN_OBJ_1(esphttpd_server_start_obj, esphttpd_server_start);
+static MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(esphttpd_server_start_obj, 1, 3, esphttpd_server_start);
 
 
 static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)

@@ -5,6 +5,8 @@ import config, model, uartpixel
 
 from ani.orbit import Orbit
 
+port = 2029
+
 def wifi_connect(essid, password):
 
     wlan = network.WLAN(network.STA_IF)
@@ -46,7 +48,7 @@ uart = machine.UART(1, baudrate = config.uart_baudrate,
                        tx       = config.uart_tx,
                        txbuf    = leds.n_leds * 3 * 2 + 4)
 
-s = create_listener_socket(config.port)
+s = create_listener_socket(port)
 
 while True:
     conn = get_connection(s)

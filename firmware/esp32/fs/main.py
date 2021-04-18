@@ -9,7 +9,11 @@ from ani.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble
 
 import esp
-esp.osdebug(None)
+#esp.osdebug(None)
+
+import machine
+machine.freq(240000000)
+
 
 def wifi_connect(essid, password):
 
@@ -48,13 +52,17 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds)
 
 from esphttpd import HTTP_Server, redirect
-server = HTTP_Server()
+
+if config.use_tls:
+    server = HTTP_Server(True, config.key_file, config.cert_file) # https
+else:
+    server = HTTP_Server()
 
 ani = [
-    Orbit(leds),
     Lorenz(leds),
     Fire(leds),
     Gradient(leds),
+    Orbit(leds),
     Spiral(leds),
     Wobble(leds),
 ]
@@ -143,9 +151,9 @@ def animate():
                 t_next = utime.ticks_us()
 
             elif dt > 0:
-                while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
-                    pass
-#                utime.sleep_us(dt)
+#                while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
+#                    pass
+                utime.sleep_us(dt)
 
             t_next = utime.ticks_add(t_next, 16666)
             driver.writefrom(cur_fb)

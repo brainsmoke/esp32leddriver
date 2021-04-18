@@ -1,5 +1,7 @@
 
-essid, password, port = None, None, 2029
+essid, password = None, None
+
+use_tls, key_file, cert_file = False, None, None
 
 uart_baudrate, uart_rx, uart_tx = 1000000, None, None
 
@@ -27,7 +29,7 @@ def load_json(filename):
 def reload():
     import gc
 
-    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir
+    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file
 
     config = load_json("/secret/network.json")
 
@@ -35,8 +37,18 @@ def reload():
         if 'wifi' in config and 'essid' in config['wifi'] and 'password' in config['wifi']:
             essid, password = config['wifi']['essid'], config['wifi']['password']
 
-        if 'socket' in config and 'port' in config['socket']:
-            port = int(config['socket']['port'])
+    del config
+    gc.collect()
+
+    config = load_json("/secret/httpd.json")
+
+    if config != None:
+        if 'use_tls' in config:
+            use_tls = bool(config['use_tls'])
+        if 'tls' in config and 'key' in config['tls']:
+            key_file = str(config['tls']['key'])
+        if 'tls' in config and 'cert' in config['tls']:
+            cert_file = str(config['tls']['cert'])
 
     del config
     gc.collect()
