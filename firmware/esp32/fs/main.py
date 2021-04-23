@@ -58,6 +58,11 @@ if config.use_tls:
 else:
     server = HTTP_Server()
 
+import webdir
+webdir.add_webdir(server, '/script', '/webroot/script', index=True, compression='gzip')
+webdir.add_webdir(server, '/css', '/webroot/css', index=True, compression='gzip')
+webdir.add_webdir(server, '/models', '/models', index=True)
+
 ani = [
     Lorenz(leds),
     Fire(leds),
@@ -74,13 +79,72 @@ class Off:
 off = Off()
 
 
-index_html = """<body>
+def write_index(req, animation, is_on):
+    req.write("""<head>
+<link rel="icon" href="data:,">
+<body>
 
-<form action="/previous" method="POST"><input type="submit" value="&lt;&lt;"></form>
-<form action="/next" method="POST"><input type="submit" value="&gt;&gt;"></form>
-<form action="/on" method="POST"><input type="submit" value="On"></form>
-<form action="/off" method="POST"><input type="submit" value="Off"></form>
-"""
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style type="text/css">
+body
+{
+}
+
+main
+{
+    display: grid;
+    grid-template: "a b c" auto
+                   "d d d" 2em / 2fr 3fr 2fr;
+    max-width: 30em;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+form
+{
+    display: contents;
+}
+
+input[type=submit]
+{
+    height: 2em;
+    font-size: 200%
+}
+
+h1
+{
+    text-align: center;
+}
+
+.settings
+{
+    grid-area: d;
+}
+
+</style>
+<body>
+<main>
+<form>
+""")
+    if is_on:
+        req.write("""
+
+<input type="submit" value="<<" formmethod="POST" formaction="/previous">
+<input type="submit" value="Off" formmethod="POST" formaction="/off">
+<input type="submit" value=">>" formmethod="POST" formaction="/next">""")
+    else:
+        req.write("""
+<input type="submit" value="<<" formmethod="POST" formaction="/previous" disabled>
+<input type="submit" value="On" formmethod="POST" formaction="/on">
+<input type="submit" value=">>" formmethod="POST" formaction="/next" disabled>""")
+    req.write("""
+</form>
+<div class="settings">""")
+    req.write("<h1>{}\n".format(animation))
+    req.write("""
+</div>
+</main>""")
 
 def animate():
 
@@ -101,8 +165,7 @@ def animate():
     try:
         @server.route("/")
         def index(req):
-            req.write(index_html)
-            req.write("<h1>{}\n".format(str(cur_ani.__qualname__)))
+            write_index(req, str(cur_ani.__qualname__), cur_ani!=off)
 
         @server.route("/next", "POST")
         def next(req):
