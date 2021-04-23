@@ -664,6 +664,354 @@ STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memcpy_obj, cball_bytearray_memcpy);
 
+const float log_prime[] =
+{
+// [ math.log(i) for i in [ 2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 67, 71, 73, 79, 83, 89, 97, 101, 103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199, 211, 223, 227, 229, 233, 239, 241, 251 ] ]
+0.6931471805599453, 1.0986122886681098, 1.6094379124341003, 1.9459101490553132, 2.3978952727983707, 2.5649493574615367, 2.833213344056216, 2.9444389791664403, 3.1354942159291497, 3.367295829986474, 3.4339872044851463, 3.6109179126442243, 3.713572066704308, 3.7612001156935624, 3.8501476017100584, 3.970291913552122, 4.07753744390572, 4.110873864173311, 4.204692619390966, 4.2626798770413155, 4.290459441148391, 4.3694478524670215, 4.418840607796598, 4.48863636973214, 4.574710978503383, 4.61512051684126, 4.634728988229636, 4.672828834461906, 4.6913478822291435, 4.727387818712341, 4.844187086458591, 4.875197323201151, 4.919980925828125, 4.9344739331306915, 5.003946305945459, 5.017279836814924, 5.056245805348308, 5.093750200806762, 5.117993812416755, 5.153291594497779, 5.187385805840755, 5.198497031265826, 5.25227342804663, 5.262690188904886, 5.2832037287379885, 5.293304824724492, 5.351858133476067, 5.407171771460119, 5.424950017481403, 5.43372200355424, 5.4510384535657, 5.476463551931511, 5.484796933490655, 5.5254529391317835
+};
+
+STATIC mp_obj_t cball_calc_gamma_map_sieve(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     gamma_map        [256]         uint16,
+	 * -     gamma                          float,
+	 * -     max                            int,
+	 * -     cut_off                        int,
+	 */
+
+	int prime_ix = 0;
+	#define NEXT_PRIME_POW(x) ( expf(x*log_prime[prime_ix++]) )
+
+	uint16_t *gamma_map;
+	size_t gamma_map_len = cball_get_uint16_array(args[0], &gamma_map, MP_BUFFER_WRITE,
+	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	if (gamma_map_len != 256)
+		mp_raise_ValueError("gamma_map needs to have 256 elements");
+
+	float gamma = mp_obj_get_float(args[1]);
+
+	int max = mp_obj_get_int(args[2]);
+	if (max < 0 || max > 0xffff)
+		mp_raise_ValueError("max needs to be in the range [0, 65535]");
+
+	int cut_off = mp_obj_get_int(args[3]);
+	if (cut_off < 0 || cut_off > 127)
+		mp_raise_ValueError("max needs to be in the range [0, 127]");
+
+	int i, j, k, l;
+
+	static float *fgamma_map = NULL;
+	if (fgamma_map == NULL)
+		fgamma_map = calloc(256, sizeof(float));
+
+	for (i=0; i<256; i++)
+		fgamma_map[i] = 0.f;
+
+	fgamma_map[1]   = 1.f;
+	fgamma_map[2]   = NEXT_PRIME_POW( gamma ); /* = powf(  2.f, gamma ); */
+	fgamma_map[3]   = NEXT_PRIME_POW( gamma ); /* = powf(  3.f, gamma ); */
+	fgamma_map[5]   = NEXT_PRIME_POW( gamma ); /* = powf(  5.f, gamma ); */
+	fgamma_map[7]   = NEXT_PRIME_POW( gamma ); /* = powf(  7.f, gamma ); */
+	fgamma_map[11]  = NEXT_PRIME_POW( gamma ); /* = powf( 11.f, gamma ); */
+
+	for (i=1; i<127; i<<=1)
+	{
+		if (i!=1)
+			fgamma_map[i<<1] = fgamma_map[i]*fgamma_map[2];
+
+		for (j=i; j<85; j*=3)
+		{
+			if (j!=1)
+				fgamma_map[j*3] = fgamma_map[j]*fgamma_map[3];
+
+			for (k=j; k<51; k*=5)
+			{
+				if (k!=1)
+					fgamma_map[k*5] = fgamma_map[k]*fgamma_map[5];
+
+				for (l=k; l<37; l*=7)
+				{
+					if (l!=1)
+					{
+						fgamma_map[l*7] = fgamma_map[l]*fgamma_map[7];
+						if (l < 24)
+							fgamma_map[l*11] = fgamma_map[l]*fgamma_map[11];
+					}
+				}
+			}
+		}
+	}
+
+	fgamma_map[121] = fgamma_map[11]*fgamma_map[11];
+	fgamma_map[242] = fgamma_map[121]*fgamma_map[2];
+
+	for (i=13; i<256; i+=2)
+		if (fgamma_map[i] == 0.f)
+		{
+			fgamma_map[i] = NEXT_PRIME_POW( gamma ); /* = powf( (float)i, gamma ); */
+			for (j=1; j*i<=255; j++)
+				if (fgamma_map[j] != 0.f)
+					fgamma_map[j*i] = fgamma_map[j] * fgamma_map[i];
+		}
+
+#undef NEXT_PRIME_POW
+	float factor = (float)max / fgamma_map[255];
+
+	for (i=0; i<256; i++)
+	{
+		int g_int = fgamma_map[i] * factor;
+		if (g_int < (cut_off>>1))
+			g_int = 0;
+		else
+		{
+			int lo = g_int & 0xff;
+			int hi = g_int & 0xff00;
+			if (lo < cut_off)
+			{
+				g_int = hi;
+				if (lo >= (cut_off>>1) )
+					g_int += cut_off;
+			}
+			else if (lo > 0x100-cut_off)
+			{
+				g_int = hi + 0x100;
+				if (lo <= 0x100-(cut_off>>1) )
+					g_int -= cut_off;
+			}
+
+			if (g_int > max)
+				g_int = max;
+
+		}
+		gamma_map[i] = (uint16_t)g_int;
+	}
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_calc_gamma_map_sieve_obj, 4, 4, cball_calc_gamma_map_sieve);
+
+static const float dividers[11] =
+{
+	-42.f,
+	1.f,
+	1.f/2.f,
+	1.f/3.f,
+	1.f/4.f,
+	1.f/5.f,
+	1.f/6.f,
+	1.f/7.f,
+	1.f/8.f,
+	1.f/9.f,
+	1.f/10.f,
+};
+
+static const struct
+{
+	uint8_t index;
+	uint8_t jump;
+} interpol_table[62] =
+{
+        { 12, 2, }, { 16, 2, }, { 18, 2, }, { 22, 2, }, { 25, 2, },
+        { 28, 2, }, { 30, 2, }, { 33, 2, }, { 36, 4, }, { 40, 2, },
+        { 42, 2, }, { 45, 3, }, { 50, 4, }, { 56, 4, }, { 60, 3, },
+        { 64, 2, }, { 66, 4, }, { 70, 2, }, { 72, 3, }, { 75, 2, },
+        { 77, 3, }, { 81, 3, }, { 84, 4, }, { 88, 2, }, { 90, 6, },
+        { 96, 2, }, { 100, 5, }, { 105, 3, }, { 108, 2, }, { 110, 2, },
+        { 112, 8, }, { 121, 4, }, { 126, 2, }, { 128, 4, }, { 132, 3, },
+        { 135, 5, }, { 140, 4, }, { 144, 3, }, { 147, 3, }, { 150, 4, },
+        { 154, 6, }, { 160, 2, }, { 162, 3, }, { 165, 3, }, { 168, 7, },
+        { 176, 4, }, { 180, 9, }, { 189, 3, }, { 192, 4, }, { 196, 2, },
+        { 198, 2, }, { 200, 10, }, { 210, 6, }, { 216, 4, }, { 220, 4, },
+        { 225, 6, }, { 231, 9, }, { 240, 2, }, { 243, 2, }, { 245, 5, },
+        { 250, 2, }, { 252, 3, },
+};
+
+STATIC mp_obj_t cball_calc_gamma_map_fast(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     gamma_map        [256]         uint16,
+	 * -     gamma                          float,
+	 * -     max                            int,
+	 * -     cut_off                        int,
+	 */
+
+	uint16_t *gamma_map;
+	size_t gamma_map_len = cball_get_uint16_array(args[0], &gamma_map, MP_BUFFER_WRITE,
+	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	if (gamma_map_len != 256)
+		mp_raise_ValueError("gamma_map needs to have 256 elements");
+
+	float gamma = mp_obj_get_float(args[1]);
+
+	int max = mp_obj_get_int(args[2]);
+	if (max < 0 || max > 0xffff)
+		mp_raise_ValueError("max needs to be in the range [0, 65535]");
+
+	int cut_off = mp_obj_get_int(args[3]);
+	if (cut_off < 0 || cut_off > 127)
+		mp_raise_ValueError("max needs to be in the range [0, 127]");
+
+	int i, j, k, l;
+
+	static float *fgamma_map = NULL;
+	if (fgamma_map == NULL)
+		fgamma_map = calloc(256, sizeof(float));
+
+	for (i=0; i<256; i++)
+		fgamma_map[i] = 0.f;
+
+
+	fgamma_map[1]   = 1.f;
+	fgamma_map[2]   = expf(0.6931471805599453f * gamma ); /* expf(log(2)*gamma) */
+	fgamma_map[3]   = expf(1.0986122886681098f * gamma );
+	fgamma_map[5]   = expf(1.6094379124341003f * gamma );
+	fgamma_map[7]   = expf(1.9459101490553132f * gamma );
+	fgamma_map[11]  = expf(2.3978952727983707f * gamma );
+	fgamma_map[255] = expf(5.5412635451584260f * gamma );
+
+	for (i=1; i<127; i<<=1)
+	{
+		if (i!=1)
+			fgamma_map[i<<1] = fgamma_map[i]*fgamma_map[2];
+
+		for (j=i; j<85; j*=3)
+		{
+			if (j!=1)
+				fgamma_map[j*3] = fgamma_map[j]*fgamma_map[3];
+
+			for (k=j; k<51; k*=5)
+			{
+				if (k!=1)
+					fgamma_map[k*5] = fgamma_map[k]*fgamma_map[5];
+
+				for (l=k; l<37; l*=7)
+				{
+					if (l!=1)
+					{
+						fgamma_map[l*7] = fgamma_map[l]*fgamma_map[7];
+						if (l < 24)
+							fgamma_map[l*11] = fgamma_map[l]*fgamma_map[11];
+					}
+				}
+			}
+		}
+	}
+
+	fgamma_map[121] = fgamma_map[11]*fgamma_map[11];
+	fgamma_map[242] = fgamma_map[121]*fgamma_map[2];
+
+	for (i=0; i<62; i++)
+	{
+		int last = interpol_table[i].index;
+		int num  = interpol_table[i].jump;
+		float div = dividers[num];
+		for (j=1; j<num; j++)
+			fgamma_map[last+j] = ( (float)(num-j)*fgamma_map[last] +
+			                       (float)(    j)*fgamma_map[last+num] )  *  div;
+	}
+
+	float factor = (float)max / fgamma_map[255];
+
+	for (i=0; i<256; i++)
+	{
+		int g_int = fgamma_map[i] * factor;
+		if (g_int < (cut_off>>1))
+			g_int = 0;
+		else
+		{
+			int lo = g_int & 0xff;
+			int hi = g_int & 0xff00;
+			if (lo < cut_off)
+			{
+				g_int = hi;
+				if (lo >= (cut_off>>1) )
+					g_int += cut_off;
+			}
+			else if (lo > 0x100-cut_off)
+			{
+				g_int = hi + 0x100;
+				if (lo <= 0x100-(cut_off>>1) )
+					g_int -= cut_off;
+			}
+
+			if (g_int > max)
+				g_int = max;
+
+		}
+		gamma_map[i] = (uint16_t)g_int;
+	}
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_calc_gamma_map_fast_obj, 4, 4, cball_calc_gamma_map_fast);
+
+
+
+STATIC mp_obj_t cball_calc_gamma_map(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     gamma_map        [256]         uint16,
+	 * -     gamma                          float,
+	 * -     max                            int,
+	 * -     cut_off                        int,
+	 */
+
+	uint16_t *gamma_map;
+	size_t gamma_map_len = cball_get_uint16_array(args[0], &gamma_map, MP_BUFFER_WRITE,
+	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	if (gamma_map_len != 256)
+		mp_raise_ValueError("gamma_map needs to have 256 elements");
+
+	float gamma = mp_obj_get_float(args[1]);
+
+	int max = mp_obj_get_int(args[2]);
+	if (max < 0 || max > 0xffff)
+		mp_raise_ValueError("max needs to be in the range [0, 65535]");
+
+	int cut_off = mp_obj_get_int(args[3]);
+	if (cut_off < 0 || cut_off > 127)
+		mp_raise_ValueError("max needs to be in the range [0, 127]");
+
+	int i;
+
+	float factor = (float)max / powf( 255.f, gamma );
+	for (i=0; i<256; i++)
+	{
+		float g = powf( (float)i, gamma ) * factor;
+		int g_int = (int)g;
+		if (g_int < (cut_off>>1))
+			g_int = 0;
+		else
+		{
+			int lo = g_int & 0xff;
+			int hi = g_int & 0xff00;
+			if (lo < cut_off)
+			{
+				g_int = hi;
+				if (lo >= (cut_off>>1))
+					g_int += cut_off;
+			}
+			else if (lo > 0x100-cut_off)
+			{
+				g_int = hi + 0x100;
+				if (lo <= 0x100-(cut_off>>1) )
+					g_int -= cut_off;
+			}
+
+			if (g_int > max)
+				g_int = max;
+
+		}
+		gamma_map[i] = (uint16_t)g_int;
+	}
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_calc_gamma_map_obj, 4, 4, cball_calc_gamma_map);
+
 STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_dest, mp_obj_t buf_src, mp_obj_t palette)
 {
 	/* args:
@@ -1207,6 +1555,9 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_float), MP_ROM_PTR(&cball_fillbuffer_float_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_gamma), MP_ROM_PTR(&cball_fillbuffer_remap_gamma_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_float), MP_ROM_PTR(&cball_fillbuffer_remap_float_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_calc_gamma_map), MP_ROM_PTR(&cball_calc_gamma_map_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_calc_gamma_map_sieve), MP_ROM_PTR(&cball_calc_gamma_map_sieve_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_calc_gamma_map_fast), MP_ROM_PTR(&cball_calc_gamma_map_fast_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_apply_palette), MP_ROM_PTR(&cball_apply_palette_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_latt_long_map), MP_ROM_PTR(&cball_latt_long_map_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_memset), MP_ROM_PTR(&cball_bytearray_memset_obj) },
