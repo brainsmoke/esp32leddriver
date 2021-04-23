@@ -1,9 +1,55 @@
-import gc
+import gc, re, os, binascii
 
-def redirect(req, location):
-    req.set_status(303)
+_urlencode_unreserved = 'A-Za-z0-9\\._\\-~'
+_urlencode_unreserved_path = _urlencode_unreserved + '/'
+#_urlencode_reserved = "!#\\$&'\\(\\)\\*\\+,:;=\\?@\\[\\]"
+
+_urldecode_regex = re.compile('%[A-Fa-f0-9][A-Fa-f0-9]')
+
+_urlencode_path_regex = re.compile('[^'+_urlencode_unreserved_path+']')
+
+html_entities = {
+	'"' : '&quot;',
+	'\'': '&apos;',
+	'&' : '&amp;',
+	'<' : '&lt;',
+	'>' : '&gt;',
+}
+
+_htmlencode_regex = re.compile('[\\\"\\\'\\&\\<\\>]')
+
+def htmlencode_esc(m):
+	return html_entities[m.group()]
+
+def htmlencode(s):
+	return _htmlencode_regex.sub(htmlencode_esc, s)
+
+def urlencode_path_esc(m):
+    return '%'+binascii.hexlify(m.group(0),'%')
+
+def urlencode_path(s):
+    return _urlencode_path_regex.sub(urlencode_path_esc, s)
+
+
+def urldecode_esc(m):
+    return binascii.unhexlify(m.group(0)[1:3])
+
+# bytes -> bytes
+def urldecode(s):
+    return _urldecode_regex.sub(urldecode_esc, s)
+
+# bytes -> bytes
+def querydecode(s):
+    return _urldecode_regex.sub(urldecode_esc, s.replace(b'+', b' '))
+
+def redirect(req, location, code=303):
+    req.set_status(code)
     req.add_header("Location", location)
     req.write_all(location)
+
+def error(req, num, text):
+    req.set_status(num)
+    req.write_all(text)
 
 class HTTP_Server:
 
@@ -52,6 +98,7 @@ class HTTP_Server:
         self._running = False
 
     def route(self, path, method="GET"):
+        print("adding route: ", path)
         def wrap(func):
             self._routes.append( (path, method, func) )
             if self._running:
@@ -60,6 +107,7 @@ class HTTP_Server:
         return wrap
 
     def del_route(self, *args):
+        print("del route", args)
         for i in range(len(self._routes)-1, -1, -1):
             route = self._routes[i][:len(args)]
             if route == args:

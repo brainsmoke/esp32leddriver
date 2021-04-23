@@ -406,7 +406,7 @@ static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
 	vstr_init(&vstr, field_len+1);
 	httpd_req_get_hdr_value_str(self->req, field_name, vstr.buf, field_len+1);
 	vstr.len = field_len;
-	return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_get_header_obj, esphttpd_request_get_header );
 
@@ -419,9 +419,28 @@ static mp_obj_t esphttpd_request_get_query_string(mp_obj_t self_in)
 	vstr_init(&vstr, len+1);
 	httpd_req_get_url_query_str(self->req, vstr.buf, len+1);
 	vstr.len = len;
-	return mp_obj_new_str_from_vstr(&mp_type_str, &vstr);
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_query_string_obj, esphttpd_request_get_query_string );
+
+/* _esphttpd.Request.get_path() */
+static mp_obj_t esphttpd_request_get_path(mp_obj_t self_in)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	const char *path = self->req->uri;
+	const char *path_end = strchr(path, '?');
+	size_t len = path_end ? (path - path_end) : strlen(path);
+	return mp_obj_new_bytes((const uint8_t *)path, len);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_path_obj, esphttpd_request_get_path );
+
+/* _esphttpd.Request.get_uri() */
+static mp_obj_t esphttpd_request_get_uri(mp_obj_t self_in)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+	return mp_obj_new_bytes((const uint8_t *)self->req->uri, strlen(self->req->uri));
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_uri_obj, esphttpd_request_get_uri );
 
 /* _esphttpd.Request.content_len() */
 static mp_obj_t esphttpd_request_content_len(mp_obj_t self_in)
@@ -473,6 +492,8 @@ static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_method),           MP_ROM_PTR(&esphttpd_request_method_obj)            },
 	{ MP_ROM_QSTR(MP_QSTR_get_header),       MP_ROM_PTR(&esphttpd_request_get_header_obj)        },
 	{ MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
+	{ MP_ROM_QSTR(MP_QSTR_get_uri),          MP_ROM_PTR(&esphttpd_request_get_uri_obj)           },
+	{ MP_ROM_QSTR(MP_QSTR_get_path),         MP_ROM_PTR(&esphttpd_request_get_path_obj)          },
 	{ MP_ROM_QSTR(MP_QSTR_set_content_type), MP_ROM_PTR(&esphttpd_request_set_content_type_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_add_header),       MP_ROM_PTR(&esphttpd_request_add_header_obj)        },
 	{ MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
@@ -702,6 +723,7 @@ static void init_httpd_config(esphttpd_server_obj_t *self, httpd_config_t *confi
 	config->global_user_ctx = self;                         /* used by handler to get queue handles */
 	config->global_user_ctx_free_fn = global_user_ctx_free; /* only called when global_user_ctx is non-NULL */
 	config->uri_match_fn = httpd_uri_match_wildcard;
+	config->max_uri_handlers = 64;
 	config->max_resp_headers = 16;
 
 	config->core_id = 1-MP_TASK_COREID;
