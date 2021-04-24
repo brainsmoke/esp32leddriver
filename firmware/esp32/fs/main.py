@@ -1,5 +1,5 @@
 
-import machine, network, utime, gc
+import machine, network, utime, gc, re
 
 import config, model, uartpixel, cball
 
@@ -79,7 +79,7 @@ class Off:
 off = Off()
 
 
-def write_index(req, animation, is_on):
+def write_index(req, animation, is_on, brightness, gamma):
     req.write("""<head>
 <link rel="icon" href="data:,">
 <body>
@@ -89,13 +89,16 @@ def write_index(req, animation, is_on):
 <style type="text/css">
 body
 {
+	font-family: Sans;
 }
 
 main
 {
     display: grid;
     grid-template: "a b c" auto
-                   "d d d" 2em / 2fr 3fr 2fr;
+                   "d d d" auto
+                   "e e e" auto
+                   "f f f" 2em / 2fr 3fr 2fr;
     max-width: 30em;
     margin-left: auto;
     margin-right: auto;
@@ -112,9 +115,25 @@ input[type=submit]
     font-size: 200%
 }
 
-h1
+h1,h2
 {
     text-align: center;
+}
+
+h2
+{
+	font-size: 14pt;
+	margin-bottom: .2em;
+}
+
+#brightness
+{
+    grid-area: e;
+}
+
+#gamma
+{
+    grid-area: f;
 }
 
 .settings
@@ -122,6 +141,10 @@ h1
     grid-area: d;
 }
 
+input[type=range]
+{
+    width: 100%;
+}
 </style>
 <body>
 <main>
@@ -137,10 +160,21 @@ h1
         req.write("""
 <input type="submit" value="<<" formmethod="POST" formaction="/previous" disabled>
 <input type="submit" value="On" formmethod="POST" formaction="/on">
-<input type="submit" value=">>" formmethod="POST" formaction="/next" disabled>""")
+<input type="submit" value=">>" formmethod="POST" formaction="/next" disabled>
+""")
     req.write("""
 </form>
-<div class="settings">""")
+<form id="brightness_form" action="/set/brightness" method="POST">
+<div id="brightness"><h2>brightness</h2>
+<input name="value" type="range" min=".02" max="1" step="0.02" value="{:f}" onchange="document.getElementById('brightness_form').submit();">
+</div>
+</form>
+<form id="gamma_form" action="/set/gamma" method="POST">
+<div id="gamma"><h2>gamma</h2>
+<input name="value" type="range" min="1" max="4" step="0.1" value="{:f}" onchange="document.getElementById('gamma_form').submit();">
+</div>
+</form>
+<div class="settings">""".format(brightness, gamma))
     req.write("<h1>{}\n".format(animation))
     req.write("""
 </div>
@@ -156,6 +190,10 @@ def animate():
 
     fade = 60
 
+    old_gamma = new_gamma = driver.gamma
+    old_brightness = new_brightness = driver.brightness
+    gamma_fade = 60
+
     def set_animation(next_ani):
         nonlocal cur_ani, fade, fb, fadeout
         cur_ani = next_ani
@@ -165,7 +203,7 @@ def animate():
     try:
         @server.route("/")
         def index(req):
-            write_index(req, str(cur_ani.__qualname__), cur_ani!=off)
+            write_index(req, str(cur_ani.__qualname__), cur_ani!=off, new_brightness, new_gamma)
 
         @server.route("/next", "POST")
         def next(req):
@@ -197,6 +235,38 @@ def animate():
             set_animation(ani[cur])
             redirect(req, "/")
 
+        # quick hack :-P
+        arr = bytearray(256)
+        regex = re.compile('(^|&)value=([^&]*)(&|$)')
+        def get_val(req):
+            n = req.recv(arr)
+            g=regex.search(bytes(arr[:n]))
+            return float(g.group(2))
+
+        @server.route("/set/brightness", "POST")
+        def brightness(req):
+            nonlocal old_brightness, new_brightness, old_gamma, gamma_fade
+            print("[brightness]")
+            value = get_val(req)
+            if 0 <= value <= 1:
+                old_brightness = driver.get_brightness()
+                old_gamma = driver.get_gamma()
+                gamma_fade = 0
+                new_brightness = value
+            redirect(req, "/")
+
+        @server.route("/set/gamma", "POST")
+        def brightness(req):
+            nonlocal old_brightness, new_gamma, old_gamma, gamma_fade
+            print("[gamma]")
+            value = get_val(req)
+            if 1 <= value <= 10:
+                old_brightness = driver.get_brightness()
+                old_gamma = driver.get_gamma()
+                gamma_fade = 0
+                new_gamma = value
+            redirect(req, "/")
+
         server.start()
 
         t_next = utime.ticks_add(utime.ticks_us(), 16666)
@@ -207,6 +277,12 @@ def animate():
             if fade < 60:
                 fade += 1
                 cball.bytearray_blend(cur_fb, cur_fade, cur_fb, fade/60.)
+
+            if gamma_fade < 60:
+                gamma_fade += 1
+                cur_gamma = ( new_gamma*gamma_fade + old_gamma*(60-gamma_fade) ) / 60
+                cur_brightness = ( new_brightness*gamma_fade + old_brightness*(60-gamma_fade) ) / 60
+                driver.calc_gamma_map(gamma=cur_gamma, brightness=cur_brightness)
 
             dt = utime.ticks_diff(t_next, utime.ticks_us())
             if dt < -2000:
@@ -225,8 +301,6 @@ def animate():
             fb[i] = 0
         driver.writefrom(fb)
         server.stop()
-        server.del_route("/next")
-        server.del_route("/previous")
 
 animate()
 
