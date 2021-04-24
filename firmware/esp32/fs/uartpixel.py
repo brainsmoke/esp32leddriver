@@ -46,13 +46,13 @@ class UartPixel:
     def set_gamma(self, gamma):
         self.calc_gamma_map(gamma=gamma)
 
-    def get_gamma(self, gamma):
+    def get_gamma(self):
         return self.gamma
 
     def set_brightness(self, brightness):
         self.calc_gamma_map(brightness=brightness)
 
-    def get_brightness(self, brightness):
+    def get_brightness(self):
         return self.brightness
 
     def set_cutoff(self, cutoff):
