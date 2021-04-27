@@ -902,6 +902,29 @@ const mp_obj_type_t esphttpd_server_type =
 	.locals_dict = (mp_obj_dict_t *)&esphttpd_server_locals_dict,
 };
 
+
+static mp_obj_t esphttpd__bufcpy(mp_obj_t dest, mp_obj_t ix, mp_obj_t src)
+{
+	mp_buffer_info_t destinfo;
+	mp_get_buffer_raise(dest, &destinfo, MP_BUFFER_WRITE);
+
+	mp_buffer_info_t srcinfo;
+	mp_get_buffer_raise(src, &srcinfo, MP_BUFFER_READ);
+
+	size_t index = mp_obj_get_int(ix);
+
+	if ( (index             > destinfo.len) ||
+         (srcinfo.len       > destinfo.len) ||
+         (index+srcinfo.len > destinfo.len) )
+        return MP_OBJ_NEW_SMALL_INT(-1);
+
+	memcpy(&destinfo.buf[index], srcinfo.buf, srcinfo.len);
+
+	return mp_obj_new_int(index+srcinfo.len);
+}
+
+static MP_DEFINE_CONST_FUN_OBJ_3(esphttpd__bufcpy_obj, esphttpd__bufcpy);
+
 static mp_obj_t esphttpd_http_server(void)
 {
 	esphttpd_server_obj_t *self = m_new_obj_with_finaliser(esphttpd_server_obj_t);
@@ -920,6 +943,7 @@ static MP_DEFINE_CONST_FUN_OBJ_0(esphttpd_http_server_obj, esphttpd_http_server)
 static const mp_rom_map_elem_t esphttpd_module_globals_table[] =
 {
 	{ MP_ROM_QSTR(MP_QSTR___name__),    MP_ROM_QSTR(MP_QSTR__esphttpd)        },
+	{ MP_ROM_QSTR(MP_QSTR__bufcpy),     MP_ROM_PTR(&esphttpd__bufcpy_obj)     },
 	{ MP_ROM_QSTR(MP_QSTR_http_server), MP_ROM_PTR(&esphttpd_http_server_obj) },
 };
 
