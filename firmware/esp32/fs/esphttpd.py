@@ -9,20 +9,20 @@ _urldecode_regex = re.compile('%[A-Fa-f0-9][A-Fa-f0-9]')
 _urlencode_path_regex = re.compile('[^'+_urlencode_unreserved_path+']')
 
 html_entities = {
-	'"' : '&quot;',
-	'\'': '&apos;',
-	'&' : '&amp;',
-	'<' : '&lt;',
-	'>' : '&gt;',
+    '"' : '&quot;',
+    '\'': '&apos;',
+    '&' : '&amp;',
+    '<' : '&lt;',
+    '>' : '&gt;',
 }
 
 _htmlencode_regex = re.compile('[\\\"\\\'\\&\\<\\>]')
 
 def htmlencode_esc(m):
-	return html_entities[m.group()]
+    return html_entities[m.group()]
 
 def htmlencode(s):
-	return _htmlencode_regex.sub(htmlencode_esc, s)
+    return _htmlencode_regex.sub(htmlencode_esc, s)
 
 def urlencode_path_esc(m):
     return '%'+binascii.hexlify(m.group(0),'%')
@@ -51,6 +51,36 @@ def error(req, num, text):
     req.set_status(num)
     req.write_all(text)
 
+import utime
+class ResponseBuffer:
+    def __init__(self, size):
+        from _esphttpd import _bufcpy
+        self._buf = memoryview(bytearray(size))
+        self._cur = 0
+        self._bufcpy = _bufcpy
+
+    def set_request(self, req):
+        self._req = req
+        self._cur = 0
+
+    def write(self, s):
+        ix = self._bufcpy(self._buf, self._cur, s)
+        if ix == -1:
+            self._req.write(self._buf[:self._cur])
+            self._cur = 0
+            ix = self._bufcpy(self._buf, self._cur, s)
+            if ix == -1:
+                self._req.write(s)
+            else:
+                self._cur = ix
+        else:
+            self._cur = ix
+
+
+    def flush(self):
+        self._req.write_all(self._buf[:self._cur])
+        self._cur = 0
+
 class HTTP_Server:
 
     def _loop(self):
@@ -61,12 +91,13 @@ class HTTP_Server:
     def _register_route(self, path, method, func):
         self._server.register(path, method, func)
 
-    def __init__(self, use_tls=False, keyfile=None, certfile=None):
+    def __init__(self, use_tls=False, keyfile=None, certfile=None, writebuf_size=65536):
         self._routes = []
         self._running = False
         self._use_tls = use_tls
         self._keyfile = keyfile
         self._certfile = certfile
+        self._writebuf = ResponseBuffer(writebuf_size)
 
     def start(self):
         from _thread import start_new_thread
@@ -96,6 +127,16 @@ class HTTP_Server:
     def stop(self):
         self._server.stop()
         self._running = False
+
+    def buffered(self):
+        def wrap(func):
+            def wrapper(req):
+                self._writebuf.set_request(req)
+                ret = func(req, self._writebuf)
+                self._writebuf.flush()
+                return ret
+            return wrapper
+        return wrap
 
     def route(self, path, method="GET"):
         print("adding route: ", path)

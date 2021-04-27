@@ -4,7 +4,7 @@ import cball
 
 class Lorenz:
 
-    def __init__(self, leds):
+    def __init__(self, leds, config=None):
         self.leds = leds
         self.attractors = uarray.array('f',
         #             position                  sigma, rho, beta
@@ -26,8 +26,32 @@ class Lorenz:
                -1,-1,-1,    55*1.44 ,  32*1.44 , 127*1.44    ]
         )
 
+        if config:
+            for i in range(6):
+                config.add_color('color_'+chr(ord('a')+i),
+                                 lambda    i=i: self.get_color(i),
+                                 lambda c, i=i: self.set_color(i, c), caption='Color '+chr(ord('A')+i))
+        self.set_speed(10)
+        if config:
+            config.add_slider('speed', 0, 20, .01, self.get_speed, self.set_speed, caption="speed")
+
+    def set_speed(self, speed):
+        self.speed_db = speed
+        self.speed = 10**(speed/10) / 100000.
+
+    def get_speed(self):
+        return self.speed_db
+
+    def get_color(self, ix):
+        return tuple( int(c/1.44+.5) for c in self.shader_flat[ix*6+3:ix*6+6] )
+
+    def set_color(self, ix, color):
+        self.shader_flat[ix*6+3] = color[0] * 1.44
+        self.shader_flat[ix*6+4] = color[1] * 1.44
+        self.shader_flat[ix*6+5] = color[2] * 1.44
+
     def update(self, n):
-        cball.lorenz_update(self.attractors, 1/10000., n)
+        cball.lorenz_update(self.attractors, self.speed, n)
         # copy positions, rotate axes for nicer effects
         self.shader_flat[0] = -self.attractors[0]*.11
         self.shader_flat[1] =  self.attractors[1]*.11

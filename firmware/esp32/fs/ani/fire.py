@@ -4,7 +4,7 @@ import cball
 
 class Fire:
 
-    def __init__(self, leds):
+    def __init__(self, leds, config=None):
         import model
 
         self.ca_map = bytes(min(255, int(((i/64)**1.25)/3.7*64.)) for i in range(512))
@@ -35,14 +35,24 @@ class Fire:
 
         self.tmp_float_buf = uarray.array('f', 0. for _ in range(leds.n_leds*3))
         self.phase = 0
-        self.phase_max = 4
+        self.set_speed(25)
+        if config:
+            config.add_slider('speed', 0, 50, 1, self.get_speed, self.set_speed, caption="speed")
+
+    def set_speed(self, speed):
+        self.speed = speed
+        self.speed_f = speed/200
+
+    def get_speed(self):
+        return self.speed
 
     def next_frame(self, fbuf):
-        if self.phase == 0:
+        self.phase = self.phase+self.speed
+        if self.phase >= 100:
             cball.ca_update(self.cells, self.width, self.height+1, self.ca_map)
-        self.phase = (self.phase+1)%self.phase_max
+        self.phase %= 100
         cball.apply_palette(self.fbuf_2d, self.cells, self.palette)
         cball.latt_long_map(fbuf, self.fbuf_2d, self.voronoi_map, self.latt_weight, self.max_weight, self.tmp_float_buf)
-        cball.bytearray_blend(self.fbuf_blend, self.fbuf_blend, fbuf, 1/8)
+        cball.bytearray_blend(self.fbuf_blend, self.fbuf_blend, fbuf, self.speed_f)
         cball.bytearray_memcpy(fbuf, self.fbuf_blend)
 

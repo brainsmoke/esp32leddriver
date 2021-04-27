@@ -17,13 +17,19 @@ def get_smooth_wave():
 
 class BaseGradient:
     def next_frame(self, fbuf):
-        self.phase = (self.phase+1)%self.phase_max
+        self.phase = (self.phase+self.speed)%self.phase_max
         phi = int(1024. * self.phase / self.phase_max)
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, -phi*7, -phi*8, -phi*9)
 
+    def get_speed(self):
+        return self.speed
+
+    def set_speed(self, speed):
+        self.speed = speed
+
 class Gradient(BaseGradient):
 
-    def __init__(self, leds):
+    def __init__(self, leds, config=None):
         n = 1024
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
@@ -35,11 +41,14 @@ class Gradient(BaseGradient):
             self.rotations[i*3+2] = int((n * (1+cmath.phase(complex(x,y)) / (math.pi*2))) % n)
 
         self.phase = 0
-        self.phase_max = 4*7*8*9
+        self.phase_max = 4*7*8*9* 10
+        self.speed = 10
+        if config:
+            config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
 class Spiral(BaseGradient):
 
-    def __init__(self, leds):
+    def __init__(self, leds, config=None):
         n = 1024
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
@@ -51,11 +60,14 @@ class Spiral(BaseGradient):
             self.rotations[i*3+2] = int((n * (1-z/2+cmath.phase(complex(x,y)) / (math.pi*2))) % n)
 
         self.phase = 0
-        self.phase_max = 4*7*8*9
+        self.phase_max = 4*7*8*9* 10
+        self.speed = 10
+        if config:
+            config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
 class Wobble:
 
-    def __init__(self, leds):
+    def __init__(self, leds, config=None):
         n = 1024
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
@@ -67,10 +79,19 @@ class Wobble:
             self.rotations[i*3+2] = int( (786*y) % n )
 
         self.phase = 0
-        self.phase_max = 512*3*3
+        self.phase_max = 512*3*3* 10
+        self.speed = 10
+        if config:
+            config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
+
+    def get_speed(self):
+        return self.speed
+
+    def set_speed(self, speed):
+        self.speed = speed
 
     def next_frame(self, fbuf):
-        self.phase = (self.phase+1)%self.phase_max
+        self.phase = (self.phase+self.speed)%self.phase_max
         phi = self.phase / self.phase_max
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*12288), int(phi*3072), 0)
         cball.wobble(fbuf, self.rotations, 2, phi)
