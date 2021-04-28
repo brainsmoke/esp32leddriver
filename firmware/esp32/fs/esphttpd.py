@@ -51,7 +51,6 @@ def error(req, num, text):
     req.set_status(num)
     req.write_all(text)
 
-import utime
 class ResponseBuffer:
     def __init__(self, size):
         from _esphttpd import _bufcpy

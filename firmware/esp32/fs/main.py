@@ -52,7 +52,7 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds)
 
 
-form = configform.ConfigTree("/player", tag="main")
+form = configform.ConfigRoot("/player")
 
 from player import Player
 
@@ -101,63 +101,88 @@ body
     font-family: Sans;
 }
 
-mainmeh
+main
 {
-    display: grid;
-    grid-template: "a b c" auto
-                   "d d d" auto
-                   "e e e" auto
-                   "f f f" 2em / 2fr 3fr 2fr;
     max-width: 30em;
+    margin: .5em;
+}
+
+.group
+{
+	width: 100%;
+}
+
+main, .group
+{
+    display: flex;
+    flex-wrap: wrap;
     margin-left: auto;
     margin-right: auto;
 }
 
-form
+form[action="/player/on"]       > input,
+form[action="/player/off"]      > input
 {
-    display: contents;
+	width: auto;
+	flex-grow: 3;
+}
+
+form[action="/player/on"]       > input:disabled,
+form[action="/player/off"]      > input:disabled
+{
+	display: none;
+}
+
+form[action="/player/next"]     > input,
+form[action="/player/previous"] > input
+{
+	width: auto;
+	flex-grow: 2;
+}
+
+.select_group, .action
+{
+	display: contents;
+}
+
+.color, .slider
+{
+	width: 100%;
+}
+
+input[type=color]
+{
+	height: 2em;
 }
 
 input[type=submit]
 {
     height: 2em;
-    font-size: 200%
+    font-size: 200%;
 }
 
-h1,h4
+h2,h4,label
 {
     text-align: center;
+	width: 100%;
 }
 
-h4
+h4,label
 {
     font-size: 14pt;
     margin-bottom: .2em;
+    margin-top: .5em;
 }
 
-#brightness
-{
-    grid-area: e;
-}
-
-#gamma
-{
-    grid-area: f;
-}
-
-.settings
-{
-    grid-area: d;
-}
-
-input[type=range]
+input
 {
     width: 100%;
 }
 </style>
 <body>
 """)
-    form.html(out)
+    csrf_tag = '<input type="hidden" name="csrf" value="TODO XXX TODO XXX " />'
+    form.html(out, csrf_tag=csrf_tag)
 
 @server.route("/player/*", "POST")
 def handler(req):

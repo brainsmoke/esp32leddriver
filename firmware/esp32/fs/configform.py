@@ -8,6 +8,7 @@ class ConfigElem:
 
     def __init__(self, caption=None, tag='div'):
         self._tag = tag
+        self._class = ''
         self._attribs = {}
         self._attrib_string = '' # cached string based on the above
         self._path = ''          # form action destination
@@ -17,21 +18,27 @@ class ConfigElem:
 
     # pre-calculate dynamically generated html
     def _update(self):
-        self._start = "<{}{}{}>\n".format(self._tag, self._extra_attrib, self._attrib_string)
-        self._end = "</{}>\n".format(self._tag)
+        if len(self._class) or 'class' in self._attribs:
+            classes = ' class="{}"'.format(''.join( (self._class, self._attribs.get('class', '')) ))
+        else:
+            classes = ''
 
-    def _set_html(self, tag, attr):
-        for name in attr:
-            value = attr[name]
+        self._start = '<{}{}{}{}>\n'.format(self._tag, classes, self._extra_attrib, self._attrib_string)
+        self._end = '</{}>\n'.format(self._tag)
+
+    def _set_css_class(self, classname):
+        self._class = classname
+        self._update()
+
+    def _set_html_attr(self, attr):
+        for name, value in attr.items():
             if value == None:
                 if name in self._attribs:
                     del self._attribs[name]
             else:
                 self._attribs[name] = value
-        if tag:
-            self._tag = value
 
-        self._attrib_string = ' '.join( '{}="{}"'.format(name, self._attribs[name]) for name in self._attribs )
+        self._attrib_string = ''.join( ' {}="{}"'.format(name, self._attribs[name]) for name in self._attribs if name != 'class' )
         self._update()
 
     def _set(self, value):
@@ -54,15 +61,15 @@ class ConfigElem:
         obj = self.lookup(path)
         obj._set(value)
 
-    def set_html(self, path, tag=None, attr={}):
+    def set_html_attr(self, path, attr={}):
         obj = self.lookup(path)
-        obj._set_html(tag, attr)
+        obj._set_html_attr(attr)
 
     def set_path(self, path):
         self._path = path
         self._update()
 
-class ConfigTree(ConfigElem):
+class ConfigGroup(ConfigElem):
 
     def __init__(self, path, caption=None, tag='div'):
         self._list = []
@@ -70,11 +77,12 @@ class ConfigTree(ConfigElem):
         super().__init__(caption=caption, tag=tag)
         if path:
             self.set_path(path)
+        self._set_css_class('group')
 
     def _update(self):
         super()._update()
         if self._caption:
-            self._start = '{}<h4>{}</h4>\n'.format(self._start, self._caption)
+            self._start = '{}<h2>{}</h2>\n'.format(self._start, self._caption)
 
     def __setitem__(self, name, obj):
         if name in self._dict:
@@ -123,7 +131,7 @@ class ConfigTree(ConfigElem):
         self[name] = Action(action_func, enabled_func, caption=caption)
 
     def add_group(self, name, caption=None):
-        tree = ConfigTree(path=None, caption=caption)
+        tree = ConfigGroup(path=None, caption=caption)
         self[name] = tree
         return tree
 
@@ -146,10 +154,18 @@ class ConfigTree(ConfigElem):
 
         out.write(self._end);
 
-class ConfigSelectGroup(ConfigTree):
+class ConfigRoot(ConfigGroup):
+    def __init__(self, path, caption=None):
+        self._list = []
+        self._dict = {}
+        super().__init__(path, caption=caption, tag='main')
+        self._set_css_class('root')
+
+class ConfigSelectGroup(ConfigGroup):
     def __init__(self, selected_func, caption=None):
         self._get_selected_func = selected_func
         super().__init__(path=None, caption=caption)
+        self._set_css_class('select_group')
 
     def print(self, indent='', name=''):
         print('{}{}: [{}]'.format(indent, name, ','.join( name for name, _ in self._list ) ) )
@@ -158,34 +174,30 @@ class ConfigSelectGroup(ConfigTree):
             elem.print(group_indent, name)
 
     def html(self, out, csrf_tag=''):
-        #out.write(self._start);
+        out.write(self._start);
         name = self._get_selected_func()
 
         if name in self._dict:
             self[name].html(out, csrf_tag)
 
-        #out.write(self._end);
-
+        out.write(self._end);
 
 class ConfigFormElem(ConfigElem):
 
-    def __init__(self, caption=None, tag='form'):
+    def __init__(self, caption=None):
         self._form_content = ''
-        super().__init__(caption=caption, tag=tag)
+        super().__init__(caption=caption, tag='form')
 
     def _set_form_content(self, content):
         self._form_content = content
         self._update()
 
     def _update(self):
-        if self._tag == 'form':
-            self._extra_attrib = ' method="POST" action="{}"'.format(self._path)
+        self._extra_attrib = ' method="POST" action="{}"'.format(self._path)
 
         super()._update()
-
-        if self._tag != 'form':
-            self._start = '<form method="POST" action="{}">\n{}'.format(self._path, self._start)
-            self._end += '</form>\n'
+        if self._caption:
+            self._start = '{}<h4>{}</h4>\n'.format(self._start, self._caption)
 
         self._start += self._form_content
 
@@ -204,11 +216,11 @@ def _html_color(rgb):
     return '#{:02x}{:02x}{:02x}'.format(rgb[0]&0xff,rgb[1]&0xff,rgb[2]&0xff)
 
 class Color(ConfigFormElem):
-    def __init__(self, getter, setter, caption=None, tag='form'):
+    def __init__(self, getter, setter, caption=None):
         self.getter, self.setter = getter, setter
-        super().__init__(caption=caption, tag=tag)
+        super().__init__(caption=caption)
         self._set_form_content('<input type="color" name="value" value="{}" onchange="this.form.submit();" />'.format(_html_color(self.getter())))
-        self._update()
+        self._set_css_class('color')
 
     def _set(self, value):
         self.setter(_parse_color(value))
@@ -220,13 +232,14 @@ class Color(ConfigFormElem):
 
 
 class Slider(ConfigFormElem):
-    def __init__(self, min, max, step, getter, setter, caption=None, tag='form'):
+    def __init__(self, min, max, step, getter, setter, caption=None):
         self.min, self.max, self.step, self.getter, self.setter = min, max, step, getter, setter
         if int(step) == step and int(min) == min and int(max) == max:
             self.type = int
         else:
             self.type = float
-        super().__init__(caption=caption, tag=tag)
+        super().__init__(caption=caption)
+        self._set_css_class('slider')
 
         self._set_form_content('<input name="value" type="range" min="{}" max="{}" step="{}" value="{}" onchange="this.form.submit();" />'.format(self.min, self.max, self.step, self.getter()))
         self._update()
@@ -240,10 +253,12 @@ class Slider(ConfigFormElem):
         print('{}{}: cur={}, min={}, max={}, step={}'.format(indent, name, self.getter(), self.min, self.max, self.step))
 
 class Action(ConfigFormElem):
-    def __init__(self, action_func, enabled_func, caption=None, tag='form'):
+    def __init__(self, action_func, enabled_func, caption=None):
         self.action_func = action_func
         self.enabled_func = enabled_func
-        super().__init__(caption=caption, tag=tag)
+        super().__init__(caption=None)
+        self._text = caption
+        self._set_css_class('action')
 
     def _set(self, value):
         if self.enabled_func():
@@ -254,7 +269,7 @@ class Action(ConfigFormElem):
 
     def html(self, out, csrf_tag=''):
         out.write(self._start);
-        out.write('<input type="submit" value="{}"{} />'.format(self._caption, (' disabled','')[bool(self.enabled_func())]))
+        out.write('<input type="submit" value="{}"{} />'.format(self._text, (' disabled','')[bool(self.enabled_func())]))
         out.write(csrf_tag);
         out.write(self._end);
 
