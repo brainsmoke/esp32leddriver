@@ -277,6 +277,9 @@ static mp_obj_t esphttpd_request_set_status(mp_obj_t self_in, mp_obj_t num)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	const char *status = status_code(mp_obj_get_int(num));
 
 	if (!status)
@@ -292,6 +295,10 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_status_obj, esphttpd_request_set
 static mp_obj_t esphttpd_request_set_session_ctx(mp_obj_t self_in, mp_obj_t sess_ctx)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	set_session_ctx(self->req, sess_ctx);
 	return mp_const_none;
 }
@@ -301,6 +308,10 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_session_ctx_obj, esphttpd_reques
 static mp_obj_t esphttpd_request_get_session_ctx(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	return get_session_ctx(self->req);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_session_ctx_obj, esphttpd_request_get_session_ctx );
@@ -309,6 +320,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_session_ctx_obj, esphttpd_reques
 static mp_obj_t esphttpd_request_recv(mp_obj_t self_in, mp_obj_t buf_out)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	mp_buffer_info_t bufinfo;
 	mp_get_buffer_raise(buf_out, &bufinfo, MP_BUFFER_WRITE);
 	int n_read = httpd_req_recv(self->req, bufinfo.buf, bufinfo.len);
@@ -354,6 +369,9 @@ static mp_obj_t esphttpd_request_write(mp_obj_t self_in, mp_obj_t buf_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	if (self->all_sent)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write() already finished sending document"));
 
@@ -374,6 +392,9 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_obj, esphttpd_request_write );
 static mp_obj_t esphttpd_request_write_all(mp_obj_t self_in, mp_obj_t buf_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
 
 	if (self->all_sent)
 		mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("Request.write_all() already finished sending document"));
@@ -396,6 +417,10 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_write_all_obj, esphttpd_request_writ
 static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	vstr_t vstr;
 	const char *field_name = mp_obj_str_get_str(field_in);
 	size_t field_len = httpd_req_get_hdr_value_len(self->req, field_name);
@@ -414,6 +439,10 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_get_header_obj, esphttpd_request_get
 static mp_obj_t esphttpd_request_get_query_string(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	vstr_t vstr;
 	size_t len = httpd_req_get_url_query_len(self->req);
 	vstr_init(&vstr, len+1);
@@ -427,6 +456,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_query_string_obj, esphttpd_reque
 static mp_obj_t esphttpd_request_get_path(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	const char *path = self->req->uri;
 	const char *path_end = strchr(path, '?');
 	size_t len = path_end ? (path - path_end) : strlen(path);
@@ -438,6 +471,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_path_obj, esphttpd_request_get_p
 static mp_obj_t esphttpd_request_get_uri(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	return mp_obj_new_bytes((const uint8_t *)self->req->uri, strlen(self->req->uri));
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_uri_obj, esphttpd_request_get_uri );
@@ -446,6 +483,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_uri_obj, esphttpd_request_get_ur
 static mp_obj_t esphttpd_request_content_len(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	return mp_obj_new_int(self->req->content_len);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_content_len_obj, esphttpd_request_content_len );
@@ -454,6 +495,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_content_len_obj, esphttpd_request_co
 static mp_obj_t esphttpd_request_method(mp_obj_t self_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	return method_str(self->req->method);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_method_obj, esphttpd_request_method );
@@ -462,6 +507,10 @@ MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_method_obj, esphttpd_request_method 
 static mp_obj_t esphttpd_request_set_content_type(mp_obj_t self_in, mp_obj_t type_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	const char *type = mp_obj_str_get_str(type_in);
 	check_esp_err(httpd_resp_set_type(self->req, type));
 	request_prevent_gc(self, type_in);
@@ -473,6 +522,10 @@ MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_set_content_type_obj, esphttpd_reque
 static mp_obj_t esphttpd_request_add_header(mp_obj_t self_in, mp_obj_t field_in, mp_obj_t value_in)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
 	const char *field = mp_obj_str_get_str(field_in);
 	const char *value = mp_obj_str_get_str(value_in);
 	check_esp_err(httpd_resp_set_hdr(self->req, field, value));
@@ -793,10 +846,10 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 		 mp_raise_msg(&mp_type_OSError, MP_ERROR_TEXT("HTTP Server not running"));
 
 
-	esphttpd_request_obj_t req_obj;
+	esphttpd_request_obj_t *req_obj = m_new_obj(esphttpd_request_obj_t);
 
 	/* gc 'retainer' pointers for headers {field,value} + status & mime */
-	init_request_obj(&req_obj, self->max_headers*2 + 2, self);
+	init_request_obj(req_obj, self->max_headers*2 + 2, self);
 
 	/* print & ignore exceptions, outside of the inner loop to speed things up */
 	for (;;)
@@ -817,18 +870,18 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 					req->ignore_sess_ctx_changes = true;
 				}
 
-				req_obj.req = req;
+				req_obj->req = req;
 
 				mp_obj_t callback = (mp_obj_t)req->user_ctx,
-				         request  = MP_OBJ_FROM_PTR(&req_obj);
+				         request  = MP_OBJ_FROM_PTR(req_obj);
 
 				mp_obj_t handler_ret = mp_call_function_1( callback, request );
 
 				if (handler_ret == mp_const_false)
 					ret = ESP_FAIL;
 
-				end_request(&req_obj);
-				clear_request_obj(&req_obj);
+				end_request(req_obj);
+				clear_request_obj(req_obj);
 				handler_done(self, ret);
 			}
 
@@ -838,7 +891,7 @@ static mp_obj_t esphttpd_server_event_loop(mp_obj_t self_in)
 		else
 		{
 			mp_obj_print_exception(&mp_plat_print, MP_OBJ_FROM_PTR(nlr.ret_val));
-			clear_request_obj(&req_obj);
+			clear_request_obj(req_obj);
 			handler_done(self, ESP_FAIL);
 		}
 	}
