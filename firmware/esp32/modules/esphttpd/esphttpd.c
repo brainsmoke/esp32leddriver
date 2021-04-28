@@ -964,6 +964,9 @@ static mp_obj_t esphttpd__bufcpy(mp_obj_t dest, mp_obj_t ix, mp_obj_t src)
 	mp_buffer_info_t srcinfo;
 	mp_get_buffer_raise(src, &srcinfo, MP_BUFFER_READ);
 
+	uint8_t *dest_buf = destinfo.buf,
+	        *src_buf  = srcinfo.buf;
+
 	size_t index = mp_obj_get_int(ix);
 
 	if ( (index             > destinfo.len) ||
@@ -971,7 +974,7 @@ static mp_obj_t esphttpd__bufcpy(mp_obj_t dest, mp_obj_t ix, mp_obj_t src)
          (index+srcinfo.len > destinfo.len) )
         return MP_OBJ_NEW_SMALL_INT(-1);
 
-	memcpy(&destinfo.buf[index], srcinfo.buf, srcinfo.len);
+	memcpy(&dest_buf[index], src_buf, srcinfo.len);
 
 	return mp_obj_new_int(index+srcinfo.len);
 }
