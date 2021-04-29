@@ -7,6 +7,7 @@ from ani.orbit import Orbit
 from ani.lorenz import Lorenz
 from ani.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble
+from ani.spot import Spots, Chroma
 
 import esp
 #esp.osdebug(None)
@@ -68,7 +69,8 @@ select = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-for Ani in (Lorenz, Fire, Gradient, Orbit, Spiral, Wobble):
+#for Ani in (Lorenz, Fire, Gradient, Orbit, Spiral, Wobble, Spots, Chroma):
+for Ani in (Lorenz, Fire, Gradient, Orbit, Wobble, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     print (name)
@@ -123,8 +125,8 @@ main, .group
 form[action="/player/on"]       > input,
 form[action="/player/off"]      > input
 {
-	width: auto;
 	flex-grow: 3;
+	width: auto;
 }
 
 form[action="/player/on"]       > input:disabled,
@@ -136,8 +138,8 @@ form[action="/player/off"]      > input:disabled
 form[action="/player/next"]     > input,
 form[action="/player/previous"] > input
 {
-	width: auto;
 	flex-grow: 2;
+	width: auto;
 }
 
 .select_group, .action
