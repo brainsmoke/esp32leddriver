@@ -6,19 +6,21 @@ def clamp_byte(x):
     return min(255, max(0, int(x)))
 
 def smooth_wave_point(theta):
-    return clamp_byte( ((1+math.sin(theta*2*math.pi))/2)**2 * 255)
+    return clamp_byte( ((1+math.cos(theta*2*math.pi))/2)**2 * 255)
 
 smooth_wave = None
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
-        smooth_wave = bytearray( smooth_wave_point(i/1024) for i in range(1024) )
+        smooth_wave = bytearray(2048)
+        for i in range(1025):
+            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
     return smooth_wave
 
 class BaseGradient:
     def next_frame(self, fbuf):
         self.phase = (self.phase+self.speed)%self.phase_max
-        phi = int(1024. * self.phase / self.phase_max)
+        phi = int(2048. * self.phase / self.phase_max)
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, -phi*7, -phi*8, -phi*9)
 
     def get_speed(self):
@@ -30,7 +32,7 @@ class BaseGradient:
 class Gradient(BaseGradient):
 
     def __init__(self, leds, config=None):
-        n = 1024
+        n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -49,7 +51,7 @@ class Gradient(BaseGradient):
 class Spiral(BaseGradient):
 
     def __init__(self, leds, config=None):
-        n = 1024
+        n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -68,7 +70,7 @@ class Spiral(BaseGradient):
 class Wobble:
 
     def __init__(self, leds, config=None):
-        n = 1024
+        n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -93,6 +95,6 @@ class Wobble:
     def next_frame(self, fbuf):
         self.phase = (self.phase+self.speed)%self.phase_max
         phi = self.phase / self.phase_max
-        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*12288), int(phi*3072), 0)
+        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*24576), int(phi*6144), 0)
         cball.wobble(fbuf, self.rotations, 2, phi)
 
