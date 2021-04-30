@@ -1,7 +1,7 @@
 
 import machine, network, utime, gc, re
 
-import config, model, uartpixel, cball, configform
+import config, model, uartpixel, cball, configform, csrf
 
 from ani.orbit import Orbit
 from ani.lorenz import Lorenz
@@ -111,7 +111,7 @@ main
 
 .group
 {
-	width: 100%;
+    width: 100%;
 }
 
 main, .group
@@ -125,36 +125,36 @@ main, .group
 form[action="/player/on"]       > input,
 form[action="/player/off"]      > input
 {
-	flex-grow: 3;
-	width: auto;
+    flex-grow: 3;
+    width: auto;
 }
 
 form[action="/player/on"]       > input:disabled,
 form[action="/player/off"]      > input:disabled
 {
-	display: none;
+    display: none;
 }
 
 form[action="/player/next"]     > input,
 form[action="/player/previous"] > input
 {
-	flex-grow: 2;
-	width: auto;
+    flex-grow: 2;
+    width: auto;
 }
 
 .select_group, .action
 {
-	display: contents;
+    display: contents;
 }
 
 .color, .slider
 {
-	width: 100%;
+    width: 100%;
 }
 
 input[type=color]
 {
-	height: 2em;
+    height: 2em;
 }
 
 input[type=submit]
@@ -166,7 +166,7 @@ input[type=submit]
 h2,h4,label
 {
     text-align: center;
-	width: 100%;
+    width: 100%;
 }
 
 h4,label
@@ -183,27 +183,40 @@ input
 </style>
 <body>
 """)
-    csrf_tag = '<input type="hidden" name="csrf" value="TODO XXX TODO XXX " />'
+    csrf_tag = b'<input type="hidden" name="csrf" value="'+csrf.get_csrf_token( req )+b'" />'
     form.html(out, csrf_tag=csrf_tag)
 
 @server.route("/player/*", "POST")
 def handler(req):
     path = urldecode(req.get_path()).decode('utf-8')
-    form.set(path[7:], get_val(req))
+    value, token = get_val(req)
+    if csrf.verify_csrf_token(req, token):
+        form.set(path[7:], value)
+    else:
+        print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
 try:
     # quick hack :-P
-    arr = bytearray(256)
-    regex = re.compile('(^|&)value=([^&]*)(&|$)')
+    arr = memoryview(bytearray(256))
+    value_regex = re.compile('(^|&)value=([^&]*)(&|$)')
+    token_regex = re.compile('(^|&)csrf=([^&]*)(&|$)')
     def get_val(req):
         n = req.recv(arr)
-        g=regex.search(bytes(arr[:n]))
+        form_content = bytes(arr[:n])
+        g=value_regex.search(form_content)
         if g:
             value = urldecode(g.group(2)).decode('utf-8')
         else:
             value = ''
-        return value
+
+        g=token_regex.search(form_content)
+        if g:
+            token = urldecode(g.group(2))
+        else:
+            token = b''
+
+        return value, token
 
     player.on()
     server.start()

@@ -46,10 +46,18 @@ def redirect(req, location, code=303):
     req.set_status(code)
     req.add_header("Location", location)
     req.write_all(location)
+    return True
 
 def error(req, num, text):
     req.set_status(num)
     req.write_all(text)
+
+def session_dict( req ):
+    d = req.get_session_ctx()
+    if d == None:
+        d = {}
+        req.set_session_ctx(d)
+    return d
 
 class ResponseBuffer:
     def __init__(self, size):
