@@ -26,7 +26,7 @@ def test_csrf():
         def add_header( self, name, value ):
             print ( 'add_header(name={}, value={})'.format(repr(name), repr(value)) )
             assert (name == b'Set-Cookie')
-            self.cookie_out = re.match(b'(^| )csrf=([0-9a-fA-f]*)(;|$)', value).group(2)
+            self.cookie_out = re.search(b'(^| )csrf=([0-9a-fA-f]*)(;|$)', value).group(2)
 
         def get_header( self, name ):
             print ( 'get_header(name={}) = {}'.format(repr(name), repr(self.cookie_header)) )

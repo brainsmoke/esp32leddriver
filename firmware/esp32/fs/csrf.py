@@ -26,17 +26,28 @@ def generate_csrf_token( req, cookie ):
 def set_csrf_cookie( req, cookie ):
     req.add_header( b'Set-Cookie', b'csrf=' + binascii.hexlify(cookie) + b'; SameSite=Lax; HttpOnly' )
 
-_get_cookie_regex = re.compile(b'(^| )csrf=([^;]*)(;|$)')
-
-def get_csrf_cookie( req ):
+def get_csrf_cookie( req ): # not very pretty
     cookie_header = req.get_header(b'Cookie')
-    match = _get_cookie_regex.match( cookie_header )
-    if match == None:
-        return None
-    hexcookie = match.group(2)
+    ix = 0
+    while True:
+
+        ix = cookie_header.find(b'csrf=', ix)
+        if ix == -1:
+            return None
+
+        if ix == 0 or cookie_header[ix-1] in b'; ':
+            hexcookie = cookie_header[ix+5:ix+37]
+            break
+
+        ix += 5
+
     if len(hexcookie) != 32:
         return None
-    return binascii.unhexlify(hexcookie)
+
+    try:
+        return binascii.unhexlify(hexcookie)
+    except ValueError:
+        return None
 
 # Interface
 
