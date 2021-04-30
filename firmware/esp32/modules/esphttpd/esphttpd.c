@@ -8,6 +8,8 @@
 
 #include "freertos/queue.h"
 
+#include <sys/socket.h>
+
 #include <ctype.h>
 #include <string.h>
 #include <stdlib.h>
@@ -467,6 +469,48 @@ static mp_obj_t esphttpd_request_get_path(mp_obj_t self_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_path_obj, esphttpd_request_get_path );
 
+/* _esphttpd.Request.get_host() */
+static mp_obj_t esphttpd_request_get_host(mp_obj_t self_in)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->req == NULL)
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
+	int sockfd = httpd_req_to_sockfd(self->req);
+
+	if (sockfd < 0)
+		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("cannot retrieve socket descriptor %d"), sockfd);
+
+	struct sockaddr_in6 remote_addr;
+	socklen_t addr_len = sizeof(remote_addr);
+
+	int ret = getpeername(sockfd, (struct sockaddr *)&remote_addr, &addr_len);
+
+	if (ret < 0)
+		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("getsockname() failed %d"), errno);
+
+	vstr_t vstr_addr;
+	vstr_init_len(&vstr_addr, 128);
+	memset(vstr_addr.buf, 0, 128);
+
+	if (remote_addr.sin6_family == PF_INET)
+	{
+		if (!inet_ntoa_r( ((struct sockaddr_in *)&remote_addr)->sin_addr.s_addr,
+		                   vstr_addr.buf, vstr_addr.len - 1) )
+			mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting address %d"), errno);
+	}
+	else if (remote_addr.sin6_family == PF_INET6)
+	{
+		if (!inet6_ntoa_r(remote_addr.sin6_addr, vstr_addr.buf, vstr_addr.len - 1) )
+			mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting v6 address %d"), errno);
+	}
+
+    vstr_addr.len = strlen(vstr_addr.buf);
+	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr_addr);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_host_obj, esphttpd_request_get_host );
+
 /* _esphttpd.Request.get_uri() */
 static mp_obj_t esphttpd_request_get_uri(mp_obj_t self_in)
 {
@@ -547,6 +591,7 @@ static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_get_uri),          MP_ROM_PTR(&esphttpd_request_get_uri_obj)           },
 	{ MP_ROM_QSTR(MP_QSTR_get_path),         MP_ROM_PTR(&esphttpd_request_get_path_obj)          },
+	{ MP_ROM_QSTR(MP_QSTR_get_host),         MP_ROM_PTR(&esphttpd_request_get_host_obj)          },
 	{ MP_ROM_QSTR(MP_QSTR_set_content_type), MP_ROM_PTR(&esphttpd_request_set_content_type_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_add_header),       MP_ROM_PTR(&esphttpd_request_add_header_obj)        },
 	{ MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
