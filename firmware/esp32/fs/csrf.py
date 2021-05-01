@@ -17,14 +17,17 @@ def generate_csrf_cookie():
 
 def generate_csrf_token( req, cookie ):
     hash_ = hashlib.sha256( cookie )
-    hash_.update( req.get_host() )
+    hash_.update( req.get_remote_host() )
     hash_.update( host_random() )
     return binascii.b2a_base64(hash_.digest())[:24]
 
 # Getting/setting cookies
 
 def set_csrf_cookie( req, cookie ):
-    req.add_header( b'Set-Cookie', b'csrf=' + binascii.hexlify(cookie) + b'; SameSite=Lax; HttpOnly' )
+    secure = b''
+    if req.get_protocol() == 'https':
+        secure = b'; Secure'
+    req.add_header( b'Set-Cookie', b'csrf=' + binascii.hexlify(cookie) + secure + b'; SameSite=Lax; HttpOnly' )
 
 def get_csrf_cookie( req ): # not very pretty
     cookie_header = req.get_header(b'Cookie')

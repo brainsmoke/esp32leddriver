@@ -18,9 +18,9 @@ def test_csrf():
         def simulate_reconnect(self):
             self.session_ctx = None
 
-        def get_host(self):
+        def get_remote_host(self):
             host = b'::FFFF:127.0.0.1'
-            print ( 'get_host() = {}'.format( repr(b'::FFFF:127.0.0.1') ) )
+            print ( 'get_remote_host() = {}'.format( repr(b'::FFFF:127.0.0.1') ) )
             return host
 
         def add_header( self, name, value ):

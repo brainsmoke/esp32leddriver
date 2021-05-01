@@ -179,6 +179,7 @@ typedef struct
 
 	context_slot_t *slots;
 	int n_slots;
+	mp_obj_t protocol_string;
 
 } esphttpd_server_obj_t;
 
@@ -467,8 +468,11 @@ static mp_obj_t esphttpd_request_get_path(mp_obj_t self_in)
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_path_obj, esphttpd_request_get_path );
 
-/* _esphttpd.Request.get_host() */
-static mp_obj_t esphttpd_request_get_host(mp_obj_t self_in)
+enum { LOCAL_PEER, REMOTE_PEER };
+enum { HOST_INFO, PORT_INFO };
+
+/* _esphttpd.Request.get_{remote,server}_{host,port}() */
+static mp_obj_t esphttpd_request_get_sockinfo(mp_obj_t self_in, int peer, int type)
 {
 	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
@@ -480,34 +484,79 @@ static mp_obj_t esphttpd_request_get_host(mp_obj_t self_in)
 	if (sockfd < 0)
 		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("cannot retrieve socket descriptor %d"), sockfd);
 
-	struct sockaddr_in6 remote_addr;
-	socklen_t addr_len = sizeof(remote_addr);
+	struct sockaddr_in6 addr;
+	socklen_t addr_len = sizeof(addr);
 
-	int ret = getpeername(sockfd, (struct sockaddr *)&remote_addr, &addr_len);
+	int ret = ( (peer == REMOTE_PEER) ? getpeername:getsockname)(sockfd, (struct sockaddr *)&addr, &addr_len);
 
 	if (ret < 0)
-		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("getsockname() failed %d"), errno);
+		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("%s() failed %d"),
+		                  (peer == REMOTE_PEER) ? "getpeername":"getsockname", errno);
 
-	vstr_t vstr_addr;
-	vstr_init_len(&vstr_addr, 128);
-	memset(vstr_addr.buf, 0, 128);
+	if ( (addr.sin6_family != PF_INET)  &&
+	     (addr.sin6_family != PF_INET6) )
+		mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("unsupported socket family %d"),
+		                  addr.sin6_family);
 
-	if (remote_addr.sin6_family == PF_INET)
+	if (type == PORT_INFO)
+		return mp_obj_new_int(ntohs(addr.sin6_port));
+	else
 	{
-		if (!inet_ntoa_r( ((struct sockaddr_in *)&remote_addr)->sin_addr.s_addr,
-		                   vstr_addr.buf, vstr_addr.len - 1) )
-			mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting address %d"), errno);
-	}
-	else if (remote_addr.sin6_family == PF_INET6)
-	{
-		if (!inet6_ntoa_r(remote_addr.sin6_addr, vstr_addr.buf, vstr_addr.len - 1) )
-			mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting v6 address %d"), errno);
-	}
+		vstr_t vstr_addr;
+		vstr_init_len(&vstr_addr, 128);
+		memset(vstr_addr.buf, 0, 128);
 
-    vstr_addr.len = strlen(vstr_addr.buf);
-	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr_addr);
+		if (addr.sin6_family == PF_INET)
+		{
+			if (!inet_ntoa_r( ((struct sockaddr_in *)&addr)->sin_addr.s_addr,
+			                   vstr_addr.buf, vstr_addr.len - 1) )
+				mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting address %d"), errno);
+		}
+		else if (addr.sin6_family == PF_INET6)
+		{
+			if (!inet6_ntoa_r(addr.sin6_addr, vstr_addr.buf, vstr_addr.len - 1) )
+				mp_raise_msg_varg(&mp_type_OSError, MP_ERROR_TEXT("error converting v6 address %d"), errno);
+		}
+
+		vstr_addr.len = strlen(vstr_addr.buf);
+		return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr_addr);
+	}
 }
-MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_host_obj, esphttpd_request_get_host );
+
+static mp_obj_t esphttpd_request_get_remote_host(mp_obj_t self_in)
+{
+	return esphttpd_request_get_sockinfo(self_in, REMOTE_PEER, HOST_INFO);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_remote_host_obj, esphttpd_request_get_remote_host );
+
+static mp_obj_t esphttpd_request_get_remote_port(mp_obj_t self_in)
+{
+	return esphttpd_request_get_sockinfo(self_in, REMOTE_PEER, PORT_INFO);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_remote_port_obj, esphttpd_request_get_remote_port );
+
+static mp_obj_t esphttpd_request_get_server_host(mp_obj_t self_in)
+{
+	return esphttpd_request_get_sockinfo(self_in, LOCAL_PEER, HOST_INFO);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_server_host_obj, esphttpd_request_get_server_host );
+
+static mp_obj_t esphttpd_request_get_server_port(mp_obj_t self_in)
+{
+	return esphttpd_request_get_sockinfo(self_in, LOCAL_PEER, PORT_INFO);
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_server_port_obj, esphttpd_request_get_server_port );
+
+static mp_obj_t esphttpd_request_get_protocol(mp_obj_t self_in)
+{
+	esphttpd_request_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if ( (self->req == NULL) || (self->server == NULL) )
+		mp_raise_ValueError(MP_ERROR_TEXT("request expired"));
+
+	return self->server->protocol_string;
+}
+MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_protocol_obj, esphttpd_request_get_protocol );
 
 /* _esphttpd.Request.get_uri() */
 static mp_obj_t esphttpd_request_get_uri(mp_obj_t self_in)
@@ -589,7 +638,11 @@ static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_get_query_string), MP_ROM_PTR(&esphttpd_request_get_query_string_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_get_uri),          MP_ROM_PTR(&esphttpd_request_get_uri_obj)           },
 	{ MP_ROM_QSTR(MP_QSTR_get_path),         MP_ROM_PTR(&esphttpd_request_get_path_obj)          },
-	{ MP_ROM_QSTR(MP_QSTR_get_host),         MP_ROM_PTR(&esphttpd_request_get_host_obj)          },
+	{ MP_ROM_QSTR(MP_QSTR_get_remote_host),  MP_ROM_PTR(&esphttpd_request_get_remote_host_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_get_remote_port),  MP_ROM_PTR(&esphttpd_request_get_remote_port_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_get_server_host),  MP_ROM_PTR(&esphttpd_request_get_server_host_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_get_server_port),  MP_ROM_PTR(&esphttpd_request_get_server_port_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_get_protocol),     MP_ROM_PTR(&esphttpd_request_get_protocol_obj)      },
 	{ MP_ROM_QSTR(MP_QSTR_set_content_type), MP_ROM_PTR(&esphttpd_request_set_content_type_obj)  },
 	{ MP_ROM_QSTR(MP_QSTR_add_header),       MP_ROM_PTR(&esphttpd_request_add_header_obj)        },
 	{ MP_ROM_QSTR(MP_QSTR_set_session_ctx),  MP_ROM_PTR(&esphttpd_request_set_session_ctx_obj)   },
@@ -861,12 +914,14 @@ static mp_obj_t esphttpd_server_start(size_t n_args, const mp_obj_t *args)
 		config.prvtkey_len = key_len;
 		config.cacert_pem = cert;
 		config.cacert_len = cert_len;
+		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_https);
 		err = httpd_ssl_start(&self->handle, &config);
 	}
 	else
 	{
 		httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
 		init_httpd_config(self, &config);
+		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_http);
 		err = httpd_start(&self->handle, &config);
 	}
 
@@ -1013,9 +1068,9 @@ static mp_obj_t esphttpd__bufcpy(mp_obj_t dest, mp_obj_t ix, mp_obj_t src)
 	size_t index = mp_obj_get_int(ix);
 
 	if ( (index             > destinfo.len) ||
-         (srcinfo.len       > destinfo.len) ||
-         (index+srcinfo.len > destinfo.len) )
-        return MP_OBJ_NEW_SMALL_INT(-1);
+	     (srcinfo.len       > destinfo.len) ||
+	     (index+srcinfo.len > destinfo.len) )
+	    return MP_OBJ_NEW_SMALL_INT(-1);
 
 	memcpy(&dest_buf[index], src_buf, srcinfo.len);
 
@@ -1029,10 +1084,11 @@ static mp_obj_t esphttpd_http_server(void)
 	esphttpd_server_obj_t *self = m_new_obj_with_finaliser(esphttpd_server_obj_t);
 	*self = (esphttpd_server_obj_t)
 	{
-		.base           = { &esphttpd_server_type },
-		.handle         = NULL,
-		.request_queue  = NULL,
-		.response_queue = NULL,
+		.base            = { &esphttpd_server_type },
+		.handle          = NULL,
+		.request_queue   = NULL,
+		.response_queue  = NULL,
+		.protocol_string = mp_const_none,
 	};
 	return MP_OBJ_FROM_PTR(self);
 }

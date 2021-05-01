@@ -183,6 +183,10 @@ input
 </style>
 <body>
 """)
+    #print ( "server ({}:{}) client ({}:{}) protocol ({})".format(
+    #        req.get_server_host(), req.get_server_port(),
+    #        req.get_remote_host(), req.get_remote_port(),
+    #        req.get_protocol() ) )
     csrf_tag = b'<input type="hidden" name="csrf" value="'+csrf.get_csrf_token( req )+b'" />'
     form.html(out, csrf_tag=csrf_tag)
 
@@ -192,7 +196,7 @@ def handler(req):
     value, token = get_val(req)
     if csrf.verify_csrf_token(req, token):
         form.set(path[7:], value)
-    else:
+    elif token != b'':
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
