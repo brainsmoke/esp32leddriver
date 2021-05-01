@@ -427,11 +427,9 @@ static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
 	const char *field_name = mp_obj_str_get_str(field_in);
 	size_t field_len = httpd_req_get_hdr_value_len(self->req, field_name);
 
-	if (field_len == 0)
-		return MP_OBJ_NEW_QSTR(MP_QSTR_);
-
 	vstr_init(&vstr, field_len+1);
-	httpd_req_get_hdr_value_str(self->req, field_name, vstr.buf, field_len+1);
+	if (field_len != 0)
+		httpd_req_get_hdr_value_str(self->req, field_name, vstr.buf, field_len+1);
 	vstr.len = field_len;
 	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
 }
