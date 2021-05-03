@@ -3,6 +3,8 @@ essid, password = None, None
 
 use_tls, key_file, cert_file = False, None, None
 
+api_key = None
+
 uart_baudrate, uart_rx, uart_tx = 1000000, None, None
 
 model_dir = "/conf"
@@ -18,7 +20,6 @@ def load_json(filename):
         with uio.open(filename) as f:
             config = ujson.load(f)
     except OSError:
-        print ("meh.")
         pass
 
     gc.collect()
@@ -29,7 +30,7 @@ def load_json(filename):
 def reload():
     import gc
 
-    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file
+    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file, api_key
 
     config = load_json("/secret/network.json")
 
@@ -43,12 +44,15 @@ def reload():
     config = load_json("/secret/httpd.json")
 
     if config != None:
-        if 'use_tls' in config:
-            use_tls = bool(config['use_tls'])
+        use_tls = bool(config.get('use_tls', False))
+
         if 'tls' in config and 'key' in config['tls']:
             key_file = str(config['tls']['key'])
         if 'tls' in config and 'cert' in config['tls']:
             cert_file = str(config['tls']['cert'])
+
+        if config.get('use_api_key') and 'api_key' in config:
+            api_key = str(config['api_key'])
 
     del config
     gc.collect()

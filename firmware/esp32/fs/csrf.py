@@ -86,3 +86,8 @@ def get_csrf_token( req ):
     d['csrf_token'] = token
     return token
 
+# X-API-Key
+
+def verify_api_key( req, key ):
+    return key != None and req.get_header(b'X-API-Key') == key.encode('utf-8')
+

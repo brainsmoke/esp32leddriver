@@ -53,7 +53,7 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds,
                              remap    = leds.remap)
 
-form = configform.ConfigRoot("/player")
+form = configform.ConfigRoot("/")
 
 from player import Player
 
@@ -122,21 +122,21 @@ main, .group
     margin-right: auto;
 }
 
-form[action="/player/on"]       > input,
-form[action="/player/off"]      > input
+form[action="/on"]       > input,
+form[action="/off"]      > input
 {
     flex-grow: 3;
     width: auto;
 }
 
-form[action="/player/on"]       > input:disabled,
-form[action="/player/off"]      > input:disabled
+form[action="/on"]       > input:disabled,
+form[action="/off"]      > input:disabled
 {
     display: none;
 }
 
-form[action="/player/next"]     > input,
-form[action="/player/previous"] > input
+form[action="/next"]     > input,
+form[action="/previous"] > input
 {
     flex-grow: 2;
     width: auto;
@@ -190,12 +190,12 @@ input
     csrf_tag = b'<input type="hidden" name="csrf" value="'+csrf.get_csrf_token( req )+b'" />'
     form.html(out, csrf_tag=csrf_tag)
 
-@server.route("/player/*", "POST")
+@server.route("/*", "POST")
 def handler(req):
     path = urldecode(req.get_path()).decode('utf-8')
     value, token = get_val(req)
-    if csrf.verify_csrf_token(req, token):
-        form.set(path[7:], value)
+    if csrf.verify_csrf_token(req, token) or csrf.verify_api_key(req, config.api_key):
+        form.set(path, value)
     elif token != b'':
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")

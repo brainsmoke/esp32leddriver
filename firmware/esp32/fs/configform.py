@@ -1,19 +1,31 @@
 import binascii
 
+from esphttpd import htmlencode, urlencode_path
+
 # very much work in progress / operating on static & trusted inputs hopefully :-P
 # pre-generate as much of the output to speed up http response
 # yes, I hate this too :-P
 
+def validate_attribute_name(s):
+    pass
+
+def validate_tag_name(s):
+    pass
+
 class ConfigElem:
 
     def __init__(self, caption=None, tag='div'):
+        validate_tag_name(tag)
         self._tag = tag
         self._class = ''
         self._attribs = {}
         self._attrib_string = '' # cached string based on the above
         self._path = ''          # form action destination
         self._extra_attrib = ''  # used to insert form arguments
-        self._caption = caption
+        if caption:
+            self._caption = htmlencode(caption)
+        else:
+            self._caption = None
         self._update()
 
     # pre-calculate dynamically generated html
@@ -27,16 +39,17 @@ class ConfigElem:
         self._end = '</{}>\n'.format(self._tag)
 
     def _set_css_class(self, classname):
-        self._class = classname
+        self._class = htmlencode(classname)
         self._update()
 
     def _set_html_attr(self, attr):
         for name, value in attr.items():
+            validate_attribute_name(name)
             if value == None:
                 if name in self._attribs:
                     del self._attribs[name]
             else:
-                self._attribs[name] = value
+                self._attribs[name] = htmlencode(value)
 
         self._attrib_string = ''.join( ' {}="{}"'.format(name, self._attribs[name]) for name in self._attribs if name != 'class' )
         self._update()
@@ -193,7 +206,7 @@ class ConfigFormElem(ConfigElem):
         self._update()
 
     def _update(self):
-        self._extra_attrib = ' method="POST" action="{}"'.format(self._path)
+        self._extra_attrib = ' method="POST" action="{}"'.format(urlencode_path(self._path))
 
         super()._update()
         if self._caption:
