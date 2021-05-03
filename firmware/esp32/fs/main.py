@@ -50,8 +50,8 @@ leds = model.load()
 driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              rx       = config.uart_rx,
                              tx       = config.uart_tx,
-                             n        = leds.n_leds)
-
+                             n        = leds.n_leds,
+                             remap    = leds.remap)
 
 form = configform.ConfigRoot("/player")
 

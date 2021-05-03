@@ -61,13 +61,14 @@ class UartPixel:
     def get_cutoff(self, cutoff):
         return self.cutoff
 
-    def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, framebuf=True):
+    def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, remap=None, framebuf=True):
         self.n = n
         if framebuf:
             self.buf = bytearray(n*3)
         self.outbuf = uarray.array('H', 0 for _ in range(n*3 + 2))
         self.led_order = led_order
         self.gamma_map = uarray.array('H', 0 for _ in range(256))
+        self.remap = remap
         self.calc_gamma_map(gamma=gamma, cutoff=cutoff, brightness=1.0)
         self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf))
 
@@ -89,5 +90,9 @@ class UartPixel:
         writefrom(self, self.buf)
 
     def writefrom(self, buf):
-        cball.fillbuffer_gamma(self.outbuf, buf, self.led_order, self.gamma_map)
+        if self.remap == None:
+            cball.fillbuffer_gamma(self.outbuf, buf, self.led_order, self.gamma_map)
+        else:
+            cball.fillbuffer_remap_gamma(self.outbuf, buf, self.remap, self.led_order, self.gamma_map)
+
         self.uart.write(self.outbuf)

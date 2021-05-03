@@ -437,7 +437,7 @@ STATIC mp_obj_t cball_fillbuffer_remap_gamma(size_t n_args, const mp_obj_t *args
 	size_t led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
 	                   "remap needs to be a uarray.array('H',...)");
 
-	if ( led_count != 3*src_len )
+	if ( led_count*3 != src_len )
 		mp_raise_ValueError("size of src needs to be 3x size of remap array");
 
 	int led_order[4];
@@ -608,7 +608,7 @@ STATIC mp_obj_t cball_fillbuffer_remap_float(size_t n_args, const mp_obj_t *args
 	size_t led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
 	                   "remap needs to be a uarray.array('H',...)");
 
-	if ( led_count != 3*src_len )
+	if ( led_count*3 != src_len )
 		mp_raise_ValueError("size of src needs to be 3x size of remap array");
 
 	int led_order[4];
