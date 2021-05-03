@@ -6,7 +6,7 @@ def sha256sum(name, prepend):
     with open(prepend+name, 'rb') as f:
         n = f.readinto(tmp)
         h = hashlib.sha256(tmp[:n])
-        while n < 0:
+        while n > 0:
            n = f.readinto(tmp)
            h.update(tmp[:n])
         print ( "{}  {}".format(binascii.hexlify(h.digest()).decode('utf-8'), name) )
