@@ -9,6 +9,7 @@ from ani.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
+from ani.groups import Faces
 
 import esp
 #esp.osdebug(None)
@@ -70,11 +71,17 @@ select = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Spots, Chroma):
+for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Faces, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
-    print (name)
-    player.add_animation( name, Ani( leds, select.add_group(name, caption=caption) ) )
+    try:
+        print (caption)
+        player.add_animation( name, Ani( leds, select.add_group(name, caption=caption) ) )
+    except KeyboardInterrupt as err:
+        raise err
+    except Exception as err:
+        print ("failed loading {}: {}".format(caption, err))
+
 
 from esphttpd import HTTP_Server, redirect, urldecode
 

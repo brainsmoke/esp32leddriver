@@ -17,7 +17,6 @@ class Rutherford:
 
     def __init__(self, leds, config=None):
         assert leds.n_leds == 240
-        
 
         self.colors = [ color.ColorDrift(200+i*30, 3) for i in range(6) ]
         
@@ -53,13 +52,6 @@ class Rutherford:
     def get_fade(self):
         return self.fade
 
-    def update(self, n):
-        cball.orbit_update(self.objects, self.Gmdt2, n)
-        for i in range(0, len(self.shader_flat), 6):
-            self.shader_flat[i  ] = self.objects[i  ]
-            self.shader_flat[i+1] = self.objects[i+1]
-            self.shader_flat[i+2] = self.objects[i+2]
-
     def next_frame(self, fbuf):
         cball.bytearray_memset(fbuf, 0)
         cball.bytearray_blend(self.fb, fbuf, self.fb, self.fade)
@@ -71,17 +63,20 @@ class Rutherford:
                 if pi < len(self.wave):
                     ix = ci*120 + 6*i
                     w = self.wave[pi]
-                    wr = (w*r) >> 8 
-                    wg = (w*g) >> 8 
-                    wb = (w*b) >> 8 
-                    self.fb[ix+0] = max(wr, self.fb[ix+0])
-                    self.fb[ix+3] = max(wr, self.fb[ix+3])
+                    wr = (w*r) >> 8
+                    if self.fb[ix+0] < wr:
+                        self.fb[ix+0] = wr
+                        self.fb[ix+3] = wr
 
-                    self.fb[ix+1] = max(wg, self.fb[ix+1])
-                    self.fb[ix+4] = max(wg, self.fb[ix+4])
+                    wg = (w*g) >> 8
+                    if self.fb[ix+1] < wg:
+                        self.fb[ix+1] = wg
+                        self.fb[ix+4] = wg
 
-                    self.fb[ix+2] = max(wb, self.fb[ix+2])
-                    self.fb[ix+5] = max(wb, self.fb[ix+5])
+                    wb = (w*b) >> 8
+                    if self.fb[ix+2] < wb:
+                        self.fb[ix+2] = wb
+                        self.fb[ix+5] = wb
 
         cball.bytearray_memcpy(fbuf, self.fb)
 
