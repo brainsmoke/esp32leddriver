@@ -2,19 +2,20 @@
 import uarray, math, cmath
 import cball
 
-def clamp_byte(x):
-    return min(255, max(0, int(x)))
-
-def smooth_wave_point(theta):
-    return clamp_byte( ((1+math.cos(theta*2*math.pi))/2)**2 * 255)
+#def clamp_byte(x):
+#    return min(255, max(0, int(x)))
+#
+#def smooth_wave_point(theta):
+#    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2 * 255)
 
 smooth_wave = None
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
         smooth_wave = bytearray(2048)
-        for i in range(1025):
-            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
+        cball.wave_for_gradient_lut(smooth_wave) # same calculation, speed up boot time
+#        for i in range(1025):
+#            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
     return smooth_wave
 
 class BaseGradient:

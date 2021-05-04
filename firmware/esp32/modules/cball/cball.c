@@ -1562,6 +1562,157 @@ STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_wobble_obj, 4, 4, cball_wobble);
 
+static const float hsi_table[256] =
+{
+/*
+
+table = [ '{: f},'.format( math.cos(math.pi*2*     i /768) /
+                           math.cos(math.pi*2*(128-i)/768) ) for i in range(256) ]
+for i in range(0,256,8):
+    print ( '\t' + ' '.join( table[i:i+8] ) )
+ *
+ */
+	 2.000000,  1.972055,  1.944876,  1.918429,  1.892682,  1.867604,  1.843165,  1.819338,
+	 1.796099,  1.773421,  1.751283,  1.729662,  1.708537,  1.687889,  1.667700,  1.647951,
+	 1.628626,  1.609709,  1.591184,  1.573038,  1.555255,  1.537824,  1.520731,  1.503964,
+	 1.487513,  1.471365,  1.455512,  1.439942,  1.424646,  1.409615,  1.394840,  1.380313,
+	 1.366025,  1.351970,  1.338139,  1.324525,  1.311121,  1.297922,  1.284920,  1.272109,
+	 1.259484,  1.247039,  1.234768,  1.222666,  1.210729,  1.198950,  1.187327,  1.175853,
+	 1.164525,  1.153338,  1.142288,  1.131372,  1.120585,  1.109924,  1.099385,  1.088965,
+	 1.078660,  1.068467,  1.058383,  1.048405,  1.038529,  1.028754,  1.019076,  1.009492,
+	 1.000000,  0.990597,  0.981281,  0.972050,  0.962900,  0.953830,  0.944838,  0.935921,
+	 0.927076,  0.918303,  0.909600,  0.900963,  0.892391,  0.883883,  0.875436,  0.867049,
+	 0.858719,  0.850447,  0.842228,  0.834063,  0.825949,  0.817885,  0.809869,  0.801900,
+	 0.793976,  0.786096,  0.778259,  0.770462,  0.762706,  0.754988,  0.747307,  0.739662,
+	 0.732051,  0.724473,  0.716928,  0.709414,  0.701929,  0.694473,  0.687044,  0.679641,
+	 0.672263,  0.664909,  0.657579,  0.650270,  0.642981,  0.635713,  0.628463,  0.621230,
+	 0.614014,  0.606814,  0.599628,  0.592456,  0.585296,  0.578148,  0.571010,  0.563882,
+	 0.556762,  0.549650,  0.542545,  0.535446,  0.528351,  0.521260,  0.514172,  0.507085,
+	 0.500000,  0.492915,  0.485828,  0.478740,  0.471649,  0.464554,  0.457455,  0.450350,
+	 0.443238,  0.436118,  0.428990,  0.421852,  0.414704,  0.407544,  0.400372,  0.393186,
+	 0.385986,  0.378770,  0.371537,  0.364287,  0.357019,  0.349730,  0.342421,  0.335091,
+	 0.327737,  0.320359,  0.312956,  0.305527,  0.298071,  0.290586,  0.283072,  0.275527,
+	 0.267949,  0.260338,  0.252693,  0.245012,  0.237294,  0.229538,  0.221741,  0.213904,
+	 0.206024,  0.198100,  0.190131,  0.182115,  0.174051,  0.165937,  0.157772,  0.149553,
+	 0.141281,  0.132951,  0.124564,  0.116117,  0.107609,  0.099037,  0.090400,  0.081697,
+	 0.072924,  0.064079,  0.055162,  0.046170,  0.037100,  0.027950,  0.018719,  0.009403,
+	 0.000000, -0.009492, -0.019076, -0.028754, -0.038529, -0.048405, -0.058383, -0.068467,
+	-0.078660, -0.088965, -0.099385, -0.109924, -0.120585, -0.131372, -0.142288, -0.153338,
+	-0.164525, -0.175853, -0.187327, -0.198950, -0.210729, -0.222666, -0.234768, -0.247039,
+	-0.259484, -0.272109, -0.284920, -0.297922, -0.311121, -0.324525, -0.338139, -0.351970,
+	-0.366025, -0.380313, -0.394840, -0.409615, -0.424646, -0.439942, -0.455512, -0.471365,
+	-0.487513, -0.503964, -0.520731, -0.537824, -0.555255, -0.573038, -0.591184, -0.609709,
+	-0.628626, -0.647951, -0.667700, -0.687889, -0.708537, -0.729662, -0.751283, -0.773421,
+	-0.796099, -0.819338, -0.843165, -0.867604, -0.892682, -0.918429, -0.944876, -0.972055,
+
+};
+
+static mp_obj_t cball_HSItoRGB(mp_obj_t h, mp_obj_t s, mp_obj_t i)
+{
+	int h_int = (int)( (float)mp_obj_get_float(h) * 768.f ) % 768;
+	if (h_int < 0) h_int += 768;
+
+	float s_float = (float)mp_obj_get_float(s);
+	if      (s_float < 0.f) s_float = 0.f;
+	else if (s_float > 1.f) s_float = 1.f;
+
+	float i_float = 85.f * (float)mp_obj_get_float(i);
+	if      (i_float <  0.f) i_float =  0.f;
+	else if (i_float > 85.f) i_float = 85.f;
+
+	int hsi_wave = hsi_table[h_int & 0xff];
+
+	uint8_t color[5];
+
+	color[0] = (uint8_t)(i_float * (1.f + s_float*     hsi_wave )    );
+	color[1] = (uint8_t)(i_float * (1.f + s_float*(1.f-hsi_wave))    );
+	color[2] = (uint8_t)(i_float * (1.f - s_float               )*3.f);
+	color[3] = color[0];
+	color[4] = color[1];
+
+	int ix=0;
+	if (h_int >= 512)
+		ix=2;
+	else if (h_int >= 256)
+		ix=1;
+
+	return mp_obj_new_bytes(&color[ix], 3);
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_HSItoRGB_obj, cball_HSItoRGB);
+
+static mp_obj_t cball_wave_lut(mp_obj_t buf)
+{
+	/* args:
+	 * -     dest        [n*4]  uint8,
+	 */
+
+	uint8_t *dest;
+	size_t dest_len = cball_get_bytearray(buf, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a bytearray");
+
+	if (dest_len & 0x3)
+		mp_raise_ValueError("dest array size must be a multiple of 4");
+
+	int n = dest_len/4;
+	int h = dest_len/2;
+
+	dest[0] = 0;
+	dest[n] = 127;
+	dest[h] = 255;
+	dest[h+n] = 127;
+
+	float fac = 2.f*(float)M_PI/(float)dest_len;
+	int i;
+	for (i=1; i<n; i++)
+	{
+		int cosine = (int)floorf( (1+cosf( (float)i * fac )) *127.5 );
+		dest[dest_len-i] = dest[i] = 255-cosine;
+		dest[h-i] = dest[h+i] = cosine;
+	}
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(cball_wave_lut_obj, cball_wave_lut);
+
+static mp_obj_t cball_wave_for_gradient_lut(mp_obj_t buf)
+{
+	/* args:
+	 * -     dest        [n*4]  uint8,
+	 */
+
+	uint8_t *dest;
+	size_t dest_len = cball_get_bytearray(buf, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a bytearray");
+
+	if (dest_len & 0x3)
+		mp_raise_ValueError("dest array size must be a multiple of 4");
+
+	int n = dest_len/4;
+	int h = dest_len/2;
+
+	dest[0] = 0;
+	dest[n] = 64;
+	dest[h] = 255;
+	dest[h+n] = 64;
+
+	float fac = 2.f*(float)M_PI/(float)dest_len;
+	int i;
+	for (i=1; i<n; i++)
+	{
+		float cosine = cosf( (float)i * fac );
+		uint32_t tmp = (uint32_t)( (1.f-cosine)*32703.94f );
+		dest[dest_len-i] = dest[i] = (tmp*tmp)>>24;
+		tmp = (uint32_t)((1.f+cosine)*32703.94f);
+		dest[h-i] = dest[h+i] = (tmp*tmp)>>24;
+	}
+
+	return mp_const_none;
+}
+STATIC MP_DEFINE_CONST_FUN_OBJ_1(cball_wave_for_gradient_lut_obj, cball_wave_for_gradient_lut);
+
+
+
 STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_cball) },
@@ -1583,6 +1734,9 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_ca_update), MP_ROM_PTR(&cball_ca_update_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_orbit_update), MP_ROM_PTR(&cball_orbit_update_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_lorenz_update), MP_ROM_PTR(&cball_lorenz_update_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_HSItoRGB), MP_ROM_PTR(&cball_HSItoRGB_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_wave_lut), MP_ROM_PTR(&cball_wave_lut_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_wave_for_gradient_lut), MP_ROM_PTR(&cball_wave_for_gradient_lut_obj) },
 };
 
 STATIC MP_DEFINE_CONST_DICT(cball_module_globals, cball_module_globals_table);
