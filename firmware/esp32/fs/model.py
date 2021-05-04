@@ -7,7 +7,7 @@ def load_json(name):
     return config.load_json(config.model_dir + '/' + name)
 
 class Model:
-    def __init__(self, n_leds, positions, normals, inside, remap=None):
+    def __init__(self, n_leds, positions, normals, inside, remap=None, circuits={}):
         self.n_leds = n_leds
         self.positions = positions
         self.normals = normals
@@ -20,6 +20,8 @@ class Model:
             self.remap = None
         else:
             self.remap = uarray.array('H', remap )
+
+        self.circuits = circuits
 
         self.inside = inside
 
@@ -41,4 +43,11 @@ def load():
 
     gc.collect()
 
-    return Model(n_leds, positions, normals, inside, remap)
+    circuits = load_json('circuits.json')
+
+    if circuits == None:
+        circuits = {}
+
+    gc.collect()
+
+    return Model(n_leds, positions, normals, inside, remap, circuits)
