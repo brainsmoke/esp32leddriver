@@ -8,6 +8,7 @@ from ani.lorenz import Lorenz
 from ani.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble
 from ani.spot import Spots, Chroma
+from ani.rutherford import Rutherford
 
 import esp
 #esp.osdebug(None)
@@ -69,8 +70,7 @@ select = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-#for Ani in (Lorenz, Fire, Gradient, Orbit, Spiral, Wobble, Spots, Chroma):
-for Ani in (Lorenz, Fire, Gradient, Orbit, Wobble, Spots, Chroma):
+for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     print (name)
