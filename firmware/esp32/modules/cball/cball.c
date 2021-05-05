@@ -1624,9 +1624,9 @@ static mp_obj_t cball_HSItoRGB(mp_obj_t h, mp_obj_t s, mp_obj_t i)
 
 	uint8_t color[5];
 
-	color[0] = (uint8_t)(i_float * (1.f + s_float*     hsi_wave )    );
-	color[1] = (uint8_t)(i_float * (1.f + s_float*(1.f-hsi_wave))    );
-	color[2] = (uint8_t)(i_float * (1.f - s_float               )*3.f);
+	color[0] = (uint8_t)(i_float * (1.f + s_float*     hsi_wave ) );
+	color[1] = (uint8_t)(i_float * (1.f + s_float*(1.f-hsi_wave)) );
+	color[2] = (uint8_t)(i_float * (1.f - s_float               ) );
 	color[3] = color[0];
 	color[4] = color[1];
 

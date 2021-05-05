@@ -14,8 +14,8 @@ def get_wave_table(n):
 def get_random_color():
     rand = urandom(4)
     h = ( rand[0]<<8 | rand[1] ) / 0xffff
-    i = .5 + ( rand[2]<<8 | rand[3] ) / 0x1fffe
     s = 1.
+    i = .5 + ( rand[2]<<8 | rand[3] ) / 0x1fffe
     return HSItoRGB(h, s, i)
 
 class ColorDrift():
