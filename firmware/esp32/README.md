@@ -34,6 +34,8 @@ cd micropython/posrt/esp32
 # XXX: Edit do{make,flash}.sh files with correct directories
 
 ./domake.sh
+# firmware should be in build-LEDBALL/firmware.bin
+
 ./doflash.sh
 
 
