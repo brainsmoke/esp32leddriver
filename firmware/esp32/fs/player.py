@@ -91,7 +91,22 @@ class Player:
             t_next = utime.ticks_add(utime.ticks_us(), 16666)
             while True:
                 fb = self._fb
-                self._cur_ani.next_frame(fb)
+                try:
+                    self._cur_ani.next_frame(fb)
+                except KeyboardInterrupt as err:
+                    raise err
+                except Exception as err:
+                    print ("animation failed")
+                    if self._ani[self._cur] != self._cur_ani:
+                        raise err
+
+                    print ("animation failed, removing: {}".format(self._cur_ani.__name__))
+                    self._ani.pop(self._cur)
+                    if len(self._ani) == 0:
+                        break
+                    self._cur %= len(self._ani)
+                    self._cur_ani = self._ani[self._cur]
+
                 if self._fade < 60:
                     self._fade += 1
                     cball.bytearray_blend(fb, self._fadeout, fb, self._fade/60.)

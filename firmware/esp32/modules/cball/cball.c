@@ -1229,6 +1229,106 @@ STATIC mp_obj_t cball_bytearray_blend(size_t n_args, const mp_obj_t *args)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_bytearray_blend_obj, 4, 4, cball_bytearray_blend);
 
+
+/* dest = 255.* ( a/255. * b/255. ) */
+STATIC mp_obj_t cball_bytearray_interval_multiply(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+{
+	/* args:
+	 * -     out           [n]  uint8,
+	 * -     in1           [n]  uint8,
+	 * -     in2           [n]  uint8,
+	 *
+	 */
+
+	mp_buffer_info_t dest_info;
+	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
+	mp_buffer_info_t src_a_info;
+	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
+	mp_buffer_info_t src_b_info;
+	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+
+	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+		mp_raise_ValueError("array sizes dont match");
+
+	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
+
+	size_t i;
+	for (i=0; i<dest_info.len; i++)
+		d[i] = ( a[i]*b[i]*65794 ) >> 24;
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_interval_multiply_obj, cball_bytearray_interval_multiply);
+
+STATIC mp_obj_t cball_bytearray_add_clamp(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+{
+	/* args:
+	 * -     out           [n]  uint8,
+	 * -     in1           [n]  uint8,
+	 * -     in2           [n]  uint8,
+	 *
+	 */
+
+	mp_buffer_info_t dest_info;
+	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
+	mp_buffer_info_t src_a_info;
+	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
+	mp_buffer_info_t src_b_info;
+	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+
+	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+		mp_raise_ValueError("array sizes dont match");
+
+	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
+
+	size_t i;
+	for (i=0; i<dest_info.len; i++)
+	{
+		int v = a[i]+b[i];
+		if ( v > 255 ) v = 255;
+		d[i] = v;
+	}
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_add_clamp_obj, cball_bytearray_add_clamp);
+
+STATIC mp_obj_t cball_bytearray_sub_clamp(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+{
+	/* args:
+	 * -     out           [n]  uint8,
+	 * -     in1           [n]  uint8,
+	 * -     in2           [n]  uint8,
+	 *
+	 */
+
+	mp_buffer_info_t dest_info;
+	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
+	mp_buffer_info_t src_a_info;
+	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
+	mp_buffer_info_t src_b_info;
+	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+
+	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+		mp_raise_ValueError("array sizes dont match");
+
+	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
+
+	size_t i;
+	for (i=0; i<dest_info.len; i++)
+	{
+		int v = a[i]-b[i];
+		if ( v < 0 ) v = 0;
+		d[i] = v;
+	}
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_sub_clamp_obj, cball_bytearray_sub_clamp);
+
 STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
@@ -1728,6 +1828,9 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_memset), MP_ROM_PTR(&cball_bytearray_memset_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_memcpy), MP_ROM_PTR(&cball_bytearray_memcpy_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_blend), MP_ROM_PTR(&cball_bytearray_blend_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_bytearray_interval_multiply), MP_ROM_PTR(&cball_bytearray_interval_multiply_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_bytearray_add_clamp), MP_ROM_PTR(&cball_bytearray_add_clamp_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_bytearray_sub_clamp), MP_ROM_PTR(&cball_bytearray_sub_clamp_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shader), MP_ROM_PTR(&cball_shader_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_gradient), MP_ROM_PTR(&cball_gradient_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wobble), MP_ROM_PTR(&cball_wobble_obj) },
