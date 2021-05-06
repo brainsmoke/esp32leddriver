@@ -1,6 +1,6 @@
 #!/bin/bash
 
-. "$(dirname "$0")/config.sh
+. "$(dirname "$0")/config.sh"
 
 SHATREE="$(dirname "$0")/../test/shatree.py"
 

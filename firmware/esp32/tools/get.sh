@@ -1,4 +1,4 @@
-. "$(dirname "$0")/config.sh
+. "$(dirname "$0")/config.sh"
 
 kill_screen
 
