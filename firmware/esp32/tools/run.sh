@@ -1,13 +1,7 @@
+#!/bin/bash
+. "$(dirname "$0")/config.sh
 
-device=/dev/ttyUSB0
-
-do_echo() {
-	echo "> $@"
-	$@
-}
-
-screen -X -S micropython quit
-
+kill_screen
 do_echo ampy -p "$device" run "$1";
 screen -S micropython "$device" 115200
-
+micropython_reset

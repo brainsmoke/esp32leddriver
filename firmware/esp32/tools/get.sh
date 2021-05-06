@@ -1,15 +1,10 @@
+. "$(dirname "$0")/config.sh
 
-device=/dev/ttyUSB0
-
-do_echo() {
-	echo "> $@"
-	$@
-}
-
-screen -X -S micropython quit
-sleep .4
+kill_screen
 
 for f in "$@"; do 
     do_echo ampy -p "$device" get "$f";
 done
+
+micropython_reset
 
