@@ -18,9 +18,9 @@ import esp
 import machine
 machine.freq(240000000)
 
-
-def wifi_connect(essid, password):
-
+wlan = None
+def wifi_connect(essid, password, wait=True):
+    global wlan
     wlan = network.WLAN(network.STA_IF)
     wlan.active(True)
     if wlan.isconnected():
@@ -28,6 +28,10 @@ def wifi_connect(essid, password):
 
     print('connecting to network...')
     wlan.connect(essid, password)
+    if wait:
+        wait_for_wifi()
+
+def wait_for_wifi():
     while not wlan.isconnected():
         pass
     print(wlan.ifconfig())
@@ -46,7 +50,7 @@ def get_connection(socket):
 config.load()
 
 if config.essid != None:
-    wifi_connect(config.essid, config.password)
+    wifi_connect(config.essid, config.password, wait=False)
 
 leds = model.load()
 
@@ -85,6 +89,8 @@ for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPl
 
 
 from esphttpd import HTTP_Server, redirect, urldecode
+
+wait_for_wifi()
 
 if config.use_tls:
     server = HTTP_Server(use_tls=True, keyfile=config.key_file, certfile=config.cert_file) # https
