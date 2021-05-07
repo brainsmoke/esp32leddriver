@@ -9,11 +9,13 @@ class Off:
 class Player:
 
     def __init__(self, driver, leds):
+        import _thread
         self._ani = []
         self._cur = 0
         self._off = Off()
         self._cur_ani = self._off
         self._driver = driver
+        self._lock = _thread.allocate_lock()
 
         self._fade_fb = bytearray(leds.n_leds * 3)
         self._fb = bytearray(leds.n_leds * 3)
@@ -24,6 +26,7 @@ class Player:
         self._gamma_fade = 60
 
     def _set_animation(self, index):
+        self._lock.acquire()
         if index == None or len(self._ani) == 0:
             self._cur_ani = self._off
         else:
@@ -32,6 +35,7 @@ class Player:
 
         self._fade_fb, self._fb = self._fb, self._fade_fb
         self._fade = 0
+        self._lock.release()
 
     def get_selected(self):
         if self.is_off():
@@ -71,20 +75,24 @@ class Player:
 
     def set_brightness(self, value):
         if 0 <= value <= 1:
+            self._lock.acquire()
             self._old_brightness = self._driver.get_brightness()
             self._old_gamma = self._driver.get_gamma()
             self._gamma_fade = 0
             self._new_brightness = value
+            self._lock.release()
 
     def get_brightness(self):
         return self._new_brightness
 
     def set_gamma(self, value):
         if 1 <= value <= 4:
+            self._lock.acquire()
             self._old_brightness = self._driver.get_brightness()
             self._old_gamma = self._driver.get_gamma()
             self._gamma_fade = 0
             self._new_gamma = value
+            self._lock.release()
 
     def get_gamma(self):
         return self._new_gamma
@@ -93,7 +101,12 @@ class Player:
         try:
             t_next = utime.ticks_add(utime.ticks_us(), 16666)
             while True:
-                ani, fade, fb, fade_fb = self._cur_ani, self._fade, self._fb, self._fade_fb
+                self._lock.acquire()
+                ani        = self._cur_ani
+                fb         = self._fb
+                fade_fb    = self._fade_fb
+                fade       = self._fade
+                self._lock.release()
                 try:
                     ani.next_frame(fb)
                 except KeyboardInterrupt as err:
@@ -111,12 +124,14 @@ class Player:
                     cball.bytearray_blend(fb, fade_fb, fb, fade/60.)
 
                 if self._gamma_fade < 60:
+                    self._lock.acquire()
                     self._gamma_fade += 1
                     cur_gamma = ( self._new_gamma *     self._gamma_fade +
                                   self._old_gamma * (60-self._gamma_fade) ) / 60
                     cur_brightness = ( self._new_brightness *     self._gamma_fade +
                                        self._old_brightness * (60-self._gamma_fade) ) / 60
 
+                    self._lock.release()
                     self._driver.calc_gamma_map(gamma=cur_gamma, brightness=cur_brightness)
 
                 dt = utime.ticks_diff(t_next, utime.ticks_us())
