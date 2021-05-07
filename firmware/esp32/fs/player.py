@@ -23,45 +23,48 @@ class Player:
         self._old_brightness = self._new_brightness = driver.get_brightness()
         self._gamma_fade = 60
 
-    def _set_animation(self, ani):
-        self._cur_ani = ani
+    def _set_animation(self, index):
+        if index == None or len(self._ani) == 0:
+            self._cur_ani = self._off
+        else:
+            self._cur = index
+            self._cur_ani = self._ani[self._cur][1]
+
         self._fadeout, self._fb = self._fb, self._fadeout
         self._fade = 0
 
     def get_selected(self):
-        if self._cur_ani != self._off:
-            return self._ani[self._cur][0]
-        else:
+        if self.is_off():
             return 'Off'
+        else:
+            return self._ani[self._cur][0]
 
     def select(self, name):
         for i in range(len(self._ani)):
             if self._ani[i][0] == name:
-                self._cur = i
-                self._set_animation(self._ani[self._cur][1])
+                self._set_animation(i)
+                break
 
     def add_animation(self, name, ani):
         self._ani.append( (name, ani) )
 
     def next(self):
-        if self._cur_ani != self._off:
-            self._cur = (self._cur+1)%len(self._ani)
-            self._set_animation(self._ani[self._cur][1])
+        if self.is_on():
+            self._set_animation( (self._cur+1)%len(self._ani) )
 
     def previous(self):
-        if self._cur_ani != self._off:
-            self._cur = (self._cur-1)%len(self._ani)
-            self._set_animation(self._ani[self._cur][1])
+        if self.is_on():
+            self._set_animation( (self._cur-1)%len(self._ani) )
 
     def off(self):
-        self._set_animation(self._off)
+        self._set_animation(None)
 
     def is_off(self):
         return self._cur_ani == self._off
 
     def on(self):
         if len(self._ani) > 0:
-            self._set_animation(self._ani[self._cur][1])
+            self._set_animation( self._cur )
 
     def is_on(self):
         return self._cur_ani != self._off
@@ -96,16 +99,12 @@ class Player:
                 except KeyboardInterrupt as err:
                     raise err
                 except Exception as err:
-                    print ("animation failed")
-                    if self._ani[self._cur] != self._cur_ani:
-                        raise err
-
                     print ("animation failed, removing: {}".format(self._cur_ani.__name__))
                     self._ani.pop(self._cur)
                     if len(self._ani) == 0:
                         break
-                    self._cur %= len(self._ani)
-                    self._cur_ani = self._ani[self._cur]
+
+                    self._set_animation( self._cur%len(self._ani) )
 
                 if self._fade < 60:
                     self._fade += 1
@@ -126,8 +125,6 @@ class Player:
                     t_next = utime.ticks_us()
 
                 elif dt > 0:
-#                    while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
-#                        pass
                     utime.sleep_us(dt)
 
                 t_next = utime.ticks_add(t_next, 16666)
@@ -135,5 +132,4 @@ class Player:
         finally:
             self._off.next_frame(fb)
             self._driver.writefrom(fb)
-
 
