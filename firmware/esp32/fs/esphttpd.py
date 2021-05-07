@@ -135,15 +135,13 @@ class HTTP_Server:
         self._server.stop()
         self._running = False
 
-    def buffered(self):
-        def wrap(func):
-            def wrapper(req):
-                self._writebuf.set_request(req)
-                ret = func(req, self._writebuf)
-                self._writebuf.flush()
-                return ret
-            return wrapper
-        return wrap
+    def buffered(self, func):
+        def wrapper(req):
+            self._writebuf.set_request(req)
+            ret = func(req, self._writebuf)
+            self._writebuf.flush()
+            return ret
+        return wrapper
 
     def route(self, path, method="GET"):
         print("adding route: ", path)

@@ -105,7 +105,7 @@ else:
 #form.print()
 
 @server.route("/", "GET")
-@server.buffered()
+@server.buffered
 def index(req, out):
     out.write("""<!DOCTYPE html><html><head>
 <link rel="icon" href="data:,">
