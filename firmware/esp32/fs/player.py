@@ -15,7 +15,7 @@ class Player:
         self._cur_ani = self._off
         self._driver = driver
 
-        self._fadeout = bytearray(leds.n_leds * 3)
+        self._fade_fb = bytearray(leds.n_leds * 3)
         self._fb = bytearray(leds.n_leds * 3)
         self._fade = 60
 
@@ -30,7 +30,7 @@ class Player:
             self._cur = index
             self._cur_ani = self._ani[self._cur][1]
 
-        self._fadeout, self._fb = self._fb, self._fadeout
+        self._fade_fb, self._fb = self._fb, self._fade_fb
         self._fade = 0
 
     def get_selected(self):
@@ -93,9 +93,9 @@ class Player:
         try:
             t_next = utime.ticks_add(utime.ticks_us(), 16666)
             while True:
-                fb = self._fb
+                ani, fade, fb, fade_fb = self._cur_ani, self._fade, self._fb, self._fade_fb
                 try:
-                    self._cur_ani.next_frame(fb)
+                    ani.next_frame(fb)
                 except KeyboardInterrupt as err:
                     raise err
                 except Exception as err:
@@ -108,7 +108,7 @@ class Player:
 
                 if self._fade < 60:
                     self._fade += 1
-                    cball.bytearray_blend(fb, self._fadeout, fb, self._fade/60.)
+                    cball.bytearray_blend(fb, fade_fb, fb, fade/60.)
 
                 if self._gamma_fade < 60:
                     self._gamma_fade += 1
