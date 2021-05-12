@@ -99,7 +99,7 @@ class Player:
 
     def run(self):
         try:
-            t_next = utime.ticks_add(utime.ticks_us(), 16666)
+#            t_next = utime.ticks_add(utime.ticks_us(), 16666)
             while True:
                 self._lock.acquire()
                 ani        = self._cur_ani
@@ -134,15 +134,15 @@ class Player:
                     self._lock.release()
                     self._driver.calc_gamma_map(gamma=cur_gamma, brightness=cur_brightness)
 
-                dt = utime.ticks_diff(t_next, utime.ticks_us())
-                if dt < -2000:
+#                dt = utime.ticks_diff(t_next, utime.ticks_us())
+#                if dt < -2000:
 #                    print(dt)
-                    t_next = utime.ticks_us()
+#                    t_next = utime.ticks_us()
 
-                elif dt > 0:
-                    utime.sleep_us(dt)
+#                elif dt > 0:
+#                    utime.sleep_us(dt)
 
-                t_next = utime.ticks_add(t_next, 16666)
+#                t_next = utime.ticks_add(t_next, 16666)
                 self._driver.writefrom(fb)
         finally:
             self._off.next_frame(fb)

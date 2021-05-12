@@ -55,6 +55,7 @@ class Rutherford:
     def next_frame(self, fbuf):
         cball.bytearray_memset(fbuf, 0)
         cball.bytearray_blend(self.fb, fbuf, self.fb, self.fade)
+        fb = self.fb
         for ci, color in enumerate(self.colors):
             r, g, b = color.next_color()
             p = int(2000 * (self.phase % self.div[ci]) )//self.div[ci]
@@ -64,21 +65,21 @@ class Rutherford:
                     ix = ci*120 + 6*i
                     w = self.wave[pi]
                     wr = (w*r) >> 8
-                    if self.fb[ix+0] < wr:
-                        self.fb[ix+0] = wr
-                        self.fb[ix+3] = wr
+                    if fb[ix+0] < wr:
+                        fb[ix+0] = wr
+                        fb[ix+3] = wr
 
                     wg = (w*g) >> 8
-                    if self.fb[ix+1] < wg:
-                        self.fb[ix+1] = wg
-                        self.fb[ix+4] = wg
+                    if fb[ix+1] < wg:
+                        fb[ix+1] = wg
+                        fb[ix+4] = wg
 
                     wb = (w*b) >> 8
-                    if self.fb[ix+2] < wb:
-                        self.fb[ix+2] = wb
-                        self.fb[ix+5] = wb
+                    if fb[ix+2] < wb:
+                        fb[ix+2] = wb
+                        fb[ix+5] = wb
 
-        cball.bytearray_memcpy(fbuf, self.fb)
+        cball.bytearray_memcpy(fbuf, fb)
 
         self.phase += self.speed
         self.phase %= self.phase_max

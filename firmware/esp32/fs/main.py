@@ -88,9 +88,18 @@ for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPl
         print ("failed loading {}: {}".format(caption, err))
 
 
+debug=False
+def gc_test():
+    print ("gc start")
+    gc.collect()
+    print ("gc end")
+
+form.add_action('gc', gc_test, lambda : debug, caption="garbage collect" )
+
 from esphttpd import HTTP_Server, redirect, urldecode
 
-wait_for_wifi()
+if config.essid != None:
+    wait_for_wifi()
 
 if config.use_tls:
     server = HTTP_Server(use_tls=True, keyfile=config.key_file, certfile=config.cert_file) # https

@@ -2,6 +2,7 @@
 import machine, uarray
 
 import cball
+import _uartpixel
 
 class UartPixel:
 
@@ -70,7 +71,11 @@ class UartPixel:
         self.gamma_map = uarray.array('H', 0 for _ in range(256))
         self.remap = remap
         self.calc_gamma_map(gamma=gamma, cutoff=cutoff, brightness=1.0)
-        self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf))
+        #self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf)*2)
+        self.queue = _uartpixel.FrameQueue(uart=1, timer=3,
+                                           baudrate=baudrate, rx=rx, tx=tx,
+                                           fps=60.,
+                                           framesize=len(self.outbuf)*2, framecount=12)
 
     def __setitem__(self, index, val):
         offset = index * 3
@@ -95,4 +100,5 @@ class UartPixel:
         else:
             cball.fillbuffer_remap_gamma(self.outbuf, buf, self.remap, self.led_order, self.gamma_map)
 
-        self.uart.write(self.outbuf)
+        #self.uart.write(self.outbuf)
+        self.queue.push(self.outbuf)
