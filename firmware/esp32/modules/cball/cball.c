@@ -1329,6 +1329,41 @@ STATIC mp_obj_t cball_bytearray_sub_clamp(mp_obj_t dest, mp_obj_t a_in, mp_obj_t
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_sub_clamp_obj, cball_bytearray_sub_clamp);
 
+STATIC mp_obj_t cball_bytearray_max(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+{
+	/* args:
+	 * -     out           [n]  uint8,
+	 * -     in1           [n]  uint8,
+	 * -     in2           [n]  uint8,
+	 *
+	 */
+
+	mp_buffer_info_t dest_info;
+	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
+	mp_buffer_info_t src_a_info;
+	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
+	mp_buffer_info_t src_b_info;
+	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+
+	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+		mp_raise_ValueError("array sizes dont match");
+
+	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
+
+	size_t i;
+	for (i=0; i<dest_info.len; i++)
+	{
+		if (a[i] > b[i])
+			d[i] = a[i];
+		else
+			d[i] = b[i];
+	}
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_max_obj, cball_bytearray_max);
+
 STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
@@ -1831,6 +1866,7 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_interval_multiply), MP_ROM_PTR(&cball_bytearray_interval_multiply_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_add_clamp), MP_ROM_PTR(&cball_bytearray_add_clamp_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_sub_clamp), MP_ROM_PTR(&cball_bytearray_sub_clamp_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_bytearray_max), MP_ROM_PTR(&cball_bytearray_max_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_shader), MP_ROM_PTR(&cball_shader_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_gradient), MP_ROM_PTR(&cball_gradient_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wobble), MP_ROM_PTR(&cball_wobble_obj) },
