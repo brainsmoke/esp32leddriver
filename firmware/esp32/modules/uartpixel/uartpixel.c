@@ -91,12 +91,15 @@ static void timer_task(void *self_ptr)
 		if (self->quit)
 			break;
 
-		if ( xQueueReceive(self->queue, &op, portMAX_DELAY) )
+		if ( xQueueReceive(self->queue, &op, 0) == pdTRUE )
 			uart_write_bytes(self->uart_num, (const char *)op.buf, op.size);
 	}
 
 	xQueueReceive(self->queue, &op, 0);
+	xSemaphoreTake( self->mutex, portMAX_DELAY );
 	self->task = NULL;
+	vQueueDelete(self->queue);
+	xSemaphoreGive( self->mutex );
 	vTaskDelete(NULL);
 }
 
@@ -156,7 +159,6 @@ static mp_obj_t uartpixel_frame_queue_deinit(mp_obj_t self_in)
 		while (self->task)
 			taskYIELD();
 
-		vQueueDelete(self->queue);
 	    uart_driver_delete(self->uart_num);
 	}
 	return mp_const_none;
@@ -279,9 +281,6 @@ static mp_obj_t uartpixel_frame_queue_push(mp_obj_t self_in, mp_obj_t buf)
 {
 	frame_queue_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-	if (self->quit)
-		mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("frame queue stopped"));
-
 	mp_buffer_info_t bufinfo;
 	mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
 
@@ -299,7 +298,9 @@ static mp_obj_t uartpixel_frame_queue_push(mp_obj_t self_in, mp_obj_t buf)
 
 	memcpy(op.buf, bufinfo.buf, bufinfo.len);
 
-	xQueueSend(self->queue, &op, portMAX_DELAY);
+	if (!self->quit)
+		xQueueSend(self->queue, &op, portMAX_DELAY);
+
 	xSemaphoreGive( self->mutex );
 	MP_THREAD_GIL_ENTER();
 
