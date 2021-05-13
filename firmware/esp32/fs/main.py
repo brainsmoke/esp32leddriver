@@ -94,7 +94,8 @@ def gc_test():
     gc.collect()
     print ("gc end")
 
-form.add_action('gc', gc_test, lambda : debug, caption="garbage collect" )
+if debug:
+    form.add_action('gc', gc_test, lambda : debug, caption="garbage collect" )
 
 from esphttpd import HTTP_Server, redirect, urldecode
 
@@ -112,6 +113,28 @@ else:
 #webdir.add_webdir(server, '/models', '/models', index=True)
 
 #form.print()
+
+# quick hack :-P
+arr = memoryview(bytearray(256))
+value_regex = re.compile('(^|&)value=([^&]*)(&|$)')
+token_regex = re.compile('(^|&)csrf=([^&]*)(&|$)')
+def get_val(req):
+    n = req.recv(arr)
+    form_content = bytes(arr[:n])
+    g=value_regex.search(form_content)
+    if g:
+        value = urldecode(g.group(2)).decode('utf-8')
+    else:
+        value = ''
+
+    g=token_regex.search(form_content)
+    if g:
+        token = urldecode(g.group(2))
+    else:
+        token = b''
+
+    return value, token
+
 
 @server.route("/", "GET")
 @server.buffered
@@ -213,6 +236,40 @@ input
     csrf_tag = b'<input type="hidden" name="csrf" value="'+csrf.get_csrf_token( req )+b'" />'
     form.html(out, csrf_tag=csrf_tag)
 
+#import uctypes,cball,binascii
+#
+#@server.route("/read", "POST")
+#def handler(req):
+#    value, token = get_val(req)
+#    values = value.split(',')
+#    addr = int(values[0], 16)
+#    size = int(values[1], 16)
+#    b = uctypes.bytes_at(addr, size)
+#    req.write_all(binascii.hexlify(b))
+#
+#uint32 = { 'val': 0 | uctypes.UINT32 }
+#@server.route("/write4", "POST")
+#def handler(req):
+#    value, token = get_val(req)
+#    values = value.split(',')
+#    addr = int(values[0], 16)
+#    val = int(values[1], 16)
+#    v = uctypes.struct(addr, uint32, uctypes.NATIVE)
+#    v.val = val
+#    req.write_all(hex(v.val))
+#
+#
+#@server.route("/write", "POST")
+#def handler(req):
+#    value, token = get_val(req)
+#    values = value.split(',')
+#    addr = int(values[0], 16)
+#    b = binascii.unhexlify(values[1])
+#    ba = uctypes.bytearray_at(addr, len(b))
+#    cball.bytearray_memcpy(ba, b)
+#    b = uctypes.bytes_at(addr, len(b))
+#    req.write_all(binascii.hexlify(b))
+
 @server.route("/*", "POST")
 def handler(req):
     path = urldecode(req.get_path()).decode('utf-8')
@@ -224,27 +281,6 @@ def handler(req):
     redirect(req, "/")
 
 try:
-    # quick hack :-P
-    arr = memoryview(bytearray(256))
-    value_regex = re.compile('(^|&)value=([^&]*)(&|$)')
-    token_regex = re.compile('(^|&)csrf=([^&]*)(&|$)')
-    def get_val(req):
-        n = req.recv(arr)
-        form_content = bytes(arr[:n])
-        g=value_regex.search(form_content)
-        if g:
-            value = urldecode(g.group(2)).decode('utf-8')
-        else:
-            value = ''
-
-        g=token_regex.search(form_content)
-        if g:
-            token = urldecode(g.group(2))
-        else:
-            token = b''
-
-        return value, token
-
     player.on()
     server.start()
     gc.collect()
