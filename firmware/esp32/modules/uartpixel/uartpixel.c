@@ -45,7 +45,7 @@ static const char *TAG = "_uartpixel";
 // TIMER_BASE_CLK is normally 80MHz. TIMER_DIVIDER ought to divide this exactly
 #define TIMER_SCALE    (TIMER_BASE_CLK / TIMER_DIVIDER)
 
-#define TIMER_FLAGS    0
+#define TIMER_FLAGS    ( ESP_INTR_FLAG_IRAM )
 
 
 typedef struct
@@ -56,13 +56,13 @@ typedef struct
 
 	int timer_group;
 	int timer_index;
-	intr_handle_t intr_handle;
 
 	int frame_size;
 	int frame_count;
 	uint8_t *buf;
 
 	int ix;
+	int quit;
 
 	QueueHandle_t queue;
 	SemaphoreHandle_t mutex;
@@ -77,29 +77,28 @@ typedef struct
 
 } write_op_t;
 
-
 static void timer_task(void *self_ptr)
 {
 	frame_queue_obj_t *self = self_ptr;
 
-	uint32_t quit = 0;
+	uint32_t event = 0;
 	write_op_t op;
 
+	uint32_t error_timeout = pdMS_TO_TICKS( 1000 );
 	for (;;)
 	{
-		xTaskNotifyWait(0, 0, &quit, portMAX_DELAY);
-		if (quit)
+		xTaskNotifyWait(0, -1, &event, error_timeout);
+		if (self->quit)
 			break;
-
-		uart_wait_tx_done(self->uart_num, portMAX_DELAY);
 
 		if ( xQueueReceive(self->queue, &op, portMAX_DELAY) )
 			uart_write_bytes(self->uart_num, (const char *)op.buf, op.size);
 	}
+
+	xQueueReceive(self->queue, &op, 0);
+	self->task = NULL;
 	vTaskDelete(NULL);
 }
-
-
 
 typedef struct queue_ll_s queue_ll_t;
 struct queue_ll_s
@@ -139,11 +138,7 @@ static void delete_frame_queue(mp_obj_t obj)
 static void start_task(frame_queue_obj_t *self)
 {
 	xTaskCreate(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task);
-}
-
-static void stop_task(frame_queue_obj_t *self)
-{
-	xTaskNotify(self->task, 1, eSetBits);
+//	xTaskCreatePinnedToCore(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task, MP_TASK_COREID);
 }
 
 static mp_obj_t uartpixel_frame_queue_deinit(mp_obj_t self_in)
@@ -151,39 +146,30 @@ static mp_obj_t uartpixel_frame_queue_deinit(mp_obj_t self_in)
 	delete_frame_queue(self_in);
 	frame_queue_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
-	if (self->intr_handle)
+	if (self->task)
 	{
+		self->quit = 1;
 		timer_pause(self->timer_group, self->timer_index);
-		esp_intr_free(self->intr_handle);
-		self->intr_handle = NULL;
-		stop_task(self);
+		timer_isr_callback_remove(self->timer_group, self->timer_index);
+		xTaskNotify(self->task, 1, eSetBits);
+
+		while (self->task)
+			taskYIELD();
+
 		vQueueDelete(self->queue);
-		uart_driver_delete(self->uart_num);
+	    uart_driver_delete(self->uart_num);
 	}
 	return mp_const_none;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(uartpixel_frame_queue_deinit_obj, uartpixel_frame_queue_deinit);
 
-uint32_t uartpixel_test;
-void uartpixel_frame_queue_isr(void *self_ptr)
+bool IRAM_ATTR uartpixel_frame_queue_isr(void *task_ptr)
 {
-	uartpixel_test = 0x4843414b;
-	frame_queue_obj_t *self = self_ptr;
-	timer_spinlock_take(self->timer_group);
-
+	TaskHandle_t task = (TaskHandle_t)task_ptr;
 	BaseType_t xHigherPriorityTaskWoken = pdFALSE;
-	xTaskNotifyFromISR(self->task, 0, eNoAction, &xHigherPriorityTaskWoken);
-
-	uartpixel_test = 0x4843344b;
-	timer_group_clr_intr_status_in_isr(self->timer_group, self->timer_index);
-	timer_group_enable_alarm_in_isr(self->timer_group, self->timer_index);
-	uartpixel_test = 0x4843304b;
-
-	if (xHigherPriorityTaskWoken == pdTRUE)
-		portYIELD_FROM_ISR();
-
-	timer_spinlock_give(self->timer_group);
+	xTaskNotifyFromISR(task, 0, eNoAction, &xHigherPriorityTaskWoken);
+	return xHigherPriorityTaskWoken == pdTRUE;
 }
 
 extern const mp_obj_type_t frame_queue_type;
@@ -227,12 +213,13 @@ static mp_obj_t uartpixel_frame_queue_make_new(const mp_obj_type_t *type,
 		.uart_num    = args[ARG_uart].u_int,
 		.timer_group = args[ARG_timer].u_int & 1,
 		.timer_index = (args[ARG_timer].u_int>>1) & 1,
-		.frame_size   = frame_size,
-		.frame_count  = frame_count,
+		.frame_size  = frame_size,
+		.frame_count = frame_count,
 		.buf   = m_new( uint8_t, frame_size*frame_count ),
 		.queue = xQueueCreate( queue_count , sizeof( write_op_t ) ),
 		.mutex = xSemaphoreCreateMutex(),
-		.ix = 0,
+		.ix    = 0,
+		.quit  = 0,
 	};
 
 	if (!self->queue)
@@ -272,8 +259,8 @@ static mp_obj_t uartpixel_frame_queue_make_new(const mp_obj_type_t *type,
 	check_esp_err(timer_init(self->timer_group, self->timer_index, &timer_cfg));
 	check_esp_err(timer_set_counter_value(self->timer_group, self->timer_index, 0x00000000));
 	check_esp_err(timer_set_alarm_value(self->timer_group, self->timer_index, period));
-	check_esp_err(timer_enable_intr(self->timer_group, self->timer_index));
-	check_esp_err(timer_isr_register(self->timer_group, self->timer_index, uartpixel_frame_queue_isr, (void *)self, TIMER_FLAGS, &self->intr_handle));
+	check_esp_err(timer_isr_callback_add(self->timer_group, self->timer_index, uartpixel_frame_queue_isr, self->task, TIMER_FLAGS) );
+
 	check_esp_err(timer_start(self->timer_group, self->timer_index));
 
 	add_frame_queue(MP_OBJ_FROM_PTR(self));
@@ -291,6 +278,9 @@ static uint8_t *new_framebuf(frame_queue_obj_t *self)
 static mp_obj_t uartpixel_frame_queue_push(mp_obj_t self_in, mp_obj_t buf)
 {
 	frame_queue_obj_t *self = MP_OBJ_TO_PTR(self_in);
+
+	if (self->quit)
+		mp_raise_msg(&mp_type_RuntimeError, MP_ERROR_TEXT("frame queue stopped"));
 
 	mp_buffer_info_t bufinfo;
 	mp_get_buffer_raise(buf, &bufinfo, MP_BUFFER_READ);
