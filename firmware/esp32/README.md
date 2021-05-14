@@ -20,7 +20,7 @@ ctrl-d
 
 ```bash
 
-# just mental notes now, need to test!
+# should be correct, but not tested from a clean VM
 
 git clone https://github.com/brainsmoke/esp32leddriver
 
@@ -29,9 +29,10 @@ git clone -b v4.2 --recursive https://github.com/espressif/esp-idf.git
 
 # clone of micropython using esp32 native vfs, also has settings for http[s] server /mbedtls
 git clone https://github.com/brainsmoke/micropython -b leddriver
-cd micropython/posrt/esp32
+cd micropython/port/esp32
 
-# XXX: Edit do{make,flash}.sh files with correct directories
+# Edit setenv.sh to set the correct build directories:
+"$EDITOR" setenv.sh
 
 ./domake.sh
 # firmware should be in build-LEDBALL/firmware.bin
