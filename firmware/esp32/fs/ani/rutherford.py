@@ -1,13 +1,12 @@
 
 import uarray
 import cball
-import color
 
 _wave = None
 def get_wave():
     global _wave
     if not _wave:
-        _wave = bytearray(512)
+        _wave = bytearray(500)
         bump = memoryview(_wave)
         cball.wave_for_gradient_lut(_wave)
     return _wave
@@ -18,9 +17,14 @@ class Rutherford:
     def __init__(self, leds, config=None):
         assert leds.n_leds == 240
 
-        self.colors = [ color.ColorDrift(200+i*30, 3) for i in range(6) ]
+        self.colors = [ cball.ColorDrift(200+i*30, 3) for i in range(6) ]
         
         self.fb = bytearray( leds.n_leds * 3 )
+        self.colormap = bytearray( leds.n_leds )
+        for i in range(len(self.colormap)):
+            self.colormap[i] = i//40
+        self.palette = bytearray( 6 * 3 )
+        self.colorfb  = bytearray( leds.n_leds * 3 )
         self.phase = 0
         self.wave = get_wave()
 
@@ -31,13 +35,13 @@ class Rutherford:
 
         self.div = tuple( self.phase_max // x for x in factors )
 
-        self.set_speed(15)
+        self.set_speed(9)
         if config:
-            config.add_slider('speed', 10, 25, 1, self.get_speed, self.set_speed, caption="speed")
+            config.add_slider('speed', 9, 22, 1, self.get_speed, self.set_speed, caption="speed")
 
-        self.set_fade(.95)
+        self.set_fade(.96)
         if config:
-            config.add_slider('fade', .9, .98, .005, self.get_fade, self.set_fade, caption="fade")
+            config.add_slider('fade', .9, .99, .005, self.get_fade, self.set_fade, caption="fade")
 
     def set_speed(self, speed):
         self.speed_db = speed
@@ -52,34 +56,37 @@ class Rutherford:
     def get_fade(self):
         return self.fade
 
-    def next_frame(self, fbuf):
-        cball.bytearray_memset(fbuf, 0)
-        cball.bytearray_blend(self.fb, fbuf, self.fb, self.fade)
+    @micropython.native
+    def next_frame(self, out):
         fb = self.fb
-        for ci, color in enumerate(self.colors):
-            r, g, b = color.next_color()
-            p = int(2000 * (self.phase % self.div[ci]) )//self.div[ci]
+        phase = self.phase
+        div = self.div
+        wave = self.wave
+
+        cball.bytearray_memset(out, 0)
+        cball.bytearray_blend(fb, out, self.fb, self.fade)
+
+        for c in range(6):
+            self.colors[c].next_color_into(self.palette, c*3)
+            p = phase % self.div[c] * 2000 // self.div[c]
             for i in range(20):
-                pi = (p+i*100) % 2000
-                if pi < len(self.wave):
-                    ix = ci*120 + 6*i
-                    w = self.wave[pi]
-                    wr = (w*r) >> 8
-                    if fb[ix+0] < wr:
-                        fb[ix+0] = wr
-                        fb[ix+3] = wr
+                p += 100
+                if p > 2000:
+                    p -= 2000
+                if p < 500:
+                    w = wave[p]
+                    ix = c*120 + i*6
+                    out[ix  ] = w
+                    out[ix+1] = w
+                    out[ix+2] = w
+                    out[ix+3] = w
+                    out[ix+4] = w
+                    out[ix+5] = w
 
-                    wg = (w*g) >> 8
-                    if fb[ix+1] < wg:
-                        fb[ix+1] = wg
-                        fb[ix+4] = wg
-
-                    wb = (w*b) >> 8
-                    if fb[ix+2] < wb:
-                        fb[ix+2] = wb
-                        fb[ix+5] = wb
-
-        cball.bytearray_memcpy(fbuf, fb)
+        cball.apply_palette(self.colorfb, self.colormap, self.palette)
+        cball.bytearray_interval_multiply(out, out, self.colorfb)
+        cball.bytearray_max(fb, fb, out)
+        cball.bytearray_memcpy(out, fb)
 
         self.phase += self.speed
         self.phase %= self.phase_max
