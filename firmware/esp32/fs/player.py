@@ -108,11 +108,15 @@ class Player:
                 fade       = self._fade
                 self._lock.release()
                 try:
+#                    t_0 = utime.ticks_us();
                     ani.next_frame(fb)
+#                    t_1 = utime.ticks_us();
+#                    print( t_1-t_0 )
                 except KeyboardInterrupt as err:
                     raise err
                 except Exception as err:
-                    print ("animation failed, removing: {}".format(self._cur_ani.__name__))
+                    print(err)
+                    print ("animation failed, removing: {}".format(self._cur_ani.__class__.__name__))
                     self._ani.pop(self._cur)
                     if len(self._ani) == 0:
                         break
