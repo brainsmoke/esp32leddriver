@@ -1,4 +1,4 @@
-import utime, gc
+import utime, gc, math
 
 import cball
 
@@ -21,8 +21,8 @@ class Player:
         self._fb = bytearray(leds.n_leds * 3)
         self._fade = 60
 
-        self._old_gamma = self._new_gamma = driver.get_gamma()
-        self._old_brightness = self._new_brightness = driver.get_brightness()
+        self._old_gamma = self._cur_gamma = self._new_gamma = driver.get_gamma()
+        self._old_brightness = self._cur_brightness = self._new_brightness = math.sqrt(driver.get_brightness())
         self._gamma_fade = 60
 
     def _set_animation(self, index):
@@ -76,8 +76,8 @@ class Player:
     def set_brightness(self, value):
         if 0 <= value <= 1:
             self._lock.acquire()
-            self._old_brightness = self._driver.get_brightness()
-            self._old_gamma = self._driver.get_gamma()
+            self._old_brightness = self._cur_brightness
+            self._old_gamma = self._cur_gamma
             self._gamma_fade = 0
             self._new_brightness = value
             self._lock.release()
@@ -88,8 +88,8 @@ class Player:
     def set_gamma(self, value):
         if 1 <= value <= 4:
             self._lock.acquire()
-            self._old_brightness = self._driver.get_brightness()
-            self._old_gamma = self._driver.get_gamma()
+            self._old_brightness = self._cur_brightness
+            self._old_gamma = self._cur_gamma
             self._gamma_fade = 0
             self._new_gamma = value
             self._lock.release()
@@ -130,13 +130,13 @@ class Player:
                 if self._gamma_fade < 60:
                     self._lock.acquire()
                     self._gamma_fade += 1
-                    cur_gamma = ( self._new_gamma *     self._gamma_fade +
-                                  self._old_gamma * (60-self._gamma_fade) ) / 60
-                    cur_brightness = ( self._new_brightness *     self._gamma_fade +
-                                       self._old_brightness * (60-self._gamma_fade) ) / 60
+                    self._cur_gamma = ( self._new_gamma *     self._gamma_fade +
+                                        self._old_gamma * (60-self._gamma_fade) ) / 60
+                    self._cur_brightness = ( self._new_brightness *     self._gamma_fade +
+                                             self._old_brightness * (60-self._gamma_fade) ) / 60
 
                     self._lock.release()
-                    self._driver.calc_gamma_map(gamma=cur_gamma, brightness=cur_brightness)
+                    self._driver.calc_gamma_map(gamma=self._cur_gamma, brightness=self._cur_brightness**2)
 
 #                dt = utime.ticks_diff(t_next, utime.ticks_us())
 #                if dt < -2000:
