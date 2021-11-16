@@ -6,9 +6,10 @@ LDFLAGS=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT)
 LINKER_SCRIPT=platform/stm32f030.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
-TARGETS=main.elf main.bin main16.elf main16.bin edgeball16.elf edgeball16.bin relayball.elf relayball.bin
+TARGETS=main.elf main.bin main16.elf main16.bin edgeball16.elf edgeball16.bin relayball.elf relayball.bin uartball16.elf uartball16.bin
 TESTS=test/test.elf test/test16.elf test/test_edgeball16.elf test/test_relay16.elf test/test_edgeball16alt.elf
 
+UARTBALL16_FLAGS=#-DN_VALUES_PER_LED=6 -DN_LEDS_PER_STRIP=8
 EDGEBALL16_FLAGS=-DN_VALUES_PER_LED=3 -DN_LEDS_PER_STRIP=60
 MAIN16_FLAGS=-DN_VALUES_PER_LED=3 -DN_LEDS_PER_STRIP=15
 MAIN_FLAGS=
@@ -21,6 +22,7 @@ RELAYBALL_FLAGS=
 
 
 EDGEBALL16_SRCS=edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
+UARTBALL16_SRCS=uartball16.c util.c $(STARTUP_SRC)
 RELAYBALL_SRCS=relayball.S relayball_init.c default_route.c bitbang16_relay_4strip.S util.c fsm.c $(STARTUP_SRC)
 MAIN_SRCS=main.c bitbang.S util.c $(STARTUP_SRC)
 MAIN16_SRCS=main16.c bitbang16.S util.c $(STARTUP_SRC)
@@ -29,7 +31,7 @@ TEST16_SRCS=test/test16.c bitbang16.S util.c $(STARTUP_SRC)
 TEST_EDGEBALL16_SRCS=test/test_edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
 TEST_EDGEBALL16ALT_SRCS=test/test_edgeball16.c bitbang16_alt_4strip.S util.c $(STARTUP_SRC)
 TEST_RELAY16_SRCS=test/test_relay16.c bitbang16_relay_4strip.S util.c $(STARTUP_SRC)
-HEADERS=bitbang16.h bitbang16_4strip.h bitbang16_relay_4strip.h bitbang.h util.h m0delay.S fsm.h
+HEADERS=bitbang16.h bitbang16_4strip.h bitbang16_relay_4strip.h bitbang.h util.h m0delay.S fsm.h uartball16.h
 
 .PHONY: all clean test
 
@@ -53,6 +55,9 @@ main16.elf: $(MAIN16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 
 edgeball16.elf: $(EDGEBALL16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(EDGEBALL16_FLAGS) $(EDGEBALL16_SRCS) -o $@
+
+uartball16.elf: $(UARTBALL16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(UARTBALL16_FLAGS) $(UARTBALL16_SRCS) -o $@
 
 relayball.elf: $(RELAYBALL_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(RELAYBALL_FLAGS) $(RELAYBALL_SRCS) -o $@
