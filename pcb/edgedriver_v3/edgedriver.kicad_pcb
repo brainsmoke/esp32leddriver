@@ -57,8 +57,8 @@
     (mod_edge_width 0.15)
     (mod_text_size 1 1)
     (mod_text_width 0.15)
-    (pad_size 1.3 0.25)
-    (pad_drill 0)
+    (pad_size 1 1.6)
+    (pad_drill 0.6)
     (pad_to_mask_clearance 0.051)
     (solder_mask_min_width 0.25)
     (aux_axis_origin 0 0)
@@ -776,7 +776,7 @@
     )
   )
 
-  (module footprints:USB_C_Receptacle_HRO_TYPE-C-31-M-12 (layer F.Cu) (tedit 5F8B9402) (tstamp 5F8BB1AF)
+  (module footprints:USB_C_Receptacle_HRO_TYPE-C-31-M-12 (layer F.Cu) (tedit 6060DD2B) (tstamp 5F8BB1AF)
     (at 8.9 -12.9 90)
     (descr "USB Type-C receptacle for USB 2.0 and PD, http://www.krhro.com/uploads/soft/180320/1-1P320120243.pdf")
     (tags "usb usb-c 2.0 pd")
@@ -996,11 +996,6 @@
       (net 69 SWDIO))
     (pad 2 thru_hole oval (at 0 2.54) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 70 SWDCLK))
-    (model ${KISYS3DMOD}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x02_P2.54mm_Vertical.wrl
-      (at (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (module esp32-wrover:C_0603_1608Metric (layer F.Cu) (tedit 5EFF7C2A) (tstamp 5FF55642)
@@ -1097,11 +1092,6 @@
       (net 54 "Net-(J3-Pad3)"))
     (pad 4 thru_hole oval (at 0 7.62 90) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 55 "Net-(J3-Pad4)"))
-    (model ${KISYS3DMOD}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x04_P2.54mm_Vertical.wrl
-      (at (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (module Package_TO_SOT_SMD:SOT-223-3_TabPin2 (layer F.Cu) (tedit 5EFF7C58) (tstamp 6007FAAE)
@@ -1130,7 +1120,7 @@
     (model ${KISYS3DMOD}/Package_TO_SOT_SMD.3dshapes/SOT-223.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 0 0 180))
     )
   )
 
@@ -1207,7 +1197,7 @@
     (model ${KISYS3DMOD}/Package_DFN_QFN.3dshapes/QFN-24-1EP_4x4mm_P0.5mm_EP2.6x2.6mm.wrl
       (at (xyz 0 0 0))
       (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
+      (rotate (xyz 0 0 -90))
     )
   )
 
@@ -1241,11 +1231,6 @@
       (net 48 +5V) (zone_connect 2))
     (pad 8 thru_hole oval (at 0 8.89 90) (size 1.7 1.7) (drill 1) (layers *.Cu *.Mask)
       (net 48 +5V) (zone_connect 2))
-    (model ${KISYS3DMOD}/Connector_PinHeader_2.54mm.3dshapes/PinHeader_1x08_P2.54mm_Vertical.wrl
-      (at (xyz 0 0 0))
-      (scale (xyz 1 1 1))
-      (rotate (xyz 0 0 0))
-    )
   )
 
   (module MountingHole:MountingHole_3.2mm_M3 (layer F.Cu) (tedit 5F01AE54) (tstamp 5EFFEA74)
