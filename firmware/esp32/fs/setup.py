@@ -13,14 +13,14 @@ def query(prompt, default=None):
 
 essid = query("wifi essid", default=None)
 if essid == None:
-    raise ValueError("no essid given")
+    network['wifi'] = { }
+else:
+    password = query("wifi password", default=None)
 
-password = query("wifi password", default=None)
+    if password == None:
+        raise ValueError("no password given")
 
-if password == None:
-    raise ValueError("no password given")
-
-network['wifi'] = { 'essid': essid, 'password': password }
+    network['wifi'] = { 'essid': essid, 'password': password }
 
 with open("/secret/network.json", "w") as f:
     ujson.dump(network, f)

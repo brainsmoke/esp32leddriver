@@ -21,20 +21,28 @@ machine.freq(240000000)
 wlan = None
 def wifi_connect(essid, password, wait=True):
     global wlan
-    wlan = network.WLAN(network.STA_IF)
-    wlan.active(True)
-    if wlan.isconnected():
-        wlan.disconnect()
+    try:
+        wlan = network.WLAN(network.STA_IF)
+        wlan.active(True)
+        if wlan.isconnected():
+            wlan.disconnect()
 
-    print('connecting to network...')
-    wlan.connect(essid, password)
-    if wait:
-        wait_for_wifi()
+        print('connecting to network...')
+        wlan.connect(essid, password)
+        if wait:
+            wait_for_wifi()
+    except OSError:
+        pass
 
 def wait_for_wifi():
-    while not wlan.isconnected():
+    try:
+        for i in range(10):
+           if wlan.isconnected():
+               print(wlan.ifconfig())
+               break
+           utime.sleep(.5)
+    except OSError:
         pass
-    print(wlan.ifconfig())
 
 def create_listener_socket(port):
     addr = usocket.getaddrinfo('0.0.0.0', port)[0][-1]
