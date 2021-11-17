@@ -1,0 +1,10 @@
+Comment,Designator,Footprint,LCSC part number
+"1uF","C7","Capacitor_SMD:C_0402_1005Metric","C52923"
+"100nF","C8,C5","Capacitor_SMD:C_0402_1005Metric","C1525"
+"10uF","C9,C10,C1","Capacitor_SMD:C_1206_3216Metric","C13585"
+"Conn_01x05_Male","J2","Connector_Molex:Molex_PicoBlade_53261-0571_1x05-1MP_P1.25mm_Horizontal","C225114"
+"AO3400","Q1,Q2","Package_TO_SOT_SMD:SOT-23","C20917"
+"10k","R6,R7,R3,R4,R5,R11","Resistor_SMD:R_0402_1005Metric","C25744"
+"ESP32-WROVER-IE(16MB)","U1","QFN-38_EP_18.0x31.4x1.27P-1","C701352"
+"STM32F030F4Px","U3","Package_SO:TSSOP-20_4.4x6.5mm_P0.65mm","C89040"
+
