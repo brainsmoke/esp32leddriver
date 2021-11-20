@@ -42,7 +42,7 @@ class UartPixel:
                 self.cutoff = cutoff
 
         max_ = max(0, min(int(self.brightness * 0xff00), 0xff00))
-        cball.calc_gamma_map_sieve( self.gamma_map, self.gamma, max_, self.cutoff )
+        cball.calc_gamma_map( self.gamma_map, self.gamma, max_, self.cutoff )
 
     def set_gamma(self, gamma):
         self.calc_gamma_map(gamma=gamma)
