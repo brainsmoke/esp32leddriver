@@ -4,7 +4,7 @@ import cball
 
 class Orbit:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat, config=None, **kwargs):
         self.leds = leds
         self.Gmdt2 = -6.674e-11*5.97219e24*1.*1./(6.371e6**3)
         self.objects = uarray.array('f',
@@ -16,12 +16,12 @@ class Orbit:
 
         self.shader_flat = uarray.array('f',
         #      position            color * intensity
-            [  -1,-1,-1,     0,         0,       255*0.394,
-               -1,-1,-1,   255*0.394, 255*0.394,  64*0.394,
-               -1,-1,-1,   255*2.463,  32*2.463, 127*2.463   ]
+            [  -1,-1,-1,     0,         0,       0.394,
+               -1,-1,-1,   0.394, 0.394,  64/255*0.394,
+               -1,-1,-1,   2.463,  32/255*2.463, 127/255*2.463   ]
         )
 
-        self.magnitude = [ .394, .394, 2.463 ]
+        self.magnitude = [ .394/255, .394/255, 2.463/255 ]
 
         if config:
             for i in range(3):
@@ -32,6 +32,8 @@ class Orbit:
         self.set_speed(10)
         if config:
             config.add_slider('speed', 0, 30, 1, self.get_speed, self.set_speed, caption="speed")
+
+        self.tmpfloat = tmpfloat
 
     def set_speed(self, speed):
         self.speed = speed
@@ -59,6 +61,6 @@ class Orbit:
 
     def next_frame(self, fbuf):
         self.update(self.speed)
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
 

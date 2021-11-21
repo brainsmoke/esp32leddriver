@@ -12,7 +12,7 @@ smooth_wave = None
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
-        smooth_wave = bytearray(2048)
+        smooth_wave = uarray.array('H', 0 for _ in range(2048))
         cball.wave_for_gradient_lut(smooth_wave) # same calculation, speed up boot time
 #        for i in range(1025):
 #            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
@@ -32,7 +32,7 @@ class BaseGradient:
 
 class Gradient(BaseGradient):
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
@@ -51,7 +51,7 @@ class Gradient(BaseGradient):
 
 class Spiral(BaseGradient):
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
@@ -70,7 +70,7 @@ class Spiral(BaseGradient):
 
 class Wobble:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         n = 2048
         self.wave = get_smooth_wave()
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))

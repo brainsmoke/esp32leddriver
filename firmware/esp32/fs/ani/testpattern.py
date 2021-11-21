@@ -3,10 +3,10 @@ import uarray, math, cmath
 import cball
 
 def clamp_byte(x):
-    return min(255, max(0, int(x)))
+    return min(65536, max(0, int(x)))
 
 def smooth_wave_point(theta):
-    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2.6 * 255)
+    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2.6 * 65535)
 
 def get_wave(size=1024, wavesize=None):
     wave = bytearray(size)
@@ -20,7 +20,7 @@ def get_wave(size=1024, wavesize=None):
 
 class TestPatternA:
 
-    def __init__(self, leds):
+    def __init__(self, leds, **kwargs):
         self.edge_count = leds.n_leds//4//4
         self.led_ix = list(64*(i%self.edge_count) for i in range(self.edge_count))
         self.phase = 0
@@ -50,7 +50,7 @@ class TestPatternA:
 
 class TestPatternB:
 
-    def __init__(self, leds):
+    def __init__(self, leds, **kwargs):
         self.edge_count = leds.n_leds//4//4
         self.led_ix = list(256*(i%self.edge_count) for i in range(self.edge_count))
         self.phase = 0
@@ -80,7 +80,7 @@ class TestPatternB:
 
 class TestPatternC:
 
-    def __init__(self, leds):
+    def __init__(self, leds, **kwargs):
         self.circle_count = 20
         self.led_ix = list(16*(i%self.circle_count) for i in range(self.circle_count))
         self.phase = 0
@@ -93,7 +93,7 @@ class TestPatternC:
 
     def next_frame(self, fbuf):
         r = self.remap
-        cball.bytearray_memset(fbuf, 0)
+        cball.array_set(fbuf, 0)
         self.phase = (self.phase-1)%self.phase_max
         for i in range(20):
             val = self.wave[ (self.led_ix[i]+self.phase)%self.phase_max ]

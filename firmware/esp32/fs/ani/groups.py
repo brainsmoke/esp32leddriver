@@ -5,7 +5,7 @@ from ani.gradient import get_smooth_wave
 
 class Faces:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         assert 'faces' in leds.circuits
         self.colors = [ (0x20,0x18,0x5), (0xff,0x99,23) ]
         self.group = bytearray(leds.n_leds)

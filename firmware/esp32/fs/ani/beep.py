@@ -1,7 +1,7 @@
 
 class Beep:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         self.phase = 0
         self.count = 0
 

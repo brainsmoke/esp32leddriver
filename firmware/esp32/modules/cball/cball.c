@@ -456,14 +456,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_calc_gamma_map_obj, cball_calc_gamma_map)
 STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_dest, mp_obj_t buf_src, mp_obj_t palette)
 {
 	/* args:
-	 * -     framebuffer_out  [pixels*3]  uint8,
+	 * -     framebuffer_out  [pixels*3]  uint16,
 	 * -     framebuffer_in   [pixels]    uint8,
-	 * -     palette          [n*3]       uint8,
+	 * -     palette          [n*3]       uint16,
 	 */
 
-	uint8_t *dest;
-	size_t dest_len  = cball_get_bytearray(buf_dest, &dest, MP_BUFFER_WRITE,
-	                   "dest needs to be a bytearray");
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(buf_dest, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
 	if (dest_len%3 != 0)
 		mp_raise_ValueError("dest array size must be a multiple of 3");
@@ -472,9 +472,9 @@ STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_dest, mp_obj_t buf_src, mp_obj_
 	size_t src_len  = cball_get_bytearray(buf_src, &src, MP_BUFFER_READ,
 	                  "src needs to be a bytearray");
 
-	uint8_t *table;
-	size_t table_len  = cball_get_bytearray(palette, &table, MP_BUFFER_READ,
-	                    "palette needs to be a bytearray");
+	uint16_t *table;
+	size_t table_len  = cball_get_uint16_array(palette, &table, MP_BUFFER_READ,
+	                    "palette needs to be a uarray.array('H',...)");
 
 	if (table_len%3 != 0)
 		mp_raise_ValueError("palette array must be a multiple of 3");
@@ -510,24 +510,24 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_apply_palette_obj, cball_apply_palette);
 STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
-	 * -     framebuffer_out  [n_leds*3]  uint8,
-	 * -     framebuffer_in   [w*h*3]     uint8,
+	 * -     framebuffer_out  [n_leds*3]  uint16,
+	 * -     framebuffer_in   [w*h*3]     uint16,
 	 * -     voronoi_map      [w*h]       uin16,
 	 * -     latt_weight      [h]         float32,
 	 * -     total_weight     [n_leds]    float32,
 	 * -     tmp_buf          [n_leds*3]  float32,
 	 */
 
-	uint8_t *dest;
-	size_t dest_len  = cball_get_bytearray(args[0], &dest, MP_BUFFER_WRITE,
-	                   "dest needs to be a bytearray");
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
 	if (dest_len%3 != 0)
 		mp_raise_ValueError("dest array size must be a multiple of 3");
 
-	uint8_t *src;
-	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
-	                  "src needs to be a bytearray");
+	uint16_t *src;
+	size_t src_len  = cball_get_uint16_array(args[1], &src, MP_BUFFER_READ,
+	                  "src needs to be a uarray.array('H',...)");
 
 	if (src_len%3 != 0)
 		mp_raise_ValueError("src array must be a multiple of 3");
@@ -583,16 +583,16 @@ STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 	{
 		float w = total_weight[i];
 		int v = (int)(w*tmp[i*3]);
-		if      (v < 0)   v=0;
-		else if (v > 255) v=255;
+		if      (v < 0)      v=0;
+		else if (v > 0xffff) v=0xffff;
 		dest[i*3]=v;
 		v = (int)(w*tmp[i*3+1]);
-		if      (v < 0)   v=0;
-		else if (v > 255) v=255;
+		if      (v < 0)      v=0;
+		else if (v > 0xffff) v=0xffff;
 		dest[i*3+1]=v;
 		v = (int)(w*tmp[i*3+2]);
-		if      (v < 0)   v=0;
-		else if (v > 255) v=255;
+		if      (v < 0)      v=0;
+		else if (v > 0xffff) v=0xffff;
 		dest[i*3+2]=v;
 	}
 
@@ -601,222 +601,249 @@ STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_latt_long_map_obj, 6, 6, cball_latt_long_map);
 
-STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
+STATIC mp_obj_t cball_array_copy(mp_obj_t out, mp_obj_t in)
 {
 	/* args:
-	 * -     out [...]  uint8,
-	 * -     in  [...]  uint8,
+	 * -     out [...]  uint16,
+	 * -     in  [...]  uint16,
 	 *
-	 * memcpy(out, in, max(out_len, in_len))
+	 * memcpy(out, in, max(out_len, in_len)*2)
 	 *
 	 */
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(out, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_info;
-	mp_get_buffer_raise(in, &src_info, MP_BUFFER_READ);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(out, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
-	size_t len = dest_info.len;
-	if (len > src_info.len)
-		len = src_info.len;
+	uint16_t *src;
+	size_t src_len = cball_get_uint16_array(in, &src, MP_BUFFER_WRITE,
+	                                        "dest needs to be a uarray.array('H',...)");
 
-	memcpy(dest_info.buf, src_info.buf, len);
+	size_t len = dest_len;
+	if (len > src_len)
+		len = src_len;
+
+	memcpy(dest, src, len*2);
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memcpy_obj, cball_bytearray_memcpy);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_array_copy_obj, cball_array_copy);
 
 
-STATIC mp_obj_t cball_bytearray_memset(mp_obj_t array, mp_obj_t c)
+STATIC mp_obj_t cball_array_set(mp_obj_t array, mp_obj_t c)
 {
 	/* args:
-	 * -     array [...]  uint8,
+	 * -     array [...]  uint16,
 	 * -     c            int,
 	 */
 
-	mp_buffer_info_t buf_info;
-	mp_get_buffer_raise(array, &buf_info, MP_BUFFER_WRITE);
-	memset(buf_info.buf, mp_obj_get_int(c), buf_info.len);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(array, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
+
+	size_t i;
+	for (i=0; i<dest_len; i++)
+		dest[i] = mp_obj_get_int(c);
+
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memset_obj, cball_bytearray_memset);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_array_set_obj, cball_array_set);
 
-STATIC mp_obj_t cball_bytearray_blend(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t cball_array_blend(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
-	 * -     out           [n]  uint8,
-	 * -     in1           [n]  uint8,
-	 * -     in2           [n]  uint8,
+	 * -     out           [n]  uint16,
+	 * -     in1           [n]  uint16,
+	 * -     in2           [n]  uint16,
 	 * -     interpolation      float
 	 *
 	 */
 
-	int mulb = (int)(256.f *mp_obj_get_float(args[3]));
+	int mulb = (int)(65536.f *mp_obj_get_float(args[3]));
 
 	if (mulb < 0)
 		mulb = 0;
-	else if (mulb > 256)
-		mulb = 256;
+	else if (mulb > 65536)
+		mulb = 65536;
 
-	int mula = 256-mulb;
+	int mula = 65536-mulb;
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(args[0], &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_a_info;
-	mp_get_buffer_raise(args[1], &src_a_info, MP_BUFFER_READ);
-	mp_buffer_info_t src_b_info;
-	mp_get_buffer_raise(args[2], &src_b_info, MP_BUFFER_READ);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
-	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+	uint16_t *src_a;
+	size_t src_a_len = cball_get_uint16_array(args[1], &src_a, MP_BUFFER_WRITE,
+	                                          "src a needs to be a uarray.array('H',...)");
+
+	uint16_t *src_b;
+	size_t src_b_len = cball_get_uint16_array(args[2], &src_b, MP_BUFFER_WRITE,
+	                                          "src b needs to be a uarray.array('H',...)");
+
+	if ( (dest_len != src_a_len) || (src_a_len != src_b_len) )
 		mp_raise_ValueError("array sizes dont match");
 
-	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
-
 	size_t i;
-	for (i=0; i<dest_info.len; i++)
-		d[i] = ( mula*a[i] + mulb*b[i] ) >> 8;
+	for (i=0; i<dest_len; i++)
+		dest[i] = ( mula*src_a[i] + mulb*src_b[i] ) >> 16;
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_bytearray_blend_obj, 4, 4, cball_bytearray_blend);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_array_blend_obj, 4, 4, cball_array_blend);
 
 
-/* dest = 255.* ( a/255. * b/255. ) */
-STATIC mp_obj_t cball_bytearray_interval_multiply(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+/* dest = 65535.* ( a/65535. * b/65535. ) */
+STATIC mp_obj_t cball_array_interval_multiply(mp_obj_t out, mp_obj_t a_in, mp_obj_t b_in)
 {
 	/* args:
-	 * -     out           [n]  uint8,
-	 * -     in1           [n]  uint8,
-	 * -     in2           [n]  uint8,
+	 * -     out           [n]  uint16,
+	 * -     in1           [n]  uint16,
+	 * -     in2           [n]  uint16,
 	 *
 	 */
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_a_info;
-	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
-	mp_buffer_info_t src_b_info;
-	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(out, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
-	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+	uint16_t *src_a;
+	size_t src_a_len = cball_get_uint16_array(a_in, &src_a, MP_BUFFER_WRITE,
+	                                          "src a needs to be a uarray.array('H',...)");
+
+	uint16_t *src_b;
+	size_t src_b_len = cball_get_uint16_array(b_in, &src_b, MP_BUFFER_WRITE,
+	                                          "src b needs to be a uarray.array('H',...)");
+
+	if ( (dest_len != src_a_len) || (src_a_len != src_b_len) )
 		mp_raise_ValueError("array sizes dont match");
 
-	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
-
 	size_t i;
-	for (i=0; i<dest_info.len; i++)
-		d[i] = ( a[i]*b[i]*65794 ) >> 24;
-
-	return mp_const_none;
-}
-
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_interval_multiply_obj, cball_bytearray_interval_multiply);
-
-STATIC mp_obj_t cball_bytearray_add_clamp(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
-{
-	/* args:
-	 * -     out           [n]  uint8,
-	 * -     in1           [n]  uint8,
-	 * -     in2           [n]  uint8,
-	 *
-	 */
-
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_a_info;
-	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
-	mp_buffer_info_t src_b_info;
-	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
-
-	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
-		mp_raise_ValueError("array sizes dont match");
-
-	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
-
-	size_t i;
-	for (i=0; i<dest_info.len; i++)
+	uint32_t mul;
+	for (i=0; i<dest_len; i++)
 	{
-		int v = a[i]+b[i];
-		if ( v > 255 ) v = 255;
-		d[i] = v;
+		mul = src_a[i]*src_b[i];
+		dest[i] = ( mul + (mul>>16) + 1 ) >> 16;
 	}
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_add_clamp_obj, cball_bytearray_add_clamp);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_array_interval_multiply_obj, cball_array_interval_multiply);
 
-STATIC mp_obj_t cball_bytearray_sub_clamp(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+STATIC mp_obj_t cball_array_add_clamp(mp_obj_t out, mp_obj_t a_in, mp_obj_t b_in)
 {
 	/* args:
-	 * -     out           [n]  uint8,
-	 * -     in1           [n]  uint8,
-	 * -     in2           [n]  uint8,
+	 * -     out           [n]  uint16,
+	 * -     in1           [n]  uint16,
+	 * -     in2           [n]  uint16,
 	 *
 	 */
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_a_info;
-	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
-	mp_buffer_info_t src_b_info;
-	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(out, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
-	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+	uint16_t *src_a;
+	size_t src_a_len = cball_get_uint16_array(a_in, &src_a, MP_BUFFER_WRITE,
+	                                          "src a needs to be a uarray.array('H',...)");
+
+	uint16_t *src_b;
+	size_t src_b_len = cball_get_uint16_array(b_in, &src_b, MP_BUFFER_WRITE,
+	                                          "src b needs to be a uarray.array('H',...)");
+
+	if ( (dest_len != src_a_len) || (src_a_len != src_b_len) )
 		mp_raise_ValueError("array sizes dont match");
 
-	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
+	size_t i;
+	for (i=0; i<dest_len; i++)
+	{
+		int v = src_a[i]+src_b[i];
+		if ( v > 65535 ) v = 65535;
+		dest[i] = v;
+	}
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_array_add_clamp_obj, cball_array_add_clamp);
+
+STATIC mp_obj_t cball_array_sub_clamp(mp_obj_t out, mp_obj_t a_in, mp_obj_t b_in)
+{
+	/* args:
+	 * -     out           [n]  uint16,
+	 * -     in1           [n]  uint16,
+	 * -     in2           [n]  uint16,
+	 *
+	 */
+
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(out, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
+
+	uint16_t *src_a;
+	size_t src_a_len = cball_get_uint16_array(a_in, &src_a, MP_BUFFER_WRITE,
+	                                          "src a needs to be a uarray.array('H',...)");
+
+	uint16_t *src_b;
+	size_t src_b_len = cball_get_uint16_array(b_in, &src_b, MP_BUFFER_WRITE,
+	                                          "src b needs to be a uarray.array('H',...)");
+
+	if ( (dest_len != src_a_len) || (src_a_len != src_b_len) )
+		mp_raise_ValueError("array sizes dont match");
 
 	size_t i;
-	for (i=0; i<dest_info.len; i++)
+	for (i=0; i<dest_len; i++)
 	{
-		int v = a[i]-b[i];
+		int v = src_a[i]+src_b[i];
 		if ( v < 0 ) v = 0;
-		d[i] = v;
+		dest[i] = v;
 	}
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_sub_clamp_obj, cball_bytearray_sub_clamp);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_array_sub_clamp_obj, cball_array_sub_clamp);
 
-STATIC mp_obj_t cball_bytearray_max(mp_obj_t dest, mp_obj_t a_in, mp_obj_t b_in)
+STATIC mp_obj_t cball_array_max(mp_obj_t out, mp_obj_t a_in, mp_obj_t b_in)
 {
 	/* args:
-	 * -     out           [n]  uint8,
-	 * -     in1           [n]  uint8,
-	 * -     in2           [n]  uint8,
+	 * -     out           [n]  uint16,
+	 * -     in1           [n]  uint16,
+	 * -     in2           [n]  uint16,
 	 *
 	 */
 
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(dest, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_a_info;
-	mp_get_buffer_raise(a_in, &src_a_info, MP_BUFFER_READ);
-	mp_buffer_info_t src_b_info;
-	mp_get_buffer_raise(b_in, &src_b_info, MP_BUFFER_READ);
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(out, &dest, MP_BUFFER_WRITE,
+	                                         "dest needs to be a uarray.array('H',...)");
 
-	if ( (dest_info.len != src_a_info.len) || (src_a_info.len != src_b_info.len) )
+	uint16_t *src_a;
+	size_t src_a_len = cball_get_uint16_array(a_in, &src_a, MP_BUFFER_WRITE,
+	                                          "src a needs to be a uarray.array('H',...)");
+
+	uint16_t *src_b;
+	size_t src_b_len = cball_get_uint16_array(b_in, &src_b, MP_BUFFER_WRITE,
+	                                          "src b needs to be a uarray.array('H',...)");
+
+	if ( (dest_len != src_a_len) || (src_a_len != src_b_len) )
 		mp_raise_ValueError("array sizes dont match");
 
-	uint8_t *d = dest_info.buf, *a = src_a_info.buf, *b = src_b_info.buf;
-
 	size_t i;
-	for (i=0; i<dest_info.len; i++)
+	for (i=0; i<dest_len; i++)
 	{
-		if (a[i] > b[i])
-			d[i] = a[i];
+		if (src_a[i] > src_b[i])
+			dest[i] = src_a[i];
 		else
-			d[i] = b[i];
+			dest[i] = src_b[i];
 	}
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_bytearray_max_obj, cball_bytearray_max);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_array_max_obj, cball_array_max);
 
 STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 {
@@ -985,14 +1012,14 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_lorenz_update_obj, cball_lorenz_update);
 STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lights_flat)
 {
 	/* args:
-	 * -     framebuffer  [n_leds*3]    uint8,
+	 * -     framebuffer  [n_leds*3]    float,
 	 * -     led_data     [n_leds*6]    float
 	 * -     lights_flat  [n_lights*6]  float
 	 */
 
-	uint8_t *fb;
-	size_t fb_len = cball_get_bytearray(framebuf, &fb, MP_BUFFER_WRITE,
-	                "framebuffer needs to be a bytearray");
+	float *fb;
+	size_t fb_len  = cball_get_float_array(framebuf, &fb, MP_BUFFER_WRITE,
+	                 "framebuf needs to be a uarray.array('f',...)");
 
 	float *led_data;
 	size_t led_data_len = cball_get_float_array(leds_flat, &led_data, MP_BUFFER_READ,
@@ -1011,9 +1038,9 @@ STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lig
 	size_t i,j;
 	for (i=0; i<fb_len; i+=3)
 	{
-		mp_float_t r=(float)fb[i],
-		           g=(float)fb[i+1],
-		           b=(float)fb[i+2];
+		mp_float_t r=0.,
+		           g=0.,
+		           b=0.;
 
 		mp_float_t ledx = led_data[i*2],
 		           ledy = led_data[i*2+1],
@@ -1041,12 +1068,9 @@ STATIC mp_obj_t cball_shader(mp_obj_t framebuf, mp_obj_t leds_flat, mp_obj_t lig
 			g += factor * lights_data[j+4];
 			b += factor * lights_data[j+5];
 		}
-		if (r>255.f) r = 255.f;
-		if (g>255.f) g = 255.f;
-		if (b>255.f) b = 255.f;
-		fb[i] = (uint8_t)r;
-		fb[i+1] = (uint8_t)g;
-		fb[i+2] = (uint8_t)b;
+		fb[i] = r;
+		fb[i+1] = g;
+		fb[i+2] = b;
 	}
 
 	return mp_const_none;
@@ -1057,7 +1081,7 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_shader_obj, cball_shader);
 STATIC mp_obj_t cball_gradient(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
-	 * -     framebuffer  [pixels*3]  uint8,
+	 * -     framebuffer  [pixels*3]  uint16,
 	 * -     rotations    [pixels*3]  uint16,
 	 * -     rwave        [...]       uint16,
 	 * -     gwave        [...]       uint16,
@@ -1067,9 +1091,9 @@ STATIC mp_obj_t cball_gradient(size_t n_args, const mp_obj_t *args)
 	 * -     bphi                     int,
 	 */
 
-	uint8_t *fb;
-	size_t fb_len = cball_get_bytearray(args[0], &fb, MP_BUFFER_WRITE,
-	                "framebuffer needs to be a bytearray");
+	uint16_t *fb;
+	size_t fb_len = cball_get_uint16_array(args[0], &fb, MP_BUFFER_WRITE,
+	                "framebuffer needs to be a uarray.array('H',...)");
 
 	uint16_t *rot;
 	size_t rot_len = cball_get_uint16_array(args[1], &rot, MP_BUFFER_READ,
@@ -1078,17 +1102,17 @@ STATIC mp_obj_t cball_gradient(size_t n_args, const mp_obj_t *args)
 	if (fb_len != rot_len)
 		mp_raise_ValueError("Array sizes don't match");
 
-	uint8_t *rwave;
-	size_t rwave_len = cball_get_bytearray(args[2], &rwave, MP_BUFFER_READ,
-	                   "rwave needs to be a bytearray");
+	uint16_t *rwave;
+	size_t rwave_len = cball_get_uint16_array(args[2], &rwave, MP_BUFFER_READ,
+	                   "rwave needs to be a uarray.array('H',...)");
 
-	uint8_t *gwave;
-	size_t gwave_len = cball_get_bytearray(args[3], &gwave, MP_BUFFER_READ,
-	                   "gwave needs to be a bytearray");
+	uint16_t *gwave;
+	size_t gwave_len = cball_get_uint16_array(args[3], &gwave, MP_BUFFER_READ,
+	                   "gwave needs to be a uarray.array('H',...)");
 
-	uint8_t *bwave;
-	size_t bwave_len = cball_get_bytearray(args[4], &bwave, MP_BUFFER_READ,
-	                   "bwave needs to be a bytearray");
+	uint16_t *bwave;
+	size_t bwave_len = cball_get_uint16_array(args[4], &bwave, MP_BUFFER_READ,
+	                   "bwave needs to be a uarray.array('H',...)");
 
 	int phi_r = (rwave_len+(mp_obj_get_int(args[5])%rwave_len))%rwave_len,
 	    phi_g = (gwave_len+(mp_obj_get_int(args[6])%gwave_len))%gwave_len,
@@ -1111,15 +1135,15 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_gradient_obj, 8, 8, cball_gradi
 STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
-	 * -     framebuffer  [pixels*3]  uint8,
+	 * -     framebuffer  [pixels*3]  uint16,
 	 * -     rotations    [pixels*3]  uint16,
 	 * -     n_components             int,
 	 * -     phase                    float,
 	 */
 
-	uint8_t *fb;
-	size_t fb_len  = cball_get_bytearray(args[0], &fb, MP_BUFFER_WRITE,
-	                 "framebuffer needs to be a bytearray");
+	uint16_t *fb;
+	size_t fb_len  = cball_get_uint16_array(args[0], &fb, MP_BUFFER_WRITE,
+	                 "framebuffer needs to be a uarray.array('H',...)");
 
 	uint16_t *rot;
 	size_t rot_len = cball_get_uint16_array(args[1], &rot, MP_BUFFER_READ,
@@ -1140,9 +1164,9 @@ STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 	for (i=component; i<fb_len; i+=3)
 	{
 		float w = 1.f+cosf( phi+(float)rot[i]*((float)M_PI*2.f/1024.f) )*tide;
-		int b = (int)(w*w*64.);
+		int b = (int)(w*w*16384.);
 		if (b<0) b=0;
-		else if (b>255) b=255;
+		else if (b>16384) b=16384;
 		fb[i] = b;
 	}
 
@@ -1196,7 +1220,7 @@ for i in range(0,256,8):
 
 };
 
-static void HSItoRGB(float h, float s, float i, uint8_t *rgb)
+static void HSItoRGB(float h, float s, float i, uint16_t *rgb)
 {
 	int h_int = (int)( h * 768.f ) % 768;
 	if (h_int < 0) h_int += 768;
@@ -1204,17 +1228,17 @@ static void HSItoRGB(float h, float s, float i, uint8_t *rgb)
 	if      (s < 0.f) s = 0.f;
 	else if (s > 1.f) s = 1.f;
 
-	i *= 85.f;
+	i *= 21845.f;
 	if      (i <  0.f) i =  0.f;
-	else if (i > 85.f) i = 85.f;
+	else if (i > 21845.f) i = 21845.f;
 
 	int hsi_wave = hsi_table[h_int & 0xff];
 
-	uint8_t color[5];
+	uint16_t color[5];
 
-	color[0] = (uint8_t)(i * (1.f + s *     hsi_wave ) );
-	color[1] = (uint8_t)(i * (1.f + s *(1.f-hsi_wave)) );
-	color[2] = (uint8_t)(i * (1.f - s                ) );
+	color[0] = (uint16_t)(i * (1.f + s *     hsi_wave ) );
+	color[1] = (uint16_t)(i * (1.f + s *(1.f-hsi_wave)) );
+	color[2] = (uint16_t)(i * (1.f - s                ) );
 	color[3] = color[0];
 	color[4] = color[1];
 
@@ -1224,14 +1248,18 @@ static void HSItoRGB(float h, float s, float i, uint8_t *rgb)
 	else if (h_int >= 256)
 		ix=1;
 
-	memcpy(rgb, &color[ix], 3);
+	memcpy(rgb, &color[ix], 3*sizeof(uint16_t));
 }
 
 static mp_obj_t cball_HSItoRGB(mp_obj_t h, mp_obj_t s, mp_obj_t i)
 {
-	uint8_t rgb[3];
+	uint16_t rgb[3];
 	HSItoRGB( (float)mp_obj_get_float(h), (float)mp_obj_get_float(s), (float)mp_obj_get_float(i), rgb );
-	return mp_obj_new_bytes(rgb, 3);
+	mp_obj_tuple_t *rgb_tuple = mp_obj_new_tuple(3, NULL);
+	rgb_tuple->items[0] = mp_obj_new_int(rgb[0]);
+	rgb_tuple->items[1] = mp_obj_new_int(rgb[1]);
+	rgb_tuple->items[2] = mp_obj_new_int(rgb[2]);
+	return rgb_tuple;
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_HSItoRGB_obj, cball_HSItoRGB);
@@ -1242,9 +1270,9 @@ static mp_obj_t cball_wave_lut(mp_obj_t buf)
 	 * -     dest        [n*4]  uint8,
 	 */
 
-	uint8_t *dest;
-	size_t dest_len = cball_get_bytearray(buf, &dest, MP_BUFFER_WRITE,
-	                  "dest needs to be a bytearray");
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(buf, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
 
 	if (dest_len & 0x3)
 		mp_raise_ValueError("dest array size must be a multiple of 4");
@@ -1253,16 +1281,16 @@ static mp_obj_t cball_wave_lut(mp_obj_t buf)
 	int h = dest_len/2;
 
 	dest[0] = 0;
-	dest[n] = 127;
-	dest[h] = 255;
-	dest[h+n] = 127;
+	dest[n] = 32767;
+	dest[h] = 65535;
+	dest[h+n] = 32767;
 
 	float fac = 2.f*(float)M_PI/(float)dest_len;
 	int i;
 	for (i=1; i<n; i++)
 	{
-		int cosine = (int)floorf( (1+cosf( (float)i * fac )) *127.5 );
-		dest[dest_len-i] = dest[i] = 255-cosine;
+		int cosine = (int)floorf( (1+cosf( (float)i * fac )) *32767.5 );
+		dest[dest_len-i] = dest[i] = 65535-cosine;
 		dest[h-i] = dest[h+i] = cosine;
 	}
 
@@ -1273,12 +1301,12 @@ STATIC MP_DEFINE_CONST_FUN_OBJ_1(cball_wave_lut_obj, cball_wave_lut);
 static mp_obj_t cball_wave_for_gradient_lut(mp_obj_t buf)
 {
 	/* args:
-	 * -     dest        [n*4]  uint8,
+	 * -     dest        [n*4]  uint16,
 	 */
 
-	uint8_t *dest;
-	size_t dest_len = cball_get_bytearray(buf, &dest, MP_BUFFER_WRITE,
-	                  "dest needs to be a bytearray");
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(buf, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
 
 	if (dest_len & 0x3)
 		mp_raise_ValueError("dest array size must be a multiple of 4");
@@ -1287,9 +1315,9 @@ static mp_obj_t cball_wave_for_gradient_lut(mp_obj_t buf)
 	int h = dest_len/2;
 
 	dest[0] = 0;
-	dest[n] = 64;
-	dest[h] = 255;
-	dest[h+n] = 64;
+	dest[n] = 16384;
+	dest[h] = 65535;
+	dest[h+n] = 16384;
 
 	float fac = 2.f*(float)M_PI/(float)dest_len;
 	int i;
@@ -1297,93 +1325,99 @@ static mp_obj_t cball_wave_for_gradient_lut(mp_obj_t buf)
 	{
 		float cosine = cosf( (float)i * fac );
 		uint32_t tmp = (uint32_t)( (1.f-cosine)*32703.94f );
-		dest[dest_len-i] = dest[i] = (tmp*tmp)>>24;
+		dest[dest_len-i] = dest[i] = (tmp*tmp)>>16;
 		tmp = (uint32_t)((1.f+cosine)*32703.94f);
-		dest[h-i] = dest[h+i] = (tmp*tmp)>>24;
+		dest[h-i] = dest[h+i] = (tmp*tmp)>>16;
 	}
 
 	return mp_const_none;
 }
 STATIC MP_DEFINE_CONST_FUN_OBJ_1(cball_wave_for_gradient_lut_obj, cball_wave_for_gradient_lut);
 
-static const uint8_t colordrift_lut[1025] =
+static const uint16_t colordrift_lut[1025] =
 {
-	0x00, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01,
-	0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02,
-	0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x02, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03,
-	0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x03, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04, 0x04,
-	0x04, 0x04, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x05, 0x06, 0x06, 0x06, 0x06,
-	0x06, 0x06, 0x06, 0x06, 0x06, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x07, 0x08, 0x08, 0x08,
-	0x08, 0x08, 0x08, 0x08, 0x08, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x09, 0x0a, 0x0a, 0x0a, 0x0a,
-	0x0a, 0x0a, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0b, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0c, 0x0d,
-	0x0d, 0x0d, 0x0d, 0x0d, 0x0d, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0e, 0x0f, 0x0f, 0x0f, 0x0f, 0x0f,
-	0x10, 0x10, 0x10, 0x10, 0x10, 0x10, 0x11, 0x11, 0x11, 0x11, 0x11, 0x12, 0x12, 0x12, 0x12, 0x12,
-	0x13, 0x13, 0x13, 0x13, 0x13, 0x14, 0x14, 0x14, 0x14, 0x14, 0x15, 0x15, 0x15, 0x15, 0x16, 0x16,
-	0x16, 0x16, 0x16, 0x17, 0x17, 0x17, 0x17, 0x18, 0x18, 0x18, 0x18, 0x18, 0x19, 0x19, 0x19, 0x19,
-	0x1a, 0x1a, 0x1a, 0x1a, 0x1b, 0x1b, 0x1b, 0x1b, 0x1b, 0x1c, 0x1c, 0x1c, 0x1c, 0x1d, 0x1d, 0x1d,
-	0x1d, 0x1e, 0x1e, 0x1e, 0x1e, 0x1f, 0x1f, 0x1f, 0x1f, 0x20, 0x20, 0x20, 0x20, 0x21, 0x21, 0x21,
-	0x22, 0x22, 0x22, 0x22, 0x23, 0x23, 0x23, 0x23, 0x24, 0x24, 0x24, 0x24, 0x25, 0x25, 0x25, 0x26,
-	0x26, 0x26, 0x26, 0x27, 0x27, 0x27, 0x28, 0x28, 0x28, 0x28, 0x29, 0x29, 0x29, 0x2a, 0x2a, 0x2a,
-	0x2a, 0x2b, 0x2b, 0x2b, 0x2c, 0x2c, 0x2c, 0x2c, 0x2d, 0x2d, 0x2d, 0x2e, 0x2e, 0x2e, 0x2f, 0x2f,
-	0x2f, 0x2f, 0x30, 0x30, 0x30, 0x31, 0x31, 0x31, 0x32, 0x32, 0x32, 0x32, 0x33, 0x33, 0x33, 0x34,
-	0x34, 0x34, 0x35, 0x35, 0x35, 0x36, 0x36, 0x36, 0x37, 0x37, 0x37, 0x38, 0x38, 0x38, 0x39, 0x39,
-	0x39, 0x39, 0x3a, 0x3a, 0x3a, 0x3b, 0x3b, 0x3b, 0x3c, 0x3c, 0x3c, 0x3d, 0x3d, 0x3d, 0x3e, 0x3e,
-	0x3e, 0x3f, 0x3f, 0x3f, 0x40, 0x40, 0x40, 0x41, 0x41, 0x41, 0x42, 0x42, 0x43, 0x43, 0x43, 0x44,
-	0x44, 0x44, 0x45, 0x45, 0x45, 0x46, 0x46, 0x46, 0x47, 0x47, 0x47, 0x48, 0x48, 0x48, 0x49, 0x49,
-	0x49, 0x4a, 0x4a, 0x4b, 0x4b, 0x4b, 0x4c, 0x4c, 0x4c, 0x4d, 0x4d, 0x4d, 0x4e, 0x4e, 0x4e, 0x4f,
-	0x4f, 0x50, 0x50, 0x50, 0x51, 0x51, 0x51, 0x52, 0x52, 0x52, 0x53, 0x53, 0x54, 0x54, 0x54, 0x55,
-	0x55, 0x55, 0x56, 0x56, 0x57, 0x57, 0x57, 0x58, 0x58, 0x58, 0x59, 0x59, 0x59, 0x5a, 0x5a, 0x5b,
-	0x5b, 0x5b, 0x5c, 0x5c, 0x5c, 0x5d, 0x5d, 0x5e, 0x5e, 0x5e, 0x5f, 0x5f, 0x60, 0x60, 0x60, 0x61,
-	0x61, 0x61, 0x62, 0x62, 0x63, 0x63, 0x63, 0x64, 0x64, 0x64, 0x65, 0x65, 0x66, 0x66, 0x66, 0x67,
-	0x67, 0x68, 0x68, 0x68, 0x69, 0x69, 0x69, 0x6a, 0x6a, 0x6b, 0x6b, 0x6b, 0x6c, 0x6c, 0x6d, 0x6d,
-	0x6d, 0x6e, 0x6e, 0x6e, 0x6f, 0x6f, 0x70, 0x70, 0x70, 0x71, 0x71, 0x72, 0x72, 0x72, 0x73, 0x73,
-	0x74, 0x74, 0x74, 0x75, 0x75, 0x75, 0x76, 0x76, 0x77, 0x77, 0x77, 0x78, 0x78, 0x79, 0x79, 0x79,
-	0x7a, 0x7a, 0x7b, 0x7b, 0x7b, 0x7c, 0x7c, 0x7c, 0x7d, 0x7d, 0x7e, 0x7e, 0x7e, 0x7f, 0x7f, 0x80,
-	0x80, 0x80, 0x81, 0x81, 0x82, 0x82, 0x82, 0x83, 0x83, 0x84, 0x84, 0x84, 0x85, 0x85, 0x85, 0x86,
-	0x86, 0x87, 0x87, 0x87, 0x88, 0x88, 0x89, 0x89, 0x89, 0x8a, 0x8a, 0x8b, 0x8b, 0x8b, 0x8c, 0x8c,
-	0x8c, 0x8d, 0x8d, 0x8e, 0x8e, 0x8e, 0x8f, 0x8f, 0x90, 0x90, 0x90, 0x91, 0x91, 0x92, 0x92, 0x92,
-	0x93, 0x93, 0x93, 0x94, 0x94, 0x95, 0x95, 0x95, 0x96, 0x96, 0x97, 0x97, 0x97, 0x98, 0x98, 0x98,
-	0x99, 0x99, 0x9a, 0x9a, 0x9a, 0x9b, 0x9b, 0x9c, 0x9c, 0x9c, 0x9d, 0x9d, 0x9d, 0x9e, 0x9e, 0x9f,
-	0x9f, 0x9f, 0xa0, 0xa0, 0xa0, 0xa1, 0xa1, 0xa2, 0xa2, 0xa2, 0xa3, 0xa3, 0xa4, 0xa4, 0xa4, 0xa5,
-	0xa5, 0xa5, 0xa6, 0xa6, 0xa7, 0xa7, 0xa7, 0xa8, 0xa8, 0xa8, 0xa9, 0xa9, 0xa9, 0xaa, 0xaa, 0xab,
-	0xab, 0xab, 0xac, 0xac, 0xac, 0xad, 0xad, 0xae, 0xae, 0xae, 0xaf, 0xaf, 0xaf, 0xb0, 0xb0, 0xb0,
-	0xb1, 0xb1, 0xb2, 0xb2, 0xb2, 0xb3, 0xb3, 0xb3, 0xb4, 0xb4, 0xb4, 0xb5, 0xb5, 0xb5, 0xb6, 0xb6,
-	0xb7, 0xb7, 0xb7, 0xb8, 0xb8, 0xb8, 0xb9, 0xb9, 0xb9, 0xba, 0xba, 0xba, 0xbb, 0xbb, 0xbb, 0xbc,
-	0xbc, 0xbc, 0xbd, 0xbd, 0xbd, 0xbe, 0xbe, 0xbf, 0xbf, 0xbf, 0xc0, 0xc0, 0xc0, 0xc1, 0xc1, 0xc1,
-	0xc2, 0xc2, 0xc2, 0xc3, 0xc3, 0xc3, 0xc4, 0xc4, 0xc4, 0xc5, 0xc5, 0xc5, 0xc6, 0xc6, 0xc6, 0xc7,
-	0xc7, 0xc7, 0xc7, 0xc8, 0xc8, 0xc8, 0xc9, 0xc9, 0xc9, 0xca, 0xca, 0xca, 0xcb, 0xcb, 0xcb, 0xcc,
-	0xcc, 0xcc, 0xcd, 0xcd, 0xcd, 0xce, 0xce, 0xce, 0xce, 0xcf, 0xcf, 0xcf, 0xd0, 0xd0, 0xd0, 0xd1,
-	0xd1, 0xd1, 0xd1, 0xd2, 0xd2, 0xd2, 0xd3, 0xd3, 0xd3, 0xd4, 0xd4, 0xd4, 0xd4, 0xd5, 0xd5, 0xd5,
-	0xd6, 0xd6, 0xd6, 0xd6, 0xd7, 0xd7, 0xd7, 0xd8, 0xd8, 0xd8, 0xd8, 0xd9, 0xd9, 0xd9, 0xda, 0xda,
-	0xda, 0xda, 0xdb, 0xdb, 0xdb, 0xdc, 0xdc, 0xdc, 0xdc, 0xdd, 0xdd, 0xdd, 0xdd, 0xde, 0xde, 0xde,
-	0xde, 0xdf, 0xdf, 0xdf, 0xe0, 0xe0, 0xe0, 0xe0, 0xe1, 0xe1, 0xe1, 0xe1, 0xe2, 0xe2, 0xe2, 0xe2,
-	0xe3, 0xe3, 0xe3, 0xe3, 0xe4, 0xe4, 0xe4, 0xe4, 0xe5, 0xe5, 0xe5, 0xe5, 0xe5, 0xe6, 0xe6, 0xe6,
-	0xe6, 0xe7, 0xe7, 0xe7, 0xe7, 0xe8, 0xe8, 0xe8, 0xe8, 0xe8, 0xe9, 0xe9, 0xe9, 0xe9, 0xea, 0xea,
-	0xea, 0xea, 0xea, 0xeb, 0xeb, 0xeb, 0xeb, 0xec, 0xec, 0xec, 0xec, 0xec, 0xed, 0xed, 0xed, 0xed,
-	0xed, 0xee, 0xee, 0xee, 0xee, 0xee, 0xef, 0xef, 0xef, 0xef, 0xef, 0xf0, 0xf0, 0xf0, 0xf0, 0xf0,
-	0xf0, 0xf1, 0xf1, 0xf1, 0xf1, 0xf1, 0xf2, 0xf2, 0xf2, 0xf2, 0xf2, 0xf2, 0xf3, 0xf3, 0xf3, 0xf3,
-	0xf3, 0xf3, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf4, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf5, 0xf6,
-	0xf6, 0xf6, 0xf6, 0xf6, 0xf6, 0xf7, 0xf7, 0xf7, 0xf7, 0xf7, 0xf7, 0xf7, 0xf8, 0xf8, 0xf8, 0xf8,
-	0xf8, 0xf8, 0xf8, 0xf8, 0xf9, 0xf9, 0xf9, 0xf9, 0xf9, 0xf9, 0xf9, 0xf9, 0xfa, 0xfa, 0xfa, 0xfa,
-	0xfa, 0xfa, 0xfa, 0xfa, 0xfa, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfb, 0xfc,
-	0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfc, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd,
-	0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfd, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe,
-	0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xfe, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,
-	0xff,
+/*
+ * table = [ '0x{:04x},'.format(round((2**12-.5)*(1-math.cos(math.pi*i/1024)))) for i in range(1025) ]
+ * for i in range(0,1025,16):
+ *     print ( '\t' + ''.join( table[i:i+16] ) )
+ *
+ */
+	0x0000,0x0000,0x0000,0x0000,0x0000,0x0000,0x0001,0x0001,0x0001,0x0002,0x0002,0x0002,0x0003,0x0003,0x0004,0x0004,
+	0x0005,0x0006,0x0006,0x0007,0x0008,0x0008,0x0009,0x000a,0x000b,0x000c,0x000d,0x000e,0x000f,0x0010,0x0011,0x0013,
+	0x0014,0x0015,0x0016,0x0018,0x0019,0x001a,0x001c,0x001d,0x001f,0x0020,0x0022,0x0024,0x0025,0x0027,0x0029,0x002b,
+	0x002c,0x002e,0x0030,0x0032,0x0034,0x0036,0x0038,0x003a,0x003c,0x003e,0x0041,0x0043,0x0045,0x0048,0x004a,0x004c,
+	0x004f,0x0051,0x0054,0x0056,0x0059,0x005b,0x005e,0x0061,0x0064,0x0066,0x0069,0x006c,0x006f,0x0072,0x0075,0x0078,
+	0x007b,0x007e,0x0081,0x0084,0x0087,0x008a,0x008e,0x0091,0x0094,0x0098,0x009b,0x009f,0x00a2,0x00a6,0x00a9,0x00ad,
+	0x00b0,0x00b4,0x00b8,0x00bb,0x00bf,0x00c3,0x00c7,0x00cb,0x00cf,0x00d3,0x00d7,0x00db,0x00df,0x00e3,0x00e7,0x00eb,
+	0x00ef,0x00f4,0x00f8,0x00fc,0x0101,0x0105,0x0109,0x010e,0x0112,0x0117,0x011c,0x0120,0x0125,0x0129,0x012e,0x0133,
+	0x0138,0x013d,0x0141,0x0146,0x014b,0x0150,0x0155,0x015a,0x015f,0x0164,0x016a,0x016f,0x0174,0x0179,0x017f,0x0184,
+	0x0189,0x018f,0x0194,0x0199,0x019f,0x01a5,0x01aa,0x01b0,0x01b5,0x01bb,0x01c1,0x01c6,0x01cc,0x01d2,0x01d8,0x01de,
+	0x01e4,0x01ea,0x01f0,0x01f6,0x01fc,0x0202,0x0208,0x020e,0x0214,0x021a,0x0221,0x0227,0x022d,0x0233,0x023a,0x0240,
+	0x0247,0x024d,0x0254,0x025a,0x0261,0x0267,0x026e,0x0275,0x027b,0x0282,0x0289,0x0290,0x0297,0x029d,0x02a4,0x02ab,
+	0x02b2,0x02b9,0x02c0,0x02c7,0x02ce,0x02d6,0x02dd,0x02e4,0x02eb,0x02f2,0x02fa,0x0301,0x0308,0x0310,0x0317,0x031e,
+	0x0326,0x032d,0x0335,0x033d,0x0344,0x034c,0x0353,0x035b,0x0363,0x036b,0x0372,0x037a,0x0382,0x038a,0x0392,0x039a,
+	0x03a2,0x03aa,0x03b2,0x03ba,0x03c2,0x03ca,0x03d2,0x03da,0x03e2,0x03eb,0x03f3,0x03fb,0x0403,0x040c,0x0414,0x041d,
+	0x0425,0x042d,0x0436,0x043e,0x0447,0x044f,0x0458,0x0461,0x0469,0x0472,0x047b,0x0483,0x048c,0x0495,0x049e,0x04a7,
+	0x04b0,0x04b8,0x04c1,0x04ca,0x04d3,0x04dc,0x04e5,0x04ee,0x04f7,0x0501,0x050a,0x0513,0x051c,0x0525,0x052f,0x0538,
+	0x0541,0x054a,0x0554,0x055d,0x0567,0x0570,0x0579,0x0583,0x058c,0x0596,0x05a0,0x05a9,0x05b3,0x05bc,0x05c6,0x05d0,
+	0x05d9,0x05e3,0x05ed,0x05f7,0x0600,0x060a,0x0614,0x061e,0x0628,0x0632,0x063c,0x0646,0x0650,0x065a,0x0664,0x066e,
+	0x0678,0x0682,0x068c,0x0696,0x06a0,0x06ab,0x06b5,0x06bf,0x06c9,0x06d4,0x06de,0x06e8,0x06f3,0x06fd,0x0707,0x0712,
+	0x071c,0x0727,0x0731,0x073c,0x0746,0x0751,0x075b,0x0766,0x0770,0x077b,0x0786,0x0790,0x079b,0x07a6,0x07b0,0x07bb,
+	0x07c6,0x07d1,0x07dc,0x07e6,0x07f1,0x07fc,0x0807,0x0812,0x081d,0x0828,0x0833,0x083e,0x0849,0x0854,0x085f,0x086a,
+	0x0875,0x0880,0x088b,0x0896,0x08a1,0x08ad,0x08b8,0x08c3,0x08ce,0x08d9,0x08e5,0x08f0,0x08fb,0x0906,0x0912,0x091d,
+	0x0928,0x0934,0x093f,0x094b,0x0956,0x0961,0x096d,0x0978,0x0984,0x098f,0x099b,0x09a6,0x09b2,0x09bd,0x09c9,0x09d5,
+	0x09e0,0x09ec,0x09f7,0x0a03,0x0a0f,0x0a1a,0x0a26,0x0a32,0x0a3e,0x0a49,0x0a55,0x0a61,0x0a6d,0x0a78,0x0a84,0x0a90,
+	0x0a9c,0x0aa8,0x0ab3,0x0abf,0x0acb,0x0ad7,0x0ae3,0x0aef,0x0afb,0x0b07,0x0b13,0x0b1f,0x0b2b,0x0b37,0x0b43,0x0b4f,
+	0x0b5b,0x0b67,0x0b73,0x0b7f,0x0b8b,0x0b97,0x0ba3,0x0baf,0x0bbb,0x0bc7,0x0bd3,0x0be0,0x0bec,0x0bf8,0x0c04,0x0c10,
+	0x0c1c,0x0c29,0x0c35,0x0c41,0x0c4d,0x0c59,0x0c66,0x0c72,0x0c7e,0x0c8a,0x0c97,0x0ca3,0x0caf,0x0cbc,0x0cc8,0x0cd4,
+	0x0ce1,0x0ced,0x0cf9,0x0d06,0x0d12,0x0d1e,0x0d2b,0x0d37,0x0d43,0x0d50,0x0d5c,0x0d68,0x0d75,0x0d81,0x0d8e,0x0d9a,
+	0x0da7,0x0db3,0x0dbf,0x0dcc,0x0dd8,0x0de5,0x0df1,0x0dfe,0x0e0a,0x0e17,0x0e23,0x0e30,0x0e3c,0x0e49,0x0e55,0x0e62,
+	0x0e6e,0x0e7b,0x0e87,0x0e94,0x0ea0,0x0ead,0x0eb9,0x0ec6,0x0ed2,0x0edf,0x0eeb,0x0ef8,0x0f04,0x0f11,0x0f1d,0x0f2a,
+	0x0f37,0x0f43,0x0f50,0x0f5c,0x0f69,0x0f75,0x0f82,0x0f8e,0x0f9b,0x0fa8,0x0fb4,0x0fc1,0x0fcd,0x0fda,0x0fe6,0x0ff3,
+	0x0fff,0x100c,0x1019,0x1025,0x1032,0x103e,0x104b,0x1057,0x1064,0x1071,0x107d,0x108a,0x1096,0x10a3,0x10af,0x10bc,
+	0x10c8,0x10d5,0x10e2,0x10ee,0x10fb,0x1107,0x1114,0x1120,0x112d,0x1139,0x1146,0x1152,0x115f,0x116b,0x1178,0x1184,
+	0x1191,0x119d,0x11aa,0x11b6,0x11c3,0x11cf,0x11dc,0x11e8,0x11f5,0x1201,0x120e,0x121a,0x1227,0x1233,0x1240,0x124c,
+	0x1258,0x1265,0x1271,0x127e,0x128a,0x1297,0x12a3,0x12af,0x12bc,0x12c8,0x12d4,0x12e1,0x12ed,0x12f9,0x1306,0x1312,
+	0x131e,0x132b,0x1337,0x1343,0x1350,0x135c,0x1368,0x1375,0x1381,0x138d,0x1399,0x13a6,0x13b2,0x13be,0x13ca,0x13d6,
+	0x13e3,0x13ef,0x13fb,0x1407,0x1413,0x141f,0x142c,0x1438,0x1444,0x1450,0x145c,0x1468,0x1474,0x1480,0x148c,0x1498,
+	0x14a4,0x14b0,0x14bc,0x14c8,0x14d4,0x14e0,0x14ec,0x14f8,0x1504,0x1510,0x151c,0x1528,0x1534,0x1540,0x154c,0x1557,
+	0x1563,0x156f,0x157b,0x1587,0x1592,0x159e,0x15aa,0x15b6,0x15c1,0x15cd,0x15d9,0x15e5,0x15f0,0x15fc,0x1608,0x1613,
+	0x161f,0x162a,0x1636,0x1642,0x164d,0x1659,0x1664,0x1670,0x167b,0x1687,0x1692,0x169e,0x16a9,0x16b4,0x16c0,0x16cb,
+	0x16d7,0x16e2,0x16ed,0x16f9,0x1704,0x170f,0x171a,0x1726,0x1731,0x173c,0x1747,0x1752,0x175e,0x1769,0x1774,0x177f,
+	0x178a,0x1795,0x17a0,0x17ab,0x17b6,0x17c1,0x17cc,0x17d7,0x17e2,0x17ed,0x17f8,0x1803,0x180e,0x1819,0x1823,0x182e,
+	0x1839,0x1844,0x184f,0x1859,0x1864,0x186f,0x1879,0x1884,0x188f,0x1899,0x18a4,0x18ae,0x18b9,0x18c3,0x18ce,0x18d8,
+	0x18e3,0x18ed,0x18f8,0x1902,0x190c,0x1917,0x1921,0x192b,0x1936,0x1940,0x194a,0x1954,0x195f,0x1969,0x1973,0x197d,
+	0x1987,0x1991,0x199b,0x19a5,0x19af,0x19b9,0x19c3,0x19cd,0x19d7,0x19e1,0x19eb,0x19f5,0x19ff,0x1a08,0x1a12,0x1a1c,
+	0x1a26,0x1a2f,0x1a39,0x1a43,0x1a4c,0x1a56,0x1a5f,0x1a69,0x1a73,0x1a7c,0x1a86,0x1a8f,0x1a98,0x1aa2,0x1aab,0x1ab5,
+	0x1abe,0x1ac7,0x1ad0,0x1ada,0x1ae3,0x1aec,0x1af5,0x1afe,0x1b08,0x1b11,0x1b1a,0x1b23,0x1b2c,0x1b35,0x1b3e,0x1b47,
+	0x1b4f,0x1b58,0x1b61,0x1b6a,0x1b73,0x1b7c,0x1b84,0x1b8d,0x1b96,0x1b9e,0x1ba7,0x1bb0,0x1bb8,0x1bc1,0x1bc9,0x1bd2,
+	0x1bda,0x1be2,0x1beb,0x1bf3,0x1bfc,0x1c04,0x1c0c,0x1c14,0x1c1d,0x1c25,0x1c2d,0x1c35,0x1c3d,0x1c45,0x1c4d,0x1c55,
+	0x1c5d,0x1c65,0x1c6d,0x1c75,0x1c7d,0x1c85,0x1c8d,0x1c94,0x1c9c,0x1ca4,0x1cac,0x1cb3,0x1cbb,0x1cc2,0x1cca,0x1cd2,
+	0x1cd9,0x1ce1,0x1ce8,0x1cef,0x1cf7,0x1cfe,0x1d05,0x1d0d,0x1d14,0x1d1b,0x1d22,0x1d29,0x1d31,0x1d38,0x1d3f,0x1d46,
+	0x1d4d,0x1d54,0x1d5b,0x1d62,0x1d68,0x1d6f,0x1d76,0x1d7d,0x1d84,0x1d8a,0x1d91,0x1d98,0x1d9e,0x1da5,0x1dab,0x1db2,
+	0x1db8,0x1dbf,0x1dc5,0x1dcc,0x1dd2,0x1dd8,0x1dde,0x1de5,0x1deb,0x1df1,0x1df7,0x1dfd,0x1e03,0x1e09,0x1e0f,0x1e15,
+	0x1e1b,0x1e21,0x1e27,0x1e2d,0x1e33,0x1e39,0x1e3e,0x1e44,0x1e4a,0x1e4f,0x1e55,0x1e5a,0x1e60,0x1e66,0x1e6b,0x1e70,
+	0x1e76,0x1e7b,0x1e80,0x1e86,0x1e8b,0x1e90,0x1e95,0x1e9b,0x1ea0,0x1ea5,0x1eaa,0x1eaf,0x1eb4,0x1eb9,0x1ebe,0x1ec2,
+	0x1ec7,0x1ecc,0x1ed1,0x1ed6,0x1eda,0x1edf,0x1ee3,0x1ee8,0x1eed,0x1ef1,0x1ef6,0x1efa,0x1efe,0x1f03,0x1f07,0x1f0b,
+	0x1f10,0x1f14,0x1f18,0x1f1c,0x1f20,0x1f24,0x1f28,0x1f2c,0x1f30,0x1f34,0x1f38,0x1f3c,0x1f40,0x1f44,0x1f47,0x1f4b,
+	0x1f4f,0x1f52,0x1f56,0x1f59,0x1f5d,0x1f60,0x1f64,0x1f67,0x1f6b,0x1f6e,0x1f71,0x1f75,0x1f78,0x1f7b,0x1f7e,0x1f81,
+	0x1f84,0x1f87,0x1f8a,0x1f8d,0x1f90,0x1f93,0x1f96,0x1f99,0x1f9b,0x1f9e,0x1fa1,0x1fa4,0x1fa6,0x1fa9,0x1fab,0x1fae,
+	0x1fb0,0x1fb3,0x1fb5,0x1fb7,0x1fba,0x1fbc,0x1fbe,0x1fc1,0x1fc3,0x1fc5,0x1fc7,0x1fc9,0x1fcb,0x1fcd,0x1fcf,0x1fd1,
+	0x1fd3,0x1fd4,0x1fd6,0x1fd8,0x1fda,0x1fdb,0x1fdd,0x1fdf,0x1fe0,0x1fe2,0x1fe3,0x1fe5,0x1fe6,0x1fe7,0x1fe9,0x1fea,
+	0x1feb,0x1fec,0x1fee,0x1fef,0x1ff0,0x1ff1,0x1ff2,0x1ff3,0x1ff4,0x1ff5,0x1ff6,0x1ff7,0x1ff7,0x1ff8,0x1ff9,0x1ff9,
+	0x1ffa,0x1ffb,0x1ffb,0x1ffc,0x1ffc,0x1ffd,0x1ffd,0x1ffd,0x1ffe,0x1ffe,0x1ffe,0x1fff,0x1fff,0x1fff,0x1fff,0x1fff,
+	0x1fff,
 };
 
 
 extern const mp_obj_type_t colordrift_type;
 typedef struct
 {
-    mp_obj_base_t base;
+	mp_obj_base_t base;
 
 	int n_colors;
 	uint32_t phase_dt, phase_shift, phase_div, phase, period;
-	uint8_t *colors;
+	uint16_t *colors;
 
 
 } colordrift_obj_t;
@@ -1392,7 +1426,7 @@ static mp_obj_t cball_colordrift_make_new(const mp_obj_type_t *type,
                                           size_t n_args,
                                           size_t n_kw, const mp_obj_t *all_args)
 {
-    enum { ARG_period, ARG_n_colors, ARG_initial_phase };
+	enum { ARG_period, ARG_n_colors, ARG_initial_phase };
 	static const mp_arg_t allowed_args[] =
 	{
 		{ MP_QSTR_period,         MP_ARG_INT , { .u_int = 128} },
@@ -1422,22 +1456,22 @@ static mp_obj_t cball_colordrift_make_new(const mp_obj_type_t *type,
 	self->period      = args[ARG_period].u_int * self->n_colors * 2048;
 	self->phase       = ( self->phase_dt * args[ARG_initial_phase].u_int ) % self->period;
 
-	self->colors = m_new(uint8_t, 3*self->n_colors);
-	memset(self->colors, 0, 3*self->n_colors);
+	self->colors = m_new(uint16_t, 3*self->n_colors);
+	memset(self->colors, 0, sizeof(uint16_t)*3*self->n_colors);
 
 	return MP_OBJ_FROM_PTR(self);
 }
 
-static void get_random_color(uint8_t *rgb)
+static void get_random_color(uint16_t *rgb)
 {
 	uint32_t random = esp_random();
 	float h = (float)(random&0xffff)/65535.f;
 	float s = 1.f;
-	float i = (float)((random&0xffff)+0x10000)/131071.f;
+	float i = (float)(((random>>16)&0xffff)+0x10000)/131071.f;
 	HSItoRGB(h, s, i, rgb);
 }
 
-static void colordrift_next_color(colordrift_obj_t *self, uint8_t *rgb)
+static void colordrift_next_color(colordrift_obj_t *self, uint16_t *rgb)
 {
 	int r=0,g=0,b=0;
 	int i;
@@ -1462,27 +1496,33 @@ static void colordrift_next_color(colordrift_obj_t *self, uint8_t *rgb)
 	if (self->phase >= self->period)
 		self->phase -= self->period;
 
-	rgb[0] = (r > 0xff00) ? 0xff : (r>>8);
-	rgb[1] = (g > 0xff00) ? 0xff : (g>>8);
-	rgb[2] = (b > 0xff00) ? 0xff : (b>>8);
+	rgb[0] = (r > 0x1fffe000) ? 0xffff : (r>>13);
+	rgb[1] = (g > 0x1fffe000) ? 0xffff : (g>>13);
+	rgb[2] = (b > 0x1fffe000) ? 0xffff : (b>>13);
 }
 
 static mp_obj_t cball_colordrift_next_color(mp_obj_t self_in)
 {
 	colordrift_obj_t *self = MP_OBJ_TO_PTR(self_in);
-	uint8_t color[3];
-	colordrift_next_color(self, color);
-	return mp_obj_new_bytes(color, 3);
+	uint16_t rgb[3];
+	colordrift_next_color(self, rgb);
+	mp_obj_tuple_t *rgb_tuple = mp_obj_new_tuple(3, NULL);
+	rgb_tuple->items[0] = mp_obj_new_int(rgb[0]);
+	rgb_tuple->items[1] = mp_obj_new_int(rgb[1]);
+	rgb_tuple->items[2] = mp_obj_new_int(rgb[2]);
+	return rgb_tuple;
 }
 
 static MP_DEFINE_CONST_FUN_OBJ_1(cball_colordrift_next_color_obj, cball_colordrift_next_color);
 
 static mp_obj_t cball_colordrift_next_color_into(mp_obj_t self_in, mp_obj_t buf_in, mp_obj_t offset_in)
 {
-	uint8_t *buf;
-    int buf_len = cball_get_bytearray(buf_in, &buf, MP_BUFFER_READ, "buf needs to be a bytearray");
+	uint16_t *buf;
+	size_t buf_len = cball_get_uint16_array(buf_in, &buf, MP_BUFFER_WRITE,
+	                 "buf needs to be a uarray.array('H',...)");
 
 	int offset = mp_obj_get_int(offset_in);
+
 	if ( (offset < 0) || (buf_len-3 < offset) )
 		mp_raise_ValueError(MP_ERROR_TEXT("wrong offset"));
 
@@ -1497,14 +1537,14 @@ static void cball_colordrift_print(const mp_print_t *print,
                                    mp_obj_t self_in,
                                    mp_print_kind_t kind)
 {
-    mp_printf(print, "<cball.ColorDrift XXX TODO Description XXX>");
+	mp_printf(print, "<cball.ColorDrift XXX TODO Description XXX>");
 }
 
 
 static const mp_rom_map_elem_t cball_colordrift_locals_dict_table[] =
 {
-    { MP_ROM_QSTR(MP_QSTR_next_color),      MP_ROM_PTR(&cball_colordrift_next_color_obj)        },
-    { MP_ROM_QSTR(MP_QSTR_next_color_into), MP_ROM_PTR(&cball_colordrift_next_color_into_obj)   },
+	{ MP_ROM_QSTR(MP_QSTR_next_color),      MP_ROM_PTR(&cball_colordrift_next_color_obj)        },
+	{ MP_ROM_QSTR(MP_QSTR_next_color_into), MP_ROM_PTR(&cball_colordrift_next_color_into_obj)   },
 };
 
 static MP_DEFINE_CONST_DICT(cball_colordrift_locals_dict, cball_colordrift_locals_dict_table);
@@ -1512,11 +1552,11 @@ static MP_DEFINE_CONST_DICT(cball_colordrift_locals_dict, cball_colordrift_local
 
 const mp_obj_type_t colordrift_type =
 {
-    { &mp_type_type },
-    .name = MP_QSTR_ColorDrift,
-    .print = cball_colordrift_print,
-    .make_new = cball_colordrift_make_new,
-    .locals_dict = (mp_obj_dict_t *)&cball_colordrift_locals_dict,
+	{ &mp_type_type },
+	.name = MP_QSTR_ColorDrift,
+	.print = cball_colordrift_print,
+	.make_new = cball_colordrift_make_new,
+	.locals_dict = (mp_obj_dict_t *)&cball_colordrift_locals_dict,
 };
 
 
@@ -1532,13 +1572,13 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_calc_gamma_map), MP_ROM_PTR(&cball_calc_gamma_map_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_apply_palette), MP_ROM_PTR(&cball_apply_palette_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_latt_long_map), MP_ROM_PTR(&cball_latt_long_map_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_memset), MP_ROM_PTR(&cball_bytearray_memset_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_memcpy), MP_ROM_PTR(&cball_bytearray_memcpy_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_blend), MP_ROM_PTR(&cball_bytearray_blend_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_interval_multiply), MP_ROM_PTR(&cball_bytearray_interval_multiply_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_add_clamp), MP_ROM_PTR(&cball_bytearray_add_clamp_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_sub_clamp), MP_ROM_PTR(&cball_bytearray_sub_clamp_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_bytearray_max), MP_ROM_PTR(&cball_bytearray_max_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_set), MP_ROM_PTR(&cball_array_set_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_copy), MP_ROM_PTR(&cball_array_copy_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_blend), MP_ROM_PTR(&cball_array_blend_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_interval_multiply), MP_ROM_PTR(&cball_array_interval_multiply_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_add_clamp), MP_ROM_PTR(&cball_array_add_clamp_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_sub_clamp), MP_ROM_PTR(&cball_array_sub_clamp_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_array_max), MP_ROM_PTR(&cball_array_max_obj) },
 
 	{ MP_ROM_QSTR(MP_QSTR_shader), MP_ROM_PTR(&cball_shader_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_gradient), MP_ROM_PTR(&cball_gradient_obj) },

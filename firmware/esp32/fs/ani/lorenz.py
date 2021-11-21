@@ -4,7 +4,7 @@ import cball
 
 class Lorenz:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat, config=None, **kwargs):
         self.leds = leds
 
         random = os.urandom(6*2)
@@ -22,13 +22,25 @@ class Lorenz:
 
         self.shader_flat = uarray.array('f',
         #      position            color * intensity
-            [  -1,-1,-1,    55*1.44,  206*1.44,    0*1.44,
-               -1,-1,-1,   255*1.44 , 255*1.44 ,  64*1.44,
-               -1,-1,-1,   255*1.44 ,  32*1.44 , 127*1.44,
-               -1,-1,-1,     0*1.44 , 255*1.44 , 255*1.44,
-               -1,-1,-1,   255*1.44 ,  55*1.44 ,  34*1.44,
-               -1,-1,-1,   255*1.44 , 164*1.44 ,   0*1.44    ]
+            [  -1,-1,-1,     0,0,0,
+               -1,-1,-1,     0,0,0,
+               -1,-1,-1,     0,0,0,
+               -1,-1,-1,     0,0,0,
+               -1,-1,-1,     0,0,0,
+               -1,-1,-1,     0,0,0   ]
         )
+
+        self.colors = [
+            (  55, 206,   0 ),
+            ( 255, 255,  64 ),
+            ( 255,  32, 127 ),
+            (   0, 255, 255 ),
+            ( 255,  55,  34 ),
+            ( 255, 164,   0 ),
+        ]
+        self.mag = 1.44/257.
+        for i in range(len(self.colors)):
+            self.set_color(i, self.colors[i])
 
         if config:
             for i in range(6):
@@ -39,6 +51,8 @@ class Lorenz:
         if config:
             config.add_slider('speed', 0, 20, .01, self.get_speed, self.set_speed, caption="speed")
 
+        self.tmpfloat = tmpfloat
+
     def set_speed(self, speed):
         self.speed_db = speed
         self.speed = 10**(speed/10) / 100000.
@@ -47,12 +61,13 @@ class Lorenz:
         return self.speed_db
 
     def get_color(self, ix):
-        return tuple( int(c/1.44+.5) for c in self.shader_flat[ix*6+3:ix*6+6] )
+        return self.colors[ix]
 
     def set_color(self, ix, color):
-        self.shader_flat[ix*6+3] = color[0] * 1.44
-        self.shader_flat[ix*6+4] = color[1] * 1.44
-        self.shader_flat[ix*6+5] = color[2] * 1.44
+        self.colors[ix] = color
+        self.shader_flat[ix*6+3] = color[0] * self.mag
+        self.shader_flat[ix*6+4] = color[1] * self.mag
+        self.shader_flat[ix*6+5] = color[2] * self.mag
 
     def update(self, n):
         cball.lorenz_update(self.attractors, self.speed, n)
@@ -83,6 +98,6 @@ class Lorenz:
 
     def next_frame(self, fbuf):
         self.update(10)
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
 

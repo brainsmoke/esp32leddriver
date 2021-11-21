@@ -79,8 +79,9 @@ def interpolate_ugly(vec_a, vec_b, d):
 class _Spot:
     def __init__(self, rot, amp, brightness, color, chroma=.5):
         # all variables in a list suitable for interpolation
-        self.new = list(rot[:2]) + [amp, brightness, chroma] + list(color)
-        self.old = list(rot[:2]) + [amp, brightness, chroma] + list(color)
+        self.color = color
+        self.new = list(rot[:2]) + [amp, brightness, chroma] + [ c/255. for c in color ]
+        self.old = list(rot[:2]) + [amp, brightness, chroma] + [ c/255. for c in color ]
         self.vectors = get_chroma_vectors(self.new)
         self.move = 60
         self.chroma = chroma
@@ -116,10 +117,11 @@ class _Spot:
         self.set_new( new )
 
     def set_color(self, color):
+        self.color = color
         new = list(self.new)
-        new[5] = color[0]
-        new[6] = color[1]
-        new[7] = color[2]
+        new[5] = color[0]/255
+        new[6] = color[1]/255
+        new[7] = color[2]/255
         self.set_new( new )
 
     def get_x_axis_rotation(self):
@@ -138,7 +140,7 @@ class _Spot:
         return self.new[4]
 
     def get_color(self):
-        return self.new[5:8]
+        return self.color
 
     def get_vectors(self):
         if self.move < 60:
@@ -149,7 +151,7 @@ class _Spot:
 
 class Chroma:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat, config=None, **kwargs):
         self.leds = leds
         self.spots = [ _Spot( (  0,    0 ), 2, 3, (255, 255, 255), .2 ) ]
 
@@ -169,6 +171,7 @@ class Chroma:
         config.add_slider('y_axis_rotation', -pi,   pi,   .01, self.spots[0].get_y_axis_rotation, self.spots[0].set_y_axis_rotation, caption='y-axis rotation')
         config.add_slider('chroma', 0, 1, .01, self.spots[0].get_chroma, self.spots[0].set_chroma, caption='chroma')
         config.add_slider('brightness', 0, 12, .01, self.spots[0].get_brightness, self.spots[0].set_brightness, caption='intensity')
+        self.tmpfloat = tmpfloat
 
     def update(self):
         for i in range(1):
@@ -196,13 +199,13 @@ class Chroma:
 
     def next_frame(self, fbuf):
         self.update()
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
 
 
 class Spots:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat, config=None, **kwargs):
         self.leds = leds
         self.spots = [ _Spot( (    0,  0 ), 2, 2, (255,   0,   0), .2 ) ,
                        _Spot( (-pi/2,  0 ), 2, 2, (  0, 255,   0), .2 ) ,
@@ -228,6 +231,7 @@ class Spots:
         config.add_color( 'color_c', self.spots[2].get_color, self.spots[2].set_color, caption="spot 3" )
         config.add_slider('x_axis_rotation_c', -pi/2, pi/2, .01, self.spots[2].get_x_axis_rotation, self.spots[2].set_x_axis_rotation, caption='x-axis rotation')
         config.add_slider('y_axis_rotation_c', -pi,   pi,   .01, self.spots[2].get_y_axis_rotation, self.spots[2].set_y_axis_rotation, caption='y-axis rotation')
+        self.tmpfloat = tmpfloat
 
     def update(self):
         for i in range(3):
@@ -245,7 +249,7 @@ class Spots:
 
     def next_frame(self, fbuf):
         self.update()
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
 
 

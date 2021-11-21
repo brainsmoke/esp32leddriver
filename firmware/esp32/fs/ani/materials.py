@@ -4,7 +4,7 @@ import cball
 
 class Checkers:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat, config=None, **kwargs):
         self.leds = leds
         self.Gmdt2 = -6.674e-11*5.97219e24*1.*1./(6.371e6**3)
         self.objects = uarray.array('f',
@@ -16,15 +16,15 @@ class Checkers:
 
         self.shader_flat = uarray.array('f',
         #      position            color * intensity
-            [  -1,-1,-1,   255*0.394, 255*0.394, 255*0.394,
-               -1,-1,-1,   255*0.394, 255*0.394, 255*0.394,
-               -1,-1,-1,   255*1500., 255*1500., 255*1500.   ]
+            [  -1,-1,-1,   0.394, 0.394, 0.394,
+               -1,-1,-1,   0.394, 0.394, 0.394,
+               -1,-1,-1,   1500., 1500., 1500.   ]
         )
 
-        self.magnitude = [ .394, .394, 1500 ]
+        self.magnitude = [ .394/255, .394/255, 1500/255 ]
 
         self.colors = [ (0xff,0xe5,0x99), (0xff,0x99,23) ]
-        self.checkers = bytearray(leds.n_leds * 3)
+        self.checkers = uarray.array('H', 0 for i in range(leds.n_leds * 3) )
 
         self.group = bytearray(leds.n_leds)
         for c in leds.circuits['faces']:
@@ -47,6 +47,8 @@ class Checkers:
         if config:
             config.add_slider('speed', 0, 30, 1, self.get_speed, self.set_speed, caption="speed")
 
+        self.tmpfloat = tmpfloat
+
     def set_speed(self, speed):
         self.speed = speed
 
@@ -62,9 +64,9 @@ class Checkers:
 
     def update_colors(self):
         for i in range(len(self.group)):
-            self.checkers[i*3  ] = self.colors[self.group[i]][0]
-            self.checkers[i*3+1] = self.colors[self.group[i]][1]
-            self.checkers[i*3+2] = self.colors[self.group[i]][2]
+            self.checkers[i*3  ] = self.colors[self.group[i]][0]*0x101
+            self.checkers[i*3+1] = self.colors[self.group[i]][1]*0x101
+            self.checkers[i*3+2] = self.colors[self.group[i]][2]*0x101
 
     def get_light(self, ix):
         mag = self.magnitude[ix]
@@ -86,13 +88,13 @@ class Checkers:
 
     def next_frame(self, fbuf):
         self.update(self.speed)
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
-        cball.bytearray_interval_multiply(fbuf, fbuf, self.checkers)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
+        cball.array_interval_multiply(fbuf, fbuf, self.checkers)
 
 class AlienPlanet:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, tmpfloat=None, config=None, **kwargs):
         self.leds = leds
         self.Gmdt2 = -6.674e-11*5.97219e24*1.*1./(6.371e6**3)
         self.objects = uarray.array('f',
@@ -104,18 +106,18 @@ class AlienPlanet:
 
         self.shader_flat = uarray.array('f',
         #      position            color * intensity
-            [  -1,-1,-1,   255*0.394, 255*0.394,  63*0.394,
-               -1,-1,-1,    63*0.394, 255*0.394, 255*0.394,
-               -1,-1,-1,   255*1500.,  63*1500., 255*1500.   ]
+            [  -1,-1,-1,   0.394, 0.394,  .25*0.394,
+               -1,-1,-1,   .25*0.394, 0.394, 0.394,
+               -1,-1,-1,   1500.,  .25*1500., 1500.   ]
         )
 
-        self.magnitude = [ .394, .394, 1500 ]
+        self.magnitude = [ .394/255, .394/255, 1500/255 ]
 
         from ani.gradient import Spiral
         self.spiral = Spiral(leds, None)
         self.spiral.set_speed(25)
         #self.spiral = Spiral(leds, config)
-        self.fb = bytearray(leds.n_leds * 3)
+        self.fb = uarray.array('H', 0 for i in range(leds.n_leds*3))
 
         if config:
             for i in range(3):
@@ -126,6 +128,11 @@ class AlienPlanet:
         self.set_speed(10)
         if config:
             config.add_slider('speed', 0, 30, 1, self.get_speed, self.set_speed, caption="speed")
+
+        if tmpfloat == None:
+             tmpfloat = uarray.array('f', 0 for i in range(len(leds)*3) )
+
+        self.tmpfloat = tmpfloat
 
     def set_speed(self, speed):
         self.speed = speed
@@ -152,11 +159,12 @@ class AlienPlanet:
             self.shader_flat[i+2] = self.objects[i+2]
 
     def next_frame(self, fbuf):
-        self.update(self.speed)
-        cball.bytearray_memset(fbuf, 255)
+        cball.array_set(fbuf, 65535)
         self.spiral.next_frame(self.fb)
-        cball.bytearray_blend(self.fb, self.fb, fbuf, .5)
-        cball.bytearray_memset(fbuf, 0)
-        cball.shader(fbuf, self.leds.flat_data, self.shader_flat)
-        cball.bytearray_interval_multiply(fbuf, fbuf, self.fb)
+        cball.array_blend(self.fb, self.fb, fbuf, .5)
+
+        self.update(self.speed)
+        cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
+        cball.framebuffer_floatto16(fbuf, self.tmpfloat)
+        cball.array_interval_multiply(fbuf, fbuf, self.fb)
 

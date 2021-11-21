@@ -1,5 +1,5 @@
 
-import machine, network, utime, gc, re
+import machine, network, utime, uarray, gc, re
 
 import config, model, uartpixel, cball, configform, csrf
 
@@ -9,7 +9,6 @@ from ani.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
-from ani.groups import Faces
 from ani.materials import Checkers, AlienPlanet
 
 import esp
@@ -66,7 +65,8 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              rx       = config.uart_rx,
                              tx       = config.uart_tx,
                              n        = leds.n_leds,
-                             remap    = leds.remap)
+                             remap    = leds.remap,
+                             framebuf = False )
 
 form = configform.ConfigRoot("/")
 
@@ -84,12 +84,15 @@ select = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPlanet, Faces, Spots, Chroma):
+tmpfloat = uarray.array('f', 0 for _ in range(leds.n_leds * 3))
+tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
+
+for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:
         print (caption)
-        player.add_animation( name, Ani( leds, select.add_group(name, caption=caption) ) )
+        player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=select.add_group(name, caption=caption) ) )
     except KeyboardInterrupt as err:
         raise err
     except Exception as err:

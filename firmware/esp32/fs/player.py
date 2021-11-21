@@ -1,10 +1,10 @@
-import utime, gc, math
+import utime, uarray, gc, math
 
 import cball
 
 class Off:
     def next_frame(self, fbuf):
-        cball.bytearray_memset(fbuf, 0)
+        cball.array_set(fbuf, 0)
 
 class Player:
 
@@ -17,8 +17,8 @@ class Player:
         self._driver = driver
         self._lock = _thread.allocate_lock()
 
-        self._fade_fb = bytearray(leds.n_leds * 3)
-        self._fb = bytearray(leds.n_leds * 3)
+        self._fade_fb = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
+        self._fb = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
         self._fade = 60
 
         self._old_gamma = self._cur_gamma = self._new_gamma = driver.get_gamma()
@@ -125,7 +125,7 @@ class Player:
 
                 if self._fade < 60:
                     self._fade += 1
-                    cball.bytearray_blend(fb, fade_fb, fb, fade/60.)
+                    cball.array_blend(fb, fade_fb, fb, fade/60.)
 
                 if self._gamma_fade < 60:
                     self._lock.acquire()
@@ -147,8 +147,8 @@ class Player:
 #                    utime.sleep_us(dt)
 
 #                t_next = utime.ticks_add(t_next, 16666)
-                self._driver.writefrom(fb)
+                self._driver.writefrom16(fb)
         finally:
             self._off.next_frame(fb)
-            self._driver.writefrom(fb)
+            self._driver.writefrom16(fb)
 

@@ -6,7 +6,7 @@ _wave = None
 def get_wave():
     global _wave
     if not _wave:
-        _wave = bytearray(500)
+        _wave = uarray.array('H', 0 for _ in range(500) )
         bump = memoryview(_wave)
         cball.wave_for_gradient_lut(_wave)
     return _wave
@@ -14,17 +14,17 @@ def get_wave():
 
 class Rutherford:
 
-    def __init__(self, leds, config=None):
+    def __init__(self, leds, config=None, **kwargs):
         assert leds.n_leds == 240
 
         self.colors = [ cball.ColorDrift(200+i*30, 3) for i in range(6) ]
         
-        self.fb = bytearray( leds.n_leds * 3 )
+        self.fb = uarray.array('H', 0 for _ in range( leds.n_leds * 3 ) )
         self.colormap = bytearray( leds.n_leds )
         for i in range(len(self.colormap)):
             self.colormap[i] = i//40
-        self.palette = bytearray( 6 * 3 )
-        self.colorfb  = bytearray( leds.n_leds * 3 )
+        self.palette = uarray.array('H', 0 for _ in range( 6 * 3 ) )
+        self.colorfb  = uarray.array('H', 0 for _ in range( leds.n_leds * 3 ) )
         self.phase = 0
         self.wave = get_wave()
 
@@ -63,8 +63,8 @@ class Rutherford:
         div = self.div
         wave = self.wave
 
-        cball.bytearray_memset(out, 0)
-        cball.bytearray_blend(fb, out, self.fb, self.fade)
+        cball.array_set(out, 0)
+        cball.array_blend(fb, out, self.fb, self.fade)
 
         for c in range(6):
             self.colors[c].next_color_into(self.palette, c*3)
@@ -84,9 +84,9 @@ class Rutherford:
                     out[ix+5] = w
 
         cball.apply_palette(self.colorfb, self.colormap, self.palette)
-        cball.bytearray_interval_multiply(out, out, self.colorfb)
-        cball.bytearray_max(fb, fb, out)
-        cball.bytearray_memcpy(out, fb)
+        cball.array_interval_multiply(out, out, self.colorfb)
+        cball.array_max(fb, fb, out)
+        cball.array_copy(out, fb)
 
         self.phase += self.speed
         self.phase %= self.phase_max
