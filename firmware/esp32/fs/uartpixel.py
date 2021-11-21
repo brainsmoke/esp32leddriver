@@ -6,26 +6,15 @@ import _uartpixel
 
 class UartPixel:
 
-#    def set_gamma_orig(self, gamma, cutoff=0x18):
-#        max_val = 0xff00
+#    def set_gamma_orig(self, gamma, max_val=0xff00):
 #        factor = max_val / (255.**gamma)
 #        for i in range(256):
-#            v = int(factor * i**gamma)
-#            lo, hi = v&0xff, v>>8
-#            if lo <= cutoff//2:
-#                lo = 0
-#            elif lo < cutoff:
-#                lo = cutoff
-#            elif lo > 256-cutoff//2:
-#                lo, hi = 0, min(hi+1, max_val>>8)
-#            elif lo > 256-cutoff:
-#                lo = 256-cutoff
-#            self.gamma_map[i] = lo | (hi<<8)
+#            self.gamma_map[i] = max(0, min(max_val, int(factor * i**gamma)))
 
     def calc_gamma_map(self, gamma=None, brightness=None, cutoff=None):
         if gamma != None:
             if not 0.5 <= gamma <= 10.5:
-                raise ValueError("brightness needs to be between 0.5 and 10.5")
+                raise ValueError("gamma needs to be between 0.5 and 10.5")
             else:
                 self.gamma = gamma
 
@@ -42,7 +31,7 @@ class UartPixel:
                 self.cutoff = cutoff
 
         max_ = max(0, min(int(self.brightness * 0xff00), 0xff00))
-        cball.calc_gamma_map( self.gamma_map, self.gamma, max_, self.cutoff )
+        cball.calc_gamma_map( self.gamma_map, self.gamma, max_ )
 
     def set_gamma(self, gamma):
         self.calc_gamma_map(gamma=gamma)
@@ -66,7 +55,16 @@ class UartPixel:
         self.n = n
         if framebuf:
             self.buf = bytearray(n*3)
-        self.outbuf = uarray.array('H', 0 for _ in range(n*3 + 2))
+
+        self.buf16 = uarray.array('H', 0 for _ in range(n*3))
+        self.outbuf = uarray.array('H', 0 for _ in range(n*len(led_order) + 2))
+
+        mv = memoryview(self.outbuf)
+        from struct import unpack
+        mv[-2], mv[-1] = unpack('HH', b'\xff\xff\xff\xf0')
+
+        self.framebuffer = mv[:-2]
+
         self.led_order = led_order
         self.gamma_map = uarray.array('H', 0 for _ in range(256))
         self.remap = remap
@@ -76,6 +74,7 @@ class UartPixel:
                                            baudrate=baudrate, rx=rx, tx=tx,
                                            fps=60.,
                                            framesize=len(self.outbuf)*2, framecount=12)
+        self.reset()
 
     def __setitem__(self, index, val):
         offset = index * 3
@@ -91,14 +90,22 @@ class UartPixel:
         for i in range(self.n):
             self[i] = color
 
+    def reset(self):
+        self.queue.push(b'\xff\xff\xff\xff\xf0') # send bad end of frame marker to make the stm32 ignore start-up gibberish
+
     def write(self):
-        writefrom(self, self.buf)
+        self.writefrom(self.buf)
 
     def writefrom(self, buf):
-        if self.remap == None:
-            cball.fillbuffer_gamma(self.outbuf, buf, self.led_order, self.gamma_map)
-        else:
-            cball.fillbuffer_remap_gamma(self.outbuf, buf, self.remap, self.led_order, self.gamma_map)
+        cball.framebuffer_8to16(self.buf16, buf)
+        self.writefrom16(self.buf16)
 
+    def writefromfloat(self, buf):
+        cball.framebuffer_floatto16(self.buf16, buf)
+        self.writefrom16(self.buf16)
+
+    def writefrom16(self, buf16):
+        cball.framebuffer_remap(self.framebuffer, buf16, self.remap, self.led_order)
+        cball.framebuffer_gamma(self.framebuffer, self.gamma_map, self.cutoff)
         #self.uart.write(self.outbuf)
         self.queue.push(self.outbuf)

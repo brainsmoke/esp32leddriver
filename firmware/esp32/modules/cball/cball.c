@@ -76,309 +76,171 @@ static int cball_get_led_order(int led_order[4], mp_obj_t order_str)
 	return len;
 }
 
-static int cball_rgb_8to16(uint16_t dest[], const uint8_t src[], size_t led_count, const int led_order[3], const uint16_t gamma_map[256])
-{
-
-	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
-	const uint8_t *p_src = src;
-	uint16_t *p_dest = dest;
-
-	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
-		return 0;
-
-	for (i=0; i<led_count; i++)
-	{
-		p_dest[r_ix] = htole16(gamma_map[*p_src++]);
-		p_dest[g_ix] = htole16(gamma_map[*p_src++]);
-		p_dest[b_ix] = htole16(gamma_map[*p_src++]);
-		p_dest += 3;
-	}
-
-	return 1;
-}
-
-static int cball_rgbw_8to16(uint16_t dest[], const uint8_t src[], size_t led_count, const int led_order[4], const uint16_t gamma_map[256])
-{
-
-	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
-	const uint8_t *p_src = src;
-	uint16_t *p_dest = dest;
-
-	if ( (r_ix|g_ix|b_ix|w_ix) != 3 ||
-	     (r_ix+g_ix+b_ix+w_ix) != 6 ||
-	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) != 24 )
-		return 0;
-
-	for (i=0; i<led_count; i++)
-	{
-		int r, g, b, w;
-		r = gamma_map[*p_src++];
-		g = gamma_map[*p_src++];
-		b = gamma_map[*p_src++];
-
-		w = r;
-		if (g < w)
-			w = g;
-		if (b < w)
-			w = b;
-
-		r -= w;
-		g -= w;
-		b -= w;
-
-		p_dest[r_ix] = htole16(r);
-		p_dest[g_ix] = htole16(g);
-		p_dest[b_ix] = htole16(b);
-		p_dest[w_ix] = htole16(w);
-		p_dest += 4;
-	}
-
-	return 1;
-}
-
-
-STATIC mp_obj_t cball_fillbuffer_gamma(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t cball_framebuffer_gamma(mp_obj_t buf_obj, mp_obj_t gamma_map_obj, mp_obj_t cut_off_obj)
 {
 	/* args:
-	 * -     dest             [n_leds*3+2]  uint16,
-	 * -     src              [n_leds*3]    uint8,
-	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
+	 * -     buf              [n_leds*3]    uint16,
 	 * -     gamma_map        [256]         uint16,
+	 * -     cut_off                        int,
 	 */
 
-	uint16_t *dest;
-	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
-	                  "dest needs to be a uarray.array('H',...)");
-
-	uint8_t *src;
-	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
-	                  "src needs to be a bytearray");
-
-	if ( src_len % 3 != 0 )
-		mp_raise_ValueError("size of src needs to be a multiple of 3");
-
-	size_t led_count = src_len/3;
-
-	int led_order[4];
-	int n_components = cball_get_led_order(led_order, args[2]);
-
-	if ( led_count*n_components+2 > dest_len )
-		mp_raise_ValueError("dest array too small");
+	uint16_t *buf;
+	size_t buf_len = cball_get_uint16_array(buf_obj, &buf, MP_BUFFER_WRITE,
+	                 "buf needs to be a uarray.array('H',...)");
 
 	uint16_t *gamma_map;
-	size_t gamma_map_len = cball_get_uint16_array(args[3], &gamma_map, MP_BUFFER_READ,
+	size_t gamma_map_len = cball_get_uint16_array(gamma_map_obj, &gamma_map, MP_BUFFER_READ,
 	                       "gamma_map needs to be a uarray.array('H',...)");
+
+	uint32_t cut_off = mp_obj_get_int(cut_off_obj);
 
 	if ( gamma_map_len != 256 )
 		mp_raise_ValueError("gamma_map array needs to have 256 elements");
 
-	if ( n_components == 4 )
-	{
-		if ( !cball_rgbw_8to16(dest, src, led_count, led_order, gamma_map) )
-			mp_raise_ValueError("remap index out of range");
-	}
-	else
-	{
-		if ( !cball_rgb_8to16(dest, src, led_count, led_order, gamma_map) )
-			mp_raise_ValueError("remap index out of range");
-	}
+	size_t i;
 
-	dest[led_count*n_components  ] = htole16(0xffff);
-	dest[led_count*n_components+1] = htole16(0xf0ff);
+	for (i=0; i<buf_len; i++)
+	{
+		uint32_t in = buf[i];
+		uint32_t gamma_ix = (in-(in>>8))>>8;
+		uint32_t inter = (in-gamma_ix-(gamma_ix<<8));
+		uint32_t out = gamma_map[gamma_ix];
+
+		if (inter != 0) /* gamma_ix == 255, iff in == 0xffff, inter == 0 */
+			out += ( (gamma_map[gamma_ix+1] - out ) * inter * 0xff + 0x100 )>>16;
+
+		uint32_t low = out&0xff;
+
+		if ( low < cut_off )
+		{
+			out &=~ 0xff;
+			if ( (low<<1) > cut_off )
+				out += cut_off;
+		}
+		else
+		{
+			low = 0x100-low;
+			if ( low < cut_off )
+			{
+				out &=~ 0xff;
+				out += 0x100;
+				if ( (low<<1) > cut_off )
+					out -= cut_off;
+			}
+		}
+
+		buf[i] = htole16(out);
+	}
 
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_gamma_obj, 4, 4, cball_fillbuffer_gamma);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_framebuffer_gamma_obj, cball_framebuffer_gamma);
 
-static int cball_rgb_floatto16(uint16_t dest[], const float src[], size_t led_count, const int led_order[3], int max)
+STATIC mp_obj_t cball_framebuffer_floatto16(mp_obj_t dest_obj, mp_obj_t src_obj)
 {
-	if (max > UINT16_MAX)
-		max = UINT16_MAX;
+	/* args:
+	 * -     dest             [n_leds*3]    uint16,
+	 * -     src              [n_leds*3]    float,
+	 */
 
-	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
-	const float *p_src = src;
-	uint16_t *p_dest = dest;
-	float f_max = (float)max;
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(dest_obj, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
 
-	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
-		return 0;
+	float *src;
+	size_t src_len  = cball_get_float_array(src_obj, &src, MP_BUFFER_READ,
+	                  "src needs to be a uarray.array('f',...)");
 
-	for (i=0; i<led_count; i++)
+	if ( src_len > dest_len )
+		mp_raise_ValueError("dest needs to be at least as big as src");
+
+	size_t i;
+
+	for (i=0; i<src_len; i++)
 	{
 		int h;
 		float v;
 
-		v = *p_src++ * f_max;
+		v = src[i] * UINT16_MAX;
 
-		                    h = (int)v;
-		     if (v < 0.f)   h = 0;
-		else if (v > f_max) h = max;
+		                         h = (int)v;
+		     if (v < 0.f)        h = 0;
+		else if (v > UINT16_MAX) h = UINT16_MAX;
 
-		p_dest[r_ix] = htole16(h);
-
-		v = *p_src++ * f_max;
-
-		                    h = (int)v;
-		     if (v < 0.f)   h = 0;
-		else if (v > f_max) h = max;
-
-		p_dest[g_ix] = htole16(h);
-
-		v = *p_src++ * f_max;
-
-		                    h = (int)v;
-		     if (v < 0.f)   h = 0;
-		else if (v > f_max) h = max;
-
-		p_dest[b_ix] = htole16(h);
-
-		p_dest += 3;
+		dest[i] = h;
 	}
-
-	return 1;
-}
-
-static int cball_rgbw_floatto16(uint16_t dest[], const float src[], size_t led_count, const int led_order[4], int max)
-{
-	if (max > UINT16_MAX)
-		max = UINT16_MAX;
-
-	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
-	const float *p_src = src;
-	uint16_t *p_dest = dest;
-	float f_max = (float)max;
-
-	if ( (r_ix|g_ix|b_ix|w_ix) == 3 &&
-	     (r_ix+g_ix+b_ix+w_ix) == 6 &&
-	     (r_ix+1)*(g_ix+1)*(b_ix+1)*(w_ix+1) == 24 )
-		return 0;
-
-	for (i=0; i<led_count; i++)
-	{
-		float v;
-
-		int r, g, b, w;
-
-		v = *p_src++ * f_max;
-
-		                    r = (int)v;
-		     if (v < 0.f)   r = 0;
-		else if (v > f_max) r = max;
-
-		v = *p_src++ * f_max;
-
-		                    g = (int)v;
-		     if (v < 0.f)   g = 0;
-		else if (v > f_max) g = max;
-
-		v = *p_src++ * f_max;
-
-		                    b = (int)v;
-		     if (v < 0.f)   b = 0;
-		else if (v > f_max) b = max;
-
-		w = r;
-		if (g < w)
-			w = g;
-		if (b < w)
-			w = b;
-
-		r -= w;
-		g -= w;
-		b -= w;
-
-		p_dest[r_ix] = htole16(r);
-		p_dest[g_ix] = htole16(g);
-		p_dest[b_ix] = htole16(b);
-		p_dest[w_ix] = htole16(w);
-		p_dest += 4;
-	}
-
-	return 1;
-}
-
-STATIC mp_obj_t cball_fillbuffer_float(size_t n_args, const mp_obj_t *args)
-{
-	/* args:
-	 * -     dest             [n_leds*3+2]  uint16,
-	 * -     src              [n_leds*3]    float,
-	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
-	 * -     max                            float,
-	 */
-
-	uint16_t *dest;
-	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
-	                  "dest needs to be a uarray.array('H',...)");
-
-	float *src;
-	size_t src_len  = cball_get_float_array(args[1], &src, MP_BUFFER_READ,
-	                  "src needs to be a uarray.array('f',...)");
-
-	if ( src_len % 3 != 0 )
-		mp_raise_ValueError("size of src needs to be a multiple of 3");
-
-	size_t led_count = src_len/3;
-
-	int led_order[4];
-	int n_components = cball_get_led_order(led_order, args[2]);
-
-	if ( led_count*n_components+2 > dest_len )
-		mp_raise_ValueError("dest array too small");
-
-	int max = mp_obj_get_int(args[3]);
-
-	if ( n_components == 4 )
-	{
-		if ( !cball_rgbw_floatto16(dest, src, led_count, led_order, max) )
-			mp_raise_ValueError("remap index out of range");
-	}
-	else
-	{
-		if ( !cball_rgb_floatto16(dest, src, led_count, led_order, max) )
-			mp_raise_ValueError("remap index out of range");
-	}
-
-	dest[led_count*n_components  ] = htole16(0xffff);
-	dest[led_count*n_components+1] = htole16(0xf0ff);
 
 	return mp_const_none;
 }
 
-//STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_float_obj, 4, 4, cball_fillbuffer_float);
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_framebuffer_floatto16_obj, cball_framebuffer_floatto16);
 
+STATIC mp_obj_t cball_framebuffer_8to16(mp_obj_t dest_obj, mp_obj_t src_obj)
+{
+	/* args:
+	 * -     dest             [n_leds*3]    uint16,
+	 * -     src              [n_leds*3]    uint8,
+	 */
 
-static int cball_remap_rgb_8to16(uint16_t dest[], const uint8_t src[], const uint16_t remap[], size_t led_count, const int led_order[3], const uint16_t gamma_map[256])
+	uint16_t *dest;
+	size_t dest_len = cball_get_uint16_array(dest_obj, &dest, MP_BUFFER_WRITE,
+	                  "dest needs to be a uarray.array('H',...)");
+
+	uint8_t *src;
+	size_t src_len  = cball_get_bytearray(src_obj, &src, MP_BUFFER_READ,
+	                  "src needs to be a bytearray");
+
+	if ( src_len > dest_len )
+		mp_raise_ValueError("dest needs to be at least as big as src");
+
+	size_t i;
+
+	for (i=0; i<src_len; i++)
+		dest[i] = src[i] + (src[i]<<8);
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_framebuffer_8to16_obj, cball_framebuffer_8to16);
+
+static int cball_remap_rgb(uint16_t dest[], const uint16_t src[], const uint16_t *remap, size_t led_count, const int led_order[3])
 {
 
 	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2];
-	const uint8_t *p_src = src;
+	const uint16_t *p_src = src;
 
 	if ( (r_ix|g_ix|b_ix) != 3 || (r_ix+g_ix+b_ix) != 3 )
 		return 0;
 
 	for (i=0; i<led_count; i++)
 	{
-		int index = remap[i];
+		int index;
 
-		if ( !(index < led_count) )
-			return 0;
+		if (remap)
+		{
+			index = remap[i];
+			if ( !(index < led_count) )
+				return 0;
+		}
+		else
+			index = i;
 
 		index *= 3;
-		dest[index+r_ix] = htole16(gamma_map[*p_src++]);
-		dest[index+g_ix] = htole16(gamma_map[*p_src++]);
-		dest[index+b_ix] = htole16(gamma_map[*p_src++]);
+		dest[index+r_ix] = htole16(*p_src++);
+		dest[index+g_ix] = htole16(*p_src++);
+		dest[index+b_ix] = htole16(*p_src++);
 	}
 
 	return 1;
 }
 
 
-static int cball_remap_rgbw_8to16(uint16_t dest[], const uint8_t src[], const uint16_t remap[], size_t led_count, const int led_order[4], const uint16_t gamma_map[256])
+static int cball_remap_rgbw(uint16_t dest[], const uint16_t src[], const uint16_t *remap, size_t led_count, const int led_order[4])
 {
 
 	size_t i, r_ix=led_order[0], g_ix=led_order[1], b_ix=led_order[2], w_ix=led_order[3];
-	const uint8_t *p_src = src;
+	const uint16_t *p_src = src;
 
 	if ( (r_ix|g_ix|b_ix|w_ix) != 3 ||
 	     (r_ix+g_ix+b_ix+w_ix) != 6 ||
@@ -387,16 +249,21 @@ static int cball_remap_rgbw_8to16(uint16_t dest[], const uint8_t src[], const ui
 
 	for (i=0; i<led_count; i++)
 	{
-		int index = remap[i];
-
-		if ( !(index < led_count) )
-			return 0;
+		int index;
+		if (remap)
+		{
+			index = remap[i];
+			if ( !(index < led_count) )
+				return 0;
+		}
+		else
+			index = i;
 
 		index *= 4;
 		int r, g, b, w;
-		r = gamma_map[*p_src++];
-		g = gamma_map[*p_src++];
-		b = gamma_map[*p_src++];
+		r = *p_src++;
+		g = *p_src++;
+		b = *p_src++;
 
 		w = r;
 		if (g < w)
@@ -417,88 +284,56 @@ static int cball_remap_rgbw_8to16(uint16_t dest[], const uint8_t src[], const ui
 	return 1;
 }
 
-STATIC mp_obj_t cball_fillbuffer_remap_gamma(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t cball_framebuffer_remap(size_t n_args, const mp_obj_t *args)
 {
 	/* args:
-	 * -     dest             [n_leds*3+2]  uint16,
-	 * -     src              [n_leds*3]    uint8,
+	 * -     dest             [>=n_leds*3]  uint16,
+	 * -     src              [n_leds*3]    uint16,
 	 * -     remap            [n_leds]      uint16,
 	 * -     led_order                      string, [ "RGB" | "GRB" | ... | "RGBW" | "GRBW" | ... ]
-	 * -     gamma_map        [256]         uint16,
 	 */
 
 	uint16_t *dest;
 	size_t dest_len = cball_get_uint16_array(args[0], &dest, MP_BUFFER_WRITE,
 	                  "dest needs to be a uarray.array('H',...)");
 
-	uint8_t *src;
-	size_t src_len  = cball_get_bytearray(args[1], &src, MP_BUFFER_READ,
-	                  "src needs to be a bytearray");
+	uint16_t *src;
+	size_t src_len  = cball_get_uint16_array(args[1], &src, MP_BUFFER_READ,
+	                  "dest needs to be a uarray.array('H',...)");
 
-	uint16_t *remap;
-	size_t led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
-	                   "remap needs to be a uarray.array('H',...)");
+	uint16_t *remap = NULL;
+	size_t led_count;
+
+	if ( args[2] == mp_const_none )
+		led_count = src_len / 3;
+	else
+		led_count = cball_get_uint16_array(args[2], &remap, MP_BUFFER_READ,
+	                "remap needs to be None or a uarray.array('H',...)");
 
 	if ( led_count*3 != src_len )
-		mp_raise_ValueError("size of src needs to be 3x size of remap array");
+		mp_raise_ValueError("size of src needs to be a multiple of 3 and optional remap array needs to be 3x size of remap array");
 
 	int led_order[4];
 	int n_components = cball_get_led_order(led_order, args[3]);
 
-	if ( led_count*n_components+2 > dest_len )
+	if ( led_count*n_components > dest_len )
 		mp_raise_ValueError("dest array too small");
-
-	uint16_t *gamma_map;
-	size_t gamma_map_len = cball_get_uint16_array(args[4], &gamma_map, MP_BUFFER_READ,
-	                       "gamma_map needs to be a uarray.array('H',...)");
-
-	if ( gamma_map_len != 256 )
-		mp_raise_ValueError("gamma_map array needs to have 256 elements");
 
 	if ( n_components == 4 )
 	{
-		if ( !cball_remap_rgbw_8to16(dest, src, remap, led_count, led_order, gamma_map) )
+		if ( !cball_remap_rgbw(dest, src, remap, led_count, led_order) )
 			mp_raise_ValueError("remap index out of range");
 	}
 	else
 	{
-		if ( !cball_remap_rgb_8to16(dest, src, remap, led_count, led_order, gamma_map) )
+		if ( !cball_remap_rgb(dest, src, remap, led_count, led_order) )
 			mp_raise_ValueError("remap index out of range");
 	}
 
-	dest[led_count*n_components  ] = htole16(0xffff);
-	dest[led_count*n_components+1] = htole16(0xf0ff);
-
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_fillbuffer_remap_gamma_obj, 5, 5, cball_fillbuffer_remap_gamma);
-
-STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
-{
-	/* args:
-	 * -     out [...]  uint8,
-	 * -     in  [...]  uint8,
-	 *
-	 * memcpy(out, in, max(out_len, in_len))
-	 *
-	 */
-
-	mp_buffer_info_t dest_info;
-	mp_get_buffer_raise(out, &dest_info, MP_BUFFER_WRITE);
-	mp_buffer_info_t src_info;
-	mp_get_buffer_raise(in, &src_info, MP_BUFFER_READ);
-
-	size_t len = dest_info.len;
-	if (len > src_info.len)
-		len = src_info.len;
-
-	memcpy(dest_info.buf, src_info.buf, len);
-
-	return mp_const_none;
-}
-
-STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memcpy_obj, cball_bytearray_memcpy);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_framebuffer_remap_obj, 4, 4, cball_framebuffer_remap);
 
 const float log_prime[] =
 {
@@ -520,34 +355,29 @@ const float log_prime[] =
 5.4510384535657, 5.476463551931511, 5.484796933490655, 5.5254529391317835
 };
 
-STATIC mp_obj_t cball_calc_gamma_map(size_t n_args, const mp_obj_t *args)
+STATIC mp_obj_t cball_calc_gamma_map(mp_obj_t gamma_map_obj, mp_obj_t gamma_obj, mp_obj_t max_obj)
 {
 	/* args:
 	 * -     gamma_map        [256]         uint16,
 	 * -     gamma                          float,
 	 * -     max                            int,
-	 * -     cut_off                        int,
 	 */
 
 	int prime_ix = 0;
 	#define NEXT_PRIME_POW(x) ( expf(x*log_prime[prime_ix++]) )
 
 	uint16_t *gamma_map;
-	size_t gamma_map_len = cball_get_uint16_array(args[0], &gamma_map, MP_BUFFER_WRITE,
+	size_t gamma_map_len = cball_get_uint16_array(gamma_map_obj, &gamma_map, MP_BUFFER_WRITE,
 	                       "gamma_map needs to be a uarray.array('H',...)");
 
 	if (gamma_map_len != 256)
 		mp_raise_ValueError("gamma_map needs to have 256 elements");
 
-	float gamma = mp_obj_get_float(args[1]);
+	float gamma = mp_obj_get_float(gamma_obj);
 
-	int max = mp_obj_get_int(args[2]);
+	int max = mp_obj_get_int(max_obj);
 	if (max < 0 || max > 0xffff)
 		mp_raise_ValueError("max needs to be in the range [0, 65535]");
-
-	int cut_off = mp_obj_get_int(args[3]);
-	if (cut_off < 0 || cut_off > 127)
-		mp_raise_ValueError("max needs to be in the range [0, 127]");
 
 	int i, j, k, l;
 
@@ -611,35 +441,17 @@ STATIC mp_obj_t cball_calc_gamma_map(size_t n_args, const mp_obj_t *args)
 	for (i=0; i<256; i++)
 	{
 		int g_int = fgamma_map[i] * factor;
-		if (g_int < (cut_off>>1))
+		if (g_int < 0)
 			g_int = 0;
-		else
-		{
-			int lo = g_int & 0xff;
-			int hi = g_int & 0xff00;
-			if (lo < cut_off)
-			{
-				g_int = hi;
-				if (lo >= (cut_off>>1) )
-					g_int += cut_off;
-			}
-			else if (lo > 0x100-cut_off)
-			{
-				g_int = hi + 0x100;
-				if (lo <= 0x100-(cut_off>>1) )
-					g_int -= cut_off;
-			}
+		else if (g_int > max)
+			g_int = max;
 
-			if (g_int > max)
-				g_int = max;
-
-		}
 		gamma_map[i] = (uint16_t)g_int;
 	}
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_calc_gamma_map_obj, 4, 4, cball_calc_gamma_map);
+STATIC MP_DEFINE_CONST_FUN_OBJ_3(cball_calc_gamma_map_obj, cball_calc_gamma_map);
 
 STATIC mp_obj_t cball_apply_palette(mp_obj_t buf_dest, mp_obj_t buf_src, mp_obj_t palette)
 {
@@ -788,6 +600,33 @@ STATIC mp_obj_t cball_latt_long_map(size_t n_args, const mp_obj_t *args)
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_latt_long_map_obj, 6, 6, cball_latt_long_map);
+
+STATIC mp_obj_t cball_bytearray_memcpy(mp_obj_t out, mp_obj_t in)
+{
+	/* args:
+	 * -     out [...]  uint8,
+	 * -     in  [...]  uint8,
+	 *
+	 * memcpy(out, in, max(out_len, in_len))
+	 *
+	 */
+
+	mp_buffer_info_t dest_info;
+	mp_get_buffer_raise(out, &dest_info, MP_BUFFER_WRITE);
+	mp_buffer_info_t src_info;
+	mp_get_buffer_raise(in, &src_info, MP_BUFFER_READ);
+
+	size_t len = dest_info.len;
+	if (len > src_info.len)
+		len = src_info.len;
+
+	memcpy(dest_info.buf, src_info.buf, len);
+
+	return mp_const_none;
+}
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_2(cball_bytearray_memcpy_obj, cball_bytearray_memcpy);
+
 
 STATIC mp_obj_t cball_bytearray_memset(mp_obj_t array, mp_obj_t c)
 {
@@ -1684,10 +1523,12 @@ const mp_obj_type_t colordrift_type =
 STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 {
 	{ MP_ROM_QSTR(MP_QSTR___name__), MP_ROM_QSTR(MP_QSTR_cball) },
-	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_gamma), MP_ROM_PTR(&cball_fillbuffer_gamma_obj) },
-//	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_float), MP_ROM_PTR(&cball_fillbuffer_float_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_gamma), MP_ROM_PTR(&cball_fillbuffer_remap_gamma_obj) },
-	{ MP_ROM_QSTR(MP_QSTR_fillbuffer_remap_gamma), MP_ROM_PTR(&cball_fillbuffer_remap_gamma_obj) },
+
+	{ MP_ROM_QSTR(MP_QSTR_framebuffer_floatto16), MP_ROM_PTR(&cball_framebuffer_floatto16_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_framebuffer_8to16), MP_ROM_PTR(&cball_framebuffer_8to16_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_framebuffer_remap), MP_ROM_PTR(&cball_framebuffer_remap_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_framebuffer_gamma), MP_ROM_PTR(&cball_framebuffer_gamma_obj) },
+
 	{ MP_ROM_QSTR(MP_QSTR_calc_gamma_map), MP_ROM_PTR(&cball_calc_gamma_map_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_apply_palette), MP_ROM_PTR(&cball_apply_palette_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_latt_long_map), MP_ROM_PTR(&cball_latt_long_map_obj) },
@@ -1698,12 +1539,14 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_add_clamp), MP_ROM_PTR(&cball_bytearray_add_clamp_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_sub_clamp), MP_ROM_PTR(&cball_bytearray_sub_clamp_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_bytearray_max), MP_ROM_PTR(&cball_bytearray_max_obj) },
+
 	{ MP_ROM_QSTR(MP_QSTR_shader), MP_ROM_PTR(&cball_shader_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_gradient), MP_ROM_PTR(&cball_gradient_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wobble), MP_ROM_PTR(&cball_wobble_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_ca_update), MP_ROM_PTR(&cball_ca_update_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_orbit_update), MP_ROM_PTR(&cball_orbit_update_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_lorenz_update), MP_ROM_PTR(&cball_lorenz_update_obj) },
+
 	{ MP_ROM_QSTR(MP_QSTR_HSItoRGB), MP_ROM_PTR(&cball_HSItoRGB_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wave_lut), MP_ROM_PTR(&cball_wave_lut_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wave_for_gradient_lut), MP_ROM_PTR(&cball_wave_for_gradient_lut_obj) },
