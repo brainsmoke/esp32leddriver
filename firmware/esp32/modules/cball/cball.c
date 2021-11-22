@@ -1166,7 +1166,7 @@ STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
 		float w = 1.f+cosf( phi+(float)rot[i]*((float)M_PI*2.f/1024.f) )*tide;
 		int b = (int)(w*w*16384.);
 		if (b<0) b=0;
-		else if (b>16384) b=16384;
+		else if (b>65535) b=65535;
 		fb[i] = b;
 	}
 
