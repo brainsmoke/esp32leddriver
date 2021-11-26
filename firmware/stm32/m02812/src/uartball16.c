@@ -92,7 +92,7 @@ void init(void)
 	recv_p=recv_buf;
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; 	// enable the clock to GPIOA
-	GPIOA->ODR = 0;
+	GPIOA->ODR = 0xff;
 	GPIOA->MODER = SWD|O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7);
 
 	GPIOB->ODR = 1<<1;
