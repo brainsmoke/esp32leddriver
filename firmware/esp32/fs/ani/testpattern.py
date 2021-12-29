@@ -2,14 +2,14 @@
 import uarray, math, cmath
 import cball
 
-def clamp_byte(x):
+def clamp_u16(x):
     return min(65536, max(0, int(x)))
 
 def smooth_wave_point(theta):
-    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2.6 * 65535)
+    return clamp_u16( ((1-math.cos(theta*2*math.pi))/2)**2.6 * 65535)
 
 def get_wave(size=1024, wavesize=None):
-    wave = bytearray(size)
+    wave = uarray.array('H', 0 for _ in range(size))
 
     if wavesize == None:
         wavesize = size
@@ -29,7 +29,7 @@ class TestPatternA:
         print(self.wave)
 
     def next_frame(self, fbuf):
-        cball.bytearray_memset(fbuf, 0)
+        cball.array_set(fbuf, 0)
         self.phase = (self.phase-1)%self.phase_max
         a, b, c, d = 0, self.edge_count*4*3, self.edge_count*4*3*2, self.edge_count*4*3*3
         for i in range(self.edge_count):
@@ -59,7 +59,7 @@ class TestPatternB:
         print(self.wave)
 
     def next_frame(self, fbuf):
-        cball.bytearray_memset(fbuf, 0)
+        cball.array_set(fbuf, 0)
         self.phase = (self.phase-1)%self.phase_max
         a, b, c, d = 0, self.edge_count*4*3, self.edge_count*4*3*2, self.edge_count*4*3*3
         for i in range(self.edge_count):

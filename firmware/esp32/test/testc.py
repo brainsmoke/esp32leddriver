@@ -15,7 +15,7 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              n        = leds.n_leds,
                              remap    = leds.remap)
 
-fb = bytearray(leds.n_leds * 3)
+fb = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
 cur_ani = TestPatternC(leds)
 
 try:
@@ -33,9 +33,9 @@ try:
                 while utime.ticks_diff(utime.ticks_us(),t_next) < 0:
                     pass
                 t_next = utime.ticks_add(t_next, 16666)
-            driver.writefrom(fb)
+            driver.writefrom16(fb)
 finally:
     for i in range(len(fb)):
         fb[i] = 0
-    driver.writefrom(fb)
+    driver.writefrom16(fb)
 
