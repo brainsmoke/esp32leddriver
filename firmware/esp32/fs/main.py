@@ -6,7 +6,7 @@ import config, model, uartpixel, cball, configform, csrf
 from ani.orbit import Orbit
 from ani.lorenz import Lorenz
 from ani.fire import Fire
-from ani.gradient import Gradient, Spiral, Wobble
+from ani.gradient import Gradient, Spiral, Wobble, ConfigMode
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
 from ani.materials import Checkers, AlienPlanet
@@ -43,17 +43,6 @@ def wait_for_wifi():
     except OSError:
         pass
 
-def create_listener_socket(port):
-    addr = usocket.getaddrinfo('0.0.0.0', port)[0][-1]
-    s = usocket.socket()
-    s.bind(addr)
-    s.listen(1)
-    return s
-
-def get_connection(socket):
-    conn, addr = socket.accept()
-    return conn.makefile('rb')
-
 config.load()
 
 if config.essid != None:
@@ -72,14 +61,14 @@ form = configform.ConfigRoot("/")
 
 from player import Player
 
-player = Player(driver, leds)
+player = Player(driver)
 
 form.add_action('previous', player.previous, player.is_on,  caption="&lt;&lt;" )
 form.add_action('off',      player.off,      player.is_on,  caption="Off"      )
 form.add_action('on',       player.on,       player.is_off, caption="On"       )
 form.add_action('next',     player.next,     player.is_on,  caption="&gt;&gt;" )
 
-select = form.add_select_group('ani', player.get_selected)
+cur_animation = form.add_select_group('ani', player.get_selected)
 
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
@@ -87,16 +76,20 @@ form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_ga
 tmpfloat = uarray.array('f', 0 for _ in range(leds.n_leds * 3))
 tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
 
+player.start()
+
 for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:
         print (caption)
-        player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=select.add_group(name, caption=caption) ) )
+        player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=cur_animation.add_group(name, caption=caption) ) )
     except KeyboardInterrupt as err:
         raise err
     except Exception as err:
         print ("failed loading {}: {}".format(caption, err))
+    if player.is_off():
+        player.on()
 
 
 debug=False
@@ -291,11 +284,25 @@ def handler(req):
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
+from gpiowait import PinEvent
+
+buttonPress = PinEvent(0, trigger=machine.Pin.IRQ_FALLING)
+
 try:
     player.on()
     server.start()
     gc.collect()
-    player.run()
+
+    while True:
+        buttonPress.wait()
+        print("[button pressed]")
+        configani = ConfigMode(leds)
+        player.set_animation(configani)
+        buttonPress.wait()
+        print("[button pressed]")
+        player.on()
+
 finally:
+    player.stop()
     server.stop()
 

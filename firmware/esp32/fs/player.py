@@ -2,14 +2,15 @@ import utime, uarray, gc, math
 
 import cball
 
+import _thread
+
 class Off:
     def next_frame(self, fbuf):
         cball.array_set(fbuf, 0)
 
 class Player:
 
-    def __init__(self, driver, leds):
-        import _thread
+    def __init__(self, driver):
         self._ani = []
         self._cur = 0
         self._off = Off()
@@ -17,25 +18,31 @@ class Player:
         self._driver = driver
         self._lock = _thread.allocate_lock()
 
-        self._fade_fb = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
-        self._fb = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
+        self._fade_fb = driver.create_framebuffer16()
+        self._fb = driver.create_framebuffer16()
         self._fade = 60
 
         self._old_gamma = self._cur_gamma = self._new_gamma = driver.get_gamma()
         self._old_brightness = self._cur_brightness = self._new_brightness = math.sqrt(driver.get_brightness())
         self._gamma_fade = 60
+        self._running = False
+        self._runlock = _thread.allocate_lock()
 
-    def _set_animation(self, index):
+    def set_animation(self, ani):
         self._lock.acquire()
-        if index == None or len(self._ani) == 0:
-            self._cur_ani = self._off
-        else:
-            self._cur = index
-            self._cur_ani = self._ani[self._cur][1]
-
-        self._fade_fb, self._fb = self._fb, self._fade_fb
-        self._fade = 0
+        if self._cur_ani != ani:
+            self._fade = 0
+            self._fade_fb, self._fb = self._fb, self._fade_fb
+        self._cur_ani = ani
         self._lock.release()
+
+    def _set_index(self, index):
+        self._cur = index
+        if len(self._ani) > 0:
+            ani = self._ani[self._cur][1]
+        else:
+            ani = self._off
+        self.set_animation(ani)
 
     def get_selected(self):
         if self.is_off():
@@ -46,7 +53,7 @@ class Player:
     def select(self, name):
         for i in range(len(self._ani)):
             if self._ani[i][0] == name:
-                self._set_animation(i)
+                self._set_index(i)
                 break
 
     def add_animation(self, name, ani):
@@ -54,24 +61,23 @@ class Player:
 
     def next(self):
         if self.is_on():
-            self._set_animation( (self._cur+1)%len(self._ani) )
+            self._set_index( (self._cur+1)%len(self._ani) )
 
     def previous(self):
         if self.is_on():
-            self._set_animation( (self._cur-1)%len(self._ani) )
+            self._set_index( (self._cur-1)%len(self._ani) )
 
     def off(self):
-        self._set_animation(None)
+        self.set_animation(self._off)
 
     def is_off(self):
-        return self._cur_ani == self._off
+        return not self.is_on()
 
     def on(self):
-        if len(self._ani) > 0:
-            self._set_animation( self._cur )
+        self._set_index( self._cur )
 
     def is_on(self):
-        return self._cur_ani != self._off
+        return self._cur_ani == self._ani[self._cur][1]
 
     def set_brightness(self, value):
         if 0 <= value <= 1:
@@ -97,10 +103,20 @@ class Player:
     def get_gamma(self):
         return self._new_gamma
 
-    def run(self):
+    def start(self):
+        _thread.start_new_thread(self._run, ())
+
+    def stop(self, wait=True):
+        self._running = False
+        if wait:
+            self._runlock.acquire()
+            self._runlock.release()
+
+    def _run(self):
+        self._runlock.acquire()
+        self._running = True
         try:
-#            t_next = utime.ticks_add(utime.ticks_us(), 16666)
-            while True:
+            while self._running:
                 self._lock.acquire()
                 ani        = self._cur_ani
                 fb         = self._fb
@@ -108,12 +124,7 @@ class Player:
                 fade       = self._fade
                 self._lock.release()
                 try:
-#                    t_0 = utime.ticks_us();
                     ani.next_frame(fb)
-#                    t_1 = utime.ticks_us();
-#                    print( t_1-t_0 )
-                except KeyboardInterrupt as err:
-                    raise err
                 except Exception as err:
                     print(err)
                     print ("animation failed, removing: {}".format(self._cur_ani.__class__.__name__))
@@ -121,7 +132,7 @@ class Player:
                     if len(self._ani) == 0:
                         break
 
-                    self._set_animation( self._cur%len(self._ani) )
+                    self._set_index( self._cur%len(self._ani) )
 
                 if self._fade < 60:
                     self._fade += 1
@@ -138,17 +149,9 @@ class Player:
                     self._lock.release()
                     self._driver.calc_gamma_map(gamma=self._cur_gamma, brightness=self._cur_brightness**2)
 
-#                dt = utime.ticks_diff(t_next, utime.ticks_us())
-#                if dt < -2000:
-#                    print(dt)
-#                    t_next = utime.ticks_us()
-
-#                elif dt > 0:
-#                    utime.sleep_us(dt)
-
-#                t_next = utime.ticks_add(t_next, 16666)
                 self._driver.writefrom16(fb)
         finally:
             self._off.next_frame(fb)
             self._driver.writefrom16(fb)
+            self._runlock.release()
 

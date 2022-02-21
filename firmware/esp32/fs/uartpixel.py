@@ -51,12 +51,18 @@ class UartPixel:
     def get_cutoff(self, cutoff):
         return self.cutoff
 
+    def create_framebuffer(self):
+        return bytearray(self.n*3)
+
+    def create_framebuffer16(self):
+        return uarray.array('H', 0 for _ in range(self.n*3))
+
     def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, remap=None, framebuf=True):
         self.n = n
         if framebuf:
-            self.buf = bytearray(n*3)
+            self.buf = self.create_framebuffer()
 
-        self.buf16 = uarray.array('H', 0 for _ in range(n*3))
+        self.buf16 = self.create_framebuffer16()
         self.outbuf = uarray.array('H', 0 for _ in range(n*len(led_order) + 2))
 
         mv = memoryview(self.outbuf)
