@@ -39,14 +39,16 @@ def wifi_configure_ap(essid, password, ip):
     wlan.active(True)
     print([essid, password, ip])
     wlan.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
+    wait_for_wifi(verbose=False)
     wlan.ifconfig( [ip, '255.255.255.0', ip, ip] )
     print(wlan.ifconfig())
 
-def wait_for_wifi():
+def wait_for_wifi(verbose=True):
     try:
         for i in range(20):
            if wlan.isconnected():
-               print(wlan.ifconfig())
+               if verbose:
+                   print(wlan.ifconfig())
                break
            utime.sleep(.5)
     except OSError:

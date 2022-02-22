@@ -6,12 +6,28 @@ import configform, config
 from esphttpd import htmlencode
 
 def validate_essid(essid):
-    return True
+    return len(essid) >= 2
 
 def validate_password(password):
-    return True
+    return len(password) >= 8
 
 def validate_ip(ip):
+    t = ip.split('.')
+
+    if len(t) != 4:
+        return False
+    try:
+        t = [ int(i) for i in t ]
+    except ValueError:
+        return False
+
+    for i in t:
+        if not 0 <= i <= 255:
+             return False
+
+    if sum(t) == 0:
+        return False
+
     return True
 
 class NetworkConf(configform.ConfigFormElem):
