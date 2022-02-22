@@ -33,9 +33,18 @@ def wifi_connect(essid, password, wait=True):
     except OSError:
         pass
 
+def wifi_configure_ap(essid, password, ip):
+    global wlan
+    wlan = network.WLAN(network.AP_IF)
+    wlan.active(True)
+    print([essid, password, ip])
+    wlan.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
+    wlan.ifconfig( [ip, '255.255.255.0', ip, ip] )
+    print(wlan.ifconfig())
+
 def wait_for_wifi():
     try:
-        for i in range(10):
+        for i in range(20):
            if wlan.isconnected():
                print(wlan.ifconfig())
                break
@@ -44,6 +53,14 @@ def wait_for_wifi():
         pass
 
 config.load()
+
+def setup():
+    from setup import setup_interactive
+    setup_interactive()
+
+def failsafe():
+    from setup import failsafe_interactive
+    failsafe_interactive()
 
 if config.essid != None:
     wifi_connect(config.essid, config.password, wait=False)
@@ -101,7 +118,7 @@ def gc_test():
 if debug:
     form.add_action('gc', gc_test, lambda : debug, caption="garbage collect" )
 
-from esphttpd import HTTP_Server, redirect, urldecode
+from esphttpd import HTTP_Server, redirect, urldecode, parse_formdata
 
 if config.essid != None:
     wait_for_wifi()
@@ -118,28 +135,6 @@ else:
 
 #form.print()
 
-# quick hack :-P
-arr = memoryview(bytearray(256))
-value_regex = re.compile('(^|&)value=([^&]*)(&|$)')
-token_regex = re.compile('(^|&)csrf=([^&]*)(&|$)')
-def get_val(req):
-    n = req.recv(arr)
-    form_content = bytes(arr[:n])
-    g=value_regex.search(form_content)
-    if g:
-        value = urldecode(g.group(2)).decode('utf-8')
-    else:
-        value = ''
-
-    g=token_regex.search(form_content)
-    if g:
-        token = urldecode(g.group(2))
-    else:
-        token = b''
-
-    return value, token
-
-
 @server.route("/", "GET")
 @server.buffered
 def index(req, out):
@@ -148,6 +143,7 @@ def index(req, out):
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style type="text/css">
+
 body
 {
     font-family: Sans;
@@ -197,8 +193,16 @@ form[action="/previous"] > input
     display: contents;
 }
 
+dl { display: flex; flex-wrap: wrap; }
+dt { width: 30%;margin:1em 0 0 0;}
+dd { width: 69%;margin:1em 0 0 0;}
+dd input { width:100% }
+.network input[type=submit]{width: 30%; font-size: 100%;margin-bottom: 1em}
+
 .color, .slider
 {
+    display: flex;
+    flex-wrap: wrap;
     width: 100%;
 }
 
@@ -211,6 +215,13 @@ input[type=submit]
 {
     height: 2em;
     font-size: 200%;
+}
+
+.slider  input[type=submit],
+.color  input[type=submit]
+{
+    width: 4em;
+    font-size: 100%;
 }
 
 h2,h4,label
@@ -228,7 +239,7 @@ h4,label
 
 input
 {
-    width: 100%;
+    flex-grow: 1;
 }
 </style>
 <body>
@@ -277,32 +288,56 @@ input
 @server.route("/*", "POST")
 def handler(req):
     path = urldecode(req.get_path()).decode('utf-8')
-    value, token = get_val(req)
+    formdata = parse_formdata( req )
+    token = formdata['csrf'].encode('utf-8')
     if csrf.verify_csrf_token(req, token) or csrf.verify_api_key(req, config.api_key):
-        form.set(path, value)
+        form.set(path, formdata)
     elif token != b'':
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
 from gpiowait import PinEvent
 
-buttonPress = PinEvent(0, trigger=machine.Pin.IRQ_FALLING)
+event = PinEvent(0, trigger=machine.Pin.IRQ_FALLING)
+def wait_for_buttonpress():
+    while True:
+        event.wait()
+        utime.sleep(1) # don't make screen attaches trigger button presses
+        if event.pin() == 0:
+            break
 
+# normal mode
 try:
     player.on()
     server.start()
     gc.collect()
-
-    while True:
-        buttonPress.wait()
-        print("[button pressed]")
-        configani = ConfigMode(leds)
-        player.set_animation(configani)
-        buttonPress.wait()
-        print("[button pressed]")
-        player.on()
-
+    wait_for_buttonpress()
 finally:
     player.stop()
-    server.stop()
+    try:
+        server.stop()
+    except OSError as e:
+        print(e)
+
+# failsafe mode
+try:
+    print("[dropping to failsafe mode]")
+    wlan.disconnect()
+    configani = ConfigMode(leds)
+    utime.sleep(.5)
+    wifi_configure_ap(config.failsafe_essid, config.failsafe_password, config.failsafe_ip)
+    player.set_animation(configani)
+    player.start()
+    import admin
+    form = admin.get_form()
+    server.use_tls(False)
+    server.start()
+    while True:
+        utime.sleep(1000) # lock with no load
+finally:
+    player.stop()
+    try:
+        server.stop()
+    except OSError as e:
+        print(e)
 

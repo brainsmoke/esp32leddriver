@@ -1,4 +1,3 @@
-import binascii
 
 from esphttpd import htmlencode, urlencode_path
 
@@ -54,7 +53,7 @@ class ConfigElem:
         self._attrib_string = ''.join( ' {}="{}"'.format(name, self._attribs[name]) for name in self._attribs if name != 'class' )
         self._update()
 
-    def _set(self, value):
+    def _set(self, formdata):
         raise ValueError("element unsettable")
 
     def _lookup(self, path_list, ix):
@@ -70,9 +69,9 @@ class ConfigElem:
 
         return self._lookup(path_list, 1)
 
-    def set(self, path, value):
+    def set(self, path, formdata):
         obj = self.lookup(path)
-        obj._set(value)
+        obj._set(formdata)
 
     def set_html_attr(self, path, attr={}):
         obj = self.lookup(path)
@@ -232,13 +231,15 @@ class Color(ConfigFormElem):
     def __init__(self, getter, setter, caption=None):
         self.getter, self.setter = getter, setter
         super().__init__(caption=caption)
-        self._set_form_content('<input type="color" name="value" value="{}" onchange="this.form.submit();" />'.format(_html_color(self.getter())))
+        self._update_content()
         self._set_css_class('color')
 
-    def _set(self, value):
-        self.setter(_parse_color(value))
-        self._set_form_content('<input type="color" name="value" value="{}" onchange="this.form.submit();" />'.format(_html_color(self.getter())))
-        self._update()
+    def _update_content(self):
+        self._set_form_content('<input type="color" name="value" value="{}" onchange="this.form.submit();" /><noscript><input type="submit" value="set" /></noscript>'.format(_html_color(self.getter())))
+
+    def _set(self, formdata):
+        self.setter(_parse_color(formdata['value']))
+        self._update_content()
 
     def print(self, indent='', name=''):
         print('{}{}: rgb{}'.format(indent, name, self.getter()))
@@ -252,15 +253,15 @@ class Slider(ConfigFormElem):
         else:
             self.type = float
         super().__init__(caption=caption)
+        self._update_content()
         self._set_css_class('slider')
 
-        self._set_form_content('<input name="value" type="range" min="{}" max="{}" step="{}" value="{}" onchange="this.form.submit();" />'.format(self.min, self.max, self.step, self.getter()))
-        self._update()
+    def _update_content(self):
+        self._set_form_content('<input name="value" type="range" min="{}" max="{}" step="{}" value="{}" onchange="this.form.submit();" /><noscript><input type="submit" value="set" /></noscript>'.format(self.min, self.max, self.step, self.getter()))
 
-    def _set(self, value):
-        self.setter(self.type(value))
-        self._set_form_content('<input name="value" type="range" min="{}" max="{}" step="{}" value="{}" onchange="this.form.submit();" />'.format(self.min, self.max, self.step, self.getter()))
-        self._update()
+    def _set(self, formdata):
+        self.setter(self.type(formdata['value']))
+        self._update_content()
 
     def print(self, indent='', name=''):
         print('{}{}: cur={}, min={}, max={}, step={}'.format(indent, name, self.getter(), self.min, self.max, self.step))
@@ -273,7 +274,7 @@ class Action(ConfigFormElem):
         self._text = caption
         self._set_css_class('action')
 
-    def _set(self, value):
+    def _set(self, formdata):
         if self.enabled_func():
             self.action_func()
 

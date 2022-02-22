@@ -22,8 +22,10 @@ cd fs
 ../tools/upload.sh
 screen /dev/ttyUSB0 115200
 ctrl-c
->>>import setup
+>>>setup()
 (enter wifi creds, will be stored in flash)
+>>>failsafe()
+(enter failsafe wifi access point creds, will be stored in flash)
 ctrl-d
 
 ```

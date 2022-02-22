@@ -1,6 +1,8 @@
 
 essid, password = None, None
 
+failsafe_essid, failsafe_password, failsafe_ip = None, None, None
+
 use_tls, key_file, cert_file = False, None, None
 
 api_key = None
@@ -26,12 +28,8 @@ def load_json(filename):
 
     return config
 
-
-def reload():
-    import gc
-
-    global essid, password, port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file, api_key
-
+def reload_network():
+    global essid, password
     config = load_json("/secret/network.json")
 
     if config != None:
@@ -39,6 +37,51 @@ def reload():
             essid, password = config['wifi']['essid'], config['wifi']['password']
 
     del config
+
+def reload_failsafe():
+    global failsafe_essid, failsafe_password, failsafe_ip
+    config = load_json("/secret/failsafe.json")
+
+    if config != None:
+        if 'wifi' in config and \
+           'essid' in config['wifi'] and \
+           'password' in config['wifi'] and \
+           'network' in config and \
+           'ip' in config['network']:
+            failsafe_essid = config['wifi']['essid']
+            failsafe_password = config['wifi']['password']
+            failsafe_ip = config['network']['ip']
+
+    del config
+
+def write_network_conf(essid, password):
+
+    import ujson
+    with open("/secret/network.json", "w") as f:
+        ujson.dump( {
+            'wifi' : { 'essid': str(essid),
+                       'password': str(password) },
+        }, f)
+
+    reload_network()
+
+def write_failsafe_conf(essid, password, ip):
+
+    import ujson
+    with open("/secret/failsafe.json", "w") as f:
+        ujson.dump( {
+            'wifi' : { 'essid': str(essid), 'password': str(password) },
+            'network' : { 'ip': str(ip) },
+        }, f)
+
+    reload_failsafe()
+
+def reload():
+    import gc
+
+    global port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file, api_key
+    reload_network()
+    reload_failsafe()
     gc.collect()
 
     config = load_json("/secret/httpd.json")

@@ -42,6 +42,28 @@ def urldecode(s):
 def querydecode(s):
     return _urldecode_regex.sub(urldecode_esc, s.replace(b'+', b' '))
 
+_arr = memoryview(bytearray(2048))
+def parse_formdata( req ):
+    result = {}
+    n = req.recv(_arr)
+    if n == len(_arr):
+        return result
+
+    form_data = bytes(_arr[:n])
+
+    end = -1
+    while end < n:
+        start = end+1
+        end = form_data.find(b'&', start)
+        if end == -1:
+            end = n
+        eq = form_data.find(b'=', start)
+        if eq != -1:
+            result[form_data[start:eq].decode('utf-8')] = urldecode(form_data[eq+1:end]).decode('utf-8')
+
+    return result
+
+
 def redirect(req, location, code=303):
     req.set_status(code)
     req.add_header("Location", location)
@@ -105,6 +127,15 @@ class HTTP_Server:
         self._keyfile = keyfile
         self._certfile = certfile
         self._writebuf = ResponseBuffer(writebuf_size)
+
+    def use_tls(self, use_tls):
+        self._use_tls = use_tls
+
+    def set_keyfile(self, keyfile):
+        self._keyfile = keyfile
+
+    def set_certfile(self, certfile):
+        self._certfile = certfile
 
     def start(self):
         from _thread import start_new_thread
