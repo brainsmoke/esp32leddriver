@@ -253,8 +253,17 @@ def op_bxx(ctx, cond, reladdr):
     if cond(ctx['flags']):
         op_b(ctx, reladdr)
 
+def op_sxtb(ctx, dst, src):
+    ctx[dst] = signed8(ctx[src])
+
+def op_sxth(ctx, dst, src):
+    ctx[dst] = signed16(ctx[src])
+
 def op_uxtb(ctx, dst, src):
     ctx[dst] = unsigned8(ctx[src])
+
+def op_uxth(ctx, dst, src):
+    ctx[dst] = unsigned16(ctx[src])
 
 def op_b(ctx, reladdr):
     set_pc(ctx, ctx['r15']+reladdr)
@@ -597,6 +606,9 @@ opcodes = {
     '1100LbbbRRRRRRRR' : op_ldstm,
     '1101ccccjjjjjjjj' : op_bxx,
 
+    '1011001000sssddd' : op_sxth,
+    '1011001001sssddd' : op_sxtb,
+    '1011001010sssddd' : op_uxth,
     '1011001011sssddd' : op_uxtb,
 
 #   '11011111kkkkkkkk' : op_swi,   # software interrupt

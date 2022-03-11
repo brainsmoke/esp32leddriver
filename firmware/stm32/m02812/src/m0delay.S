@@ -72,6 +72,16 @@ bne 0b
 	.endif
 .endm
 
+.macro delay_big reg num
+	delay \reg (\num%4)
+	ldr \reg, =(\num>>2)   /*     0 + 2       */
+1:	subs \reg, #1          /*     2 + reg     */
+	bne 1b                 /* 2+reg + 3*reg-2 */
+	                       /* 4*reg           */
+.endm
+
+
+
 .macro delay_reg_div8 reg scratch sub cycleadj
 
 
@@ -88,3 +98,4 @@ bne 0b
    bne 2b                                     //                 3*(reg>>2)-2
 
 .endm
+
