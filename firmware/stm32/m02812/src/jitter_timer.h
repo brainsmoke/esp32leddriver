@@ -13,16 +13,16 @@
 #define LED2  (8)
 #define LED3 (12)
 
-#define PACKET0  (3)
-#define PACKET1  (7)
-#define PACKET2 (11)
+#define PACKET1  (3)
+#define PACKET2  (7)
+#define PACKET3 (11)
 
 #define BITBANG_NATIVE_CYCLES (70)
 
 #define MEASURE_LEN            (1024)
 #define MEASURE_PERIODS        (MEASURE_LEN*8-1)
 #define MEASURE_NATIVE_CYCLES  (BITBANG_NATIVE_CYCLES*MEASURE_PERIODS)
-#define FRAME_LEN              (MEASURE_LEN+PACKET2+1)
+#define FRAME_LEN              (MEASURE_LEN+PACKET3+1)
 
 #ifndef __ASSEMBLER__
 
