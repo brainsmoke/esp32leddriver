@@ -181,3 +181,32 @@ pop {r4-r7}
 bx lr
 	.size	bitbang, .-bitbang
 
+	.global	bitbang_clear
+	.code	16
+	.thumb_func
+	.type	bitbang_clear, %function
+	.syntax unified
+	.thumb
+
+
+bitbang_clear:
+
+push {r4-r7}
+movs rGPIO, r0
+movs rPINMASK, r1
+movs rTMP, #24
+movs rOUTTMP, #0
+
+bitbang_clear_loop:
+/*  0 +  2 */ strh rPINMASK, [rGPIO, #GPIO_ODR]
+/*  2 + 14 */ delay rSCRATCH, 14
+/* 16 +  2 */ strh rOUTTMP, [rGPIO, #GPIO_ODR]
+/* 18 + 47 */ delay rSCRATCH, 47
+/* 65 +  1 */ subs rTMP, #1
+/* 66 + 3+1*/ bne bitbang_clear_loop
+
+delay_big rTMP, 14400
+
+pop {r4-r7}
+bx lr
+	.size	bitbang_clear, .-bitbang_clear

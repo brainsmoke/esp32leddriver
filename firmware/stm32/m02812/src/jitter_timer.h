@@ -31,6 +31,8 @@
 extern uint32_t histogram[HISTOGRAM_MAX+1];
 void bitbang(uint16_t *buf, uint32_t pin, volatile GPIO_TypeDef *gpio, volatile TIM_TypeDef *timer);
 
+void bitbang_clear(volatile GPIO_TypeDef *gpio, uint32_t mask);
+
 #endif
 
 #endif // JITTER_TIMER_H
