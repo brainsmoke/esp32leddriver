@@ -1,0 +1,5 @@
+(sym_lib_table
+  (lib (name esp32-wrover)(type Legacy)(uri ${KIPRJMOD}/libs/esp32-wrover.lib)(options "")(descr ""))
+  (lib (name edgedriver-rescue)(type Legacy)(uri ${KIPRJMOD}/edgedriver-rescue.lib)(options "")(descr ""))
+  (lib (name ch340b)(type Legacy)(uri ${KIPRJMOD}/ch340b.lib)(options "")(descr ""))
+)
