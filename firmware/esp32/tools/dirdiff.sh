@@ -2,6 +2,8 @@
 
 . "$(dirname "$0")/config.sh"
 
+kill_screen
+
 SHATREE="$(dirname "$0")/../test/shatree.py"
 
 DIR="."
