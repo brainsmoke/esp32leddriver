@@ -324,7 +324,8 @@ finally:
 # failsafe mode
 try:
     print("[dropping to failsafe mode]")
-    wlan.disconnect()
+    if wlan != None:
+        wlan.disconnect()
     configani = ConfigMode(leds)
     utime.sleep(.5)
     wifi_configure_ap(config.failsafe_essid, config.failsafe_password, config.failsafe_ip)
