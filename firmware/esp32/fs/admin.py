@@ -11,6 +11,9 @@ def validate_essid(essid):
 def validate_password(password):
     return len(password) >= 8
 
+def validate_network_type(s):
+    return s in ("open", "protected")
+
 def validate_ip(ip):
     t = ip.split('.')
 
@@ -38,21 +41,35 @@ class NetworkConf(configform.ConfigFormElem):
 
     def _update_content(self):
         essid = config.essid
-        if not essid:
+        password_string = config.password
+        if essid == None:
             essid = ""
-        password = config.password
-        if not password:
-            password = ""
+            password_string = ""
+
+        protected_sel, open_sel,  = "selected", ""
+        if password_string == None:
+            password_string = ""
+            protected_sel, open_sel = "", "selected"
+
         self._set_form_content("""<dl>
+<dt>Type<dd><select name="type" onchange="this.form.elements['password'].disabled = (this.value=='open');">
+<option value="protected" {}>Password Protected
+<option value="open" onchange="" {}>Open
+</select>
 <dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" />
 <dt>Password<dd><input name="password" type="text" value="{}" maxlength="128" />
 </dl>
-<input type="submit" value="set" />""".format(htmlencode(essid), htmlencode(password)))
+<input type="submit" value="set" />
+<script>const f=document.currentScript.parentNode; f.elements['password'].disabled = (f.elements['type'].value=='open')</script>
+""".format(protected_sel, open_sel, htmlencode(essid), htmlencode(password_string)))
 
     def _set(self, formdata):
         if validate_essid(formdata['essid']) and \
-           validate_password(formdata['password']):
-            config.write_network_conf(formdata['essid'], formdata['password'])
+           validate_network_type(formdata['type']):
+            if formdata['type'] != 'open' and validate_password(formdata['password']):
+                config.write_network_conf(formdata['essid'], formdata['password'])
+            else:
+                config.write_network_conf(formdata['essid'], None)
         self._update_content()
 
 class FailsafeConf(configform.ConfigFormElem):
@@ -63,10 +80,10 @@ class FailsafeConf(configform.ConfigFormElem):
 
     def _update_content(self):
         essid = config.failsafe_essid
-        if not essid:
+        if essid == None:
             essid = ""
         password = config.failsafe_password
-        if not password:
+        if password == None:
             password = ""
         ip = config.failsafe_ip
         if not ip:

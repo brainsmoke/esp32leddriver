@@ -33,10 +33,12 @@ def reload_network():
     config = load_json("/secret/network.json")
 
     if config != None:
-        if 'wifi' in config and 'essid' in config['wifi'] and 'password' in config['wifi']:
+        if 'wifi' in config and 'essid' in config['wifi']:
             essid = config['wifi']['essid']
             if 'password' in config['wifi']:
                 password = config['wifi']['password']
+            else:
+                password = None
 
     del config
 
@@ -60,10 +62,11 @@ def write_network_conf(essid, password):
 
     import ujson
     with open("/secret/network.json", "w") as f:
-        ujson.dump( {
-            'wifi' : { 'essid': str(essid),
-                       'password': str(password) },
-        }, f)
+        settings = { 'wifi' : { 'essid': str(essid) } }
+        if password != None:
+            settings['wifi']['password'] = password
+
+        ujson.dump( settings, f )
 
     reload_network()
 
