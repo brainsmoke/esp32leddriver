@@ -24,6 +24,15 @@ def setup_interactive():
     config.write_network_conf(essid, password)
 
 
+def setup_open_interactive():
+
+    essid = query("wifi essid", default=config.essid)
+    if essid == '':
+        raise ValueError("no essid given")
+
+    config.write_network_conf(essid, None)
+
+
 def failsafe_interactive():
 
     old_essid = config.failsafe_essid

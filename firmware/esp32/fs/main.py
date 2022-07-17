@@ -60,6 +60,10 @@ def setup():
     from setup import setup_interactive
     setup_interactive()
 
+def setup_open():
+    from setup import setup_open_interactive
+    setup_open_interactive()
+
 def failsafe():
     from setup import failsafe_interactive
     failsafe_interactive()

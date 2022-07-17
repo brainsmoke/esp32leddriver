@@ -34,7 +34,9 @@ def reload_network():
 
     if config != None:
         if 'wifi' in config and 'essid' in config['wifi'] and 'password' in config['wifi']:
-            essid, password = config['wifi']['essid'], config['wifi']['password']
+            essid = config['wifi']['essid']
+            if 'password' in config['wifi']:
+                password = config['wifi']['password']
 
     del config
 
