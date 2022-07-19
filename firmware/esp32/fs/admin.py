@@ -12,7 +12,7 @@ def validate_password(password):
     return len(password) >= 8
 
 def validate_network_type(s):
-    return s in ("open", "protected")
+    return s in ("off", "open", "protected")
 
 def validate_ip(ip):
     t = ip.split('.')
@@ -34,42 +34,68 @@ def validate_ip(ip):
     return True
 
 class NetworkConf(configform.ConfigFormElem):
-    def __init__(self, caption='Network Config'):
+    def __init__(self, caption='Network Config', info=None):
         super().__init__(caption=caption)
         self._set_css_class('network')
+        self._info = info
         self._update_content()
 
     def _update_content(self):
-        essid = config.essid
-        password_string = config.password
-        if essid == None:
-            essid = ""
-            password_string = ""
 
-        protected_sel, open_sel,  = "selected", ""
-        if password_string == None:
-            password_string = ""
-            protected_sel, open_sel = "", "selected"
+        protected_sel, open_sel, off_sel  = "", "", ""
+        essid, password = "", ""
+
+        if config.essid == None:
+            off_sel = "selected"
+        else:
+            essid = config.essid
+            if config.password == None:
+                open_sel = "selected"
+            else:
+                password = config.password
+                protected_sel = "selected"
+
+        info = "no connection info available"
+        if self._info != None:
+            info = "<dl>{}</dl>".format(''.join( '<dt>{}<dd>{}'.format(
+                htmlencode(t),htmlencode(d)) for t, d in self._info ) )
 
         self._set_form_content("""<dl>
-<dt>Type<dd><select name="type" onchange="this.form.elements['password'].disabled = (this.value=='open');">
+<dt>Type<dd><select name="type" onchange="this.form.elements['password'].disabled = (this.value!='protected');this.form.elements['essid'].disabled = (this.value=='off');">
 <option value="protected" {}>Password Protected
 <option value="open" onchange="" {}>Open
+<option value="off" {}>Off
 </select>
 <dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" />
 <dt>Password<dd><input name="password" type="text" value="{}" maxlength="128" />
+<dt>Conn. info<dd>{}
 </dl>
 <input type="submit" value="set" />
-<script>const f=document.currentScript.parentNode; f.elements['password'].disabled = (f.elements['type'].value=='open')</script>
-""".format(protected_sel, open_sel, htmlencode(essid), htmlencode(password_string)))
+<script>const f=document.currentScript.parentNode; f.elements['password'].disabled = (f.elements['type'].value!='protected');f.elements['essid'].disabled = (f.elements['type'].value=='off')</script>
+""".format(protected_sel, open_sel, off_sel, htmlencode(essid), htmlencode(password), info))
 
     def _set(self, formdata):
-        if validate_essid(formdata['essid']) and \
-           validate_network_type(formdata['type']):
-            if formdata['type'] != 'open' and validate_password(formdata['password']):
-                config.write_network_conf(formdata['essid'], formdata['password'])
-            else:
-                config.write_network_conf(formdata['essid'], None)
+        mode = formdata.get('type', '')
+        essid = formdata.get('essid', '')
+        password = formdata.get('password', '')
+
+        if not validate_network_type(mode):
+            return
+
+        if mode == 'off':
+            essid, password = None, None
+
+        elif not validate_essid(essid):
+            return
+
+        elif mode == 'open':
+            password = None
+
+        elif not validate_password(password):
+            return
+
+        config.write_network_conf(essid, password)
+        self._info = None
         self._update_content()
 
 class FailsafeConf(configform.ConfigFormElem):
@@ -102,10 +128,10 @@ class FailsafeConf(configform.ConfigFormElem):
             config.write_failsafe_conf(formdata['essid'], formdata['password'], formdata['ip'])
             self._update_content()
 
-def get_form():
+def get_form( network_info, reset_func ):
     form = configform.ConfigRoot("/")
-    form['network'] = NetworkConf("Network Config")
+    form['network'] = NetworkConf("Network Config", network_info)
     form['failsafe'] = FailsafeConf("Failsafe Network Config")
-    form['reset'] = configform.Action(machine.reset, lambda: True, 'reset')
+    form['reset'] = configform.Action(reset_func, lambda: True, 'reset')
     return form
 

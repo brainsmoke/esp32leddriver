@@ -17,11 +17,12 @@ import esp
 import machine
 machine.freq(240000000)
 
-wlan = None
+wlan = network.WLAN(network.STA_IF)
+ap = network.WLAN(network.AP_IF)
+ap.active(False)
+
 def wifi_connect(essid, password, wait=True):
-    global wlan
     try:
-        wlan = network.WLAN(network.STA_IF)
         wlan.active(True)
         if wlan.isconnected():
             wlan.disconnect()
@@ -34,14 +35,12 @@ def wifi_connect(essid, password, wait=True):
         pass
 
 def wifi_configure_ap(essid, password, ip):
-    global wlan
-    wlan = network.WLAN(network.AP_IF)
-    wlan.active(True)
+    wlan.active(False)
+    ap.active(True)
     print([essid, password, ip])
-    wlan.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
-    wait_for_wifi(verbose=False)
-    wlan.ifconfig( [ip, '255.255.255.0', ip, ip] )
-    print(wlan.ifconfig())
+    ap.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
+    ap.ifconfig( [ip, '255.255.255.0', ip, ip] )
+    print(ap.ifconfig())
 
 def wait_for_wifi(verbose=True):
     try:
@@ -328,7 +327,10 @@ finally:
 # failsafe mode
 try:
     print("[dropping to failsafe mode]")
-    if wlan != None:
+    mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
+    info = tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
+                        (mac, ) + wlan.ifconfig() ) )
+    if wlan.active():
         wlan.disconnect()
     configani = ConfigMode(leds)
     utime.sleep(.5)
@@ -336,7 +338,12 @@ try:
     player.set_animation(configani)
     player.start()
     import admin
-    form = admin.get_form()
+
+    def reset():
+        ap.active(False)
+        machine.reset()
+
+    form = admin.get_form( info, reset_func=reset )
     server.use_tls(False)
     server.start()
     while True:

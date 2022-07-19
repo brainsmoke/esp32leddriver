@@ -21,7 +21,7 @@ def load_json(filename):
     try:
         with uio.open(filename) as f:
             config = ujson.load(f)
-    except OSError:
+    except (OSError, ValueError):
         pass
 
     gc.collect()
@@ -62,11 +62,13 @@ def write_network_conf(essid, password):
 
     import ujson
     with open("/secret/network.json", "w") as f:
-        settings = { 'wifi' : { 'essid': str(essid) } }
+        settings = {}
+        if essid != None:
+            settings['essid'] = essid
         if password != None:
-            settings['wifi']['password'] = password
+            settings['password'] = password
 
-        ujson.dump( settings, f )
+        ujson.dump( { 'wifi' : settings }, f )
 
     reload_network()
 
