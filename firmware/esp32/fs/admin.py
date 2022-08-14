@@ -66,8 +66,8 @@ class NetworkConf(configform.ConfigFormElem):
 <option value="open" onchange="" {}>Open
 <option value="off" {}>Off
 </select>
-<dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" />
-<dt>Password<dd><input name="password" type="text" value="{}" maxlength="128" />
+<dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" autocomplete="off" />
+<dt>Password<dd><input name="password" type="text" value="{}" maxlength="128" autocomplete="off" />
 <dt>Conn. info<dd>{}
 </dl>
 <input type="submit" value="set" />

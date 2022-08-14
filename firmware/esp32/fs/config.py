@@ -32,6 +32,8 @@ def reload_network():
     global essid, password
     config = load_json("/secret/network.json")
 
+    essid = None
+    password = None
     if config != None:
         if 'wifi' in config and 'essid' in config['wifi']:
             essid = config['wifi']['essid']
