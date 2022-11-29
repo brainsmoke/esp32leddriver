@@ -39,19 +39,21 @@ ctrl-d
 git clone https://github.com/brainsmoke/esp32leddriver
 
 # ESP-IDF
-git clone -b v4.2 --recursive https://github.com/espressif/esp-idf.git
+git clone -b v4.4.3 --recursive https://github.com/espressif/esp-idf.git
+(cd esp-idf; ./install.sh)
 
 # clone of micropython using esp32 native vfs, also has settings for http[s] server /mbedtls
-git clone https://github.com/brainsmoke/micropython -b leddriver
-cd micropython/port/esp32
+git clone https://github.com/brainsmoke/micropython -b leddriver-post-1.19
+(cd micropython/ports/esp32 ; make submodules)
 
 # Edit setenv.sh to set the correct build directories:
-"$EDITOR" setenv.sh
+cd esp32leddriver/firmware/esp32
+"$EDITOR" toosl/setenv.sh
 
-./domake.sh
-# firmware should be in build-LEDBALL/firmware.bin
+./tools/domake.sh
+# firmware should be in micropython/ports/esp32/build-LEDBALL/firmware.bin
 
-./doflash.sh
+./tools/doflash.sh
 
 
 ```

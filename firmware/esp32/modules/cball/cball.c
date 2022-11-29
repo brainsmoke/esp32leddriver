@@ -1550,15 +1550,14 @@ static const mp_rom_map_elem_t cball_colordrift_locals_dict_table[] =
 static MP_DEFINE_CONST_DICT(cball_colordrift_locals_dict, cball_colordrift_locals_dict_table);
 
 
-const mp_obj_type_t colordrift_type =
-{
-	{ &mp_type_type },
-	.name = MP_QSTR_ColorDrift,
-	.print = cball_colordrift_print,
-	.make_new = cball_colordrift_make_new,
-	.locals_dict = (mp_obj_dict_t *)&cball_colordrift_locals_dict,
-};
-
+MP_DEFINE_CONST_OBJ_TYPE(
+	colordrift_type,
+	MP_QSTR_ColorDrift,
+	MP_TYPE_FLAG_NONE,
+	make_new, cball_colordrift_make_new,
+	print, cball_colordrift_print,
+	locals_dict, &cball_colordrift_locals_dict
+	);
 
 STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 {
@@ -1601,5 +1600,5 @@ const mp_obj_module_t cball_user_cmodule =
 	.globals = (mp_obj_dict_t*)&cball_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR_cball, cball_user_cmodule, MODULE_CBALL_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR_cball, cball_user_cmodule);
 

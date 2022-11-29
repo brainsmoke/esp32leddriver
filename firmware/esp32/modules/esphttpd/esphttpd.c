@@ -95,8 +95,8 @@ typedef struct
 
 static const int_str_obj_map_t methods[] =
 {
-	{ HTTP_GET,  "GET",  MP_OBJ_NEW_QSTR(MP_QSTR_GET)   },
-	{ HTTP_POST, "POST", MP_OBJ_NEW_QSTR(MP_QSTR_POST)  },
+	{ HTTP_GET,  "GET",  MP_ROM_QSTR(MP_QSTR_GET)   },
+	{ HTTP_POST, "POST", MP_ROM_QSTR(MP_QSTR_POST)  },
 	{ -1,         NULL,  mp_const_none                  },
 };
 
@@ -432,7 +432,7 @@ static mp_obj_t esphttpd_request_get_header(mp_obj_t self_in, mp_obj_t field_in)
 	if (field_len != 0)
 		httpd_req_get_hdr_value_str(self->req, field_name, vstr.buf, field_len+1);
 	vstr.len = field_len;
-	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+	return mp_obj_new_bytes_from_vstr(&vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_2( esphttpd_request_get_header_obj, esphttpd_request_get_header );
 
@@ -449,7 +449,7 @@ static mp_obj_t esphttpd_request_get_query_string(mp_obj_t self_in)
 	vstr_init(&vstr, len+1);
 	httpd_req_get_url_query_str(self->req, vstr.buf, len+1);
 	vstr.len = len;
-	return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr);
+	return mp_obj_new_bytes_from_vstr(&vstr);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_query_string_obj, esphttpd_request_get_query_string );
 
@@ -519,7 +519,7 @@ static mp_obj_t esphttpd_request_get_sockinfo(mp_obj_t self_in, int peer, int ty
 		}
 
 		vstr_addr.len = strlen(vstr_addr.buf);
-		return mp_obj_new_str_from_vstr(&mp_type_bytes, &vstr_addr);
+		return mp_obj_new_bytes_from_vstr(&vstr_addr);
 	}
 }
 
@@ -651,13 +651,13 @@ static const mp_rom_map_elem_t esphttpd_request_locals_dict_table[] =
 
 static MP_DEFINE_CONST_DICT(esphttpd_request_locals_dict, esphttpd_request_locals_dict_table);
 
-const mp_obj_type_t esphttpd_request_type =
-{
-	{ &mp_type_type },
-	.name = MP_QSTR_Request,
-	.print = esphttpd_request_print,
-	.locals_dict = (mp_obj_dict_t *)&esphttpd_request_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+	esphttpd_request_type,
+	MP_QSTR_Request,
+	MP_TYPE_FLAG_NONE,
+	print, esphttpd_request_print,
+	locals_dict, &esphttpd_request_locals_dict
+	);
 
 static void init_request_obj(esphttpd_request_obj_t *req, int n_alloc,
                              esphttpd_server_obj_t *server)
@@ -914,14 +914,14 @@ static mp_obj_t esphttpd_server_start(size_t n_args, const mp_obj_t *args)
 		config.prvtkey_len = key_len;
 		config.cacert_pem = cert;
 		config.cacert_len = cert_len;
-		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_https);
+		self->protocol_string = MP_ROM_QSTR(MP_QSTR_https);
 		err = httpd_ssl_start(&self->handle, &config);
 	}
 	else
 	{
 		httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
 		init_httpd_config(self, &config);
-		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_http);
+		self->protocol_string = MP_ROM_QSTR(MP_QSTR_http);
 		err = httpd_start(&self->handle, &config);
 	}
 
@@ -1045,14 +1045,13 @@ static const mp_rom_map_elem_t esphttpd_server_locals_dict_table[] =
 
 static MP_DEFINE_CONST_DICT(esphttpd_server_locals_dict, esphttpd_server_locals_dict_table);
 
-const mp_obj_type_t esphttpd_server_type =
-{
-	{ &mp_type_type },
-	.name = MP_QSTR_server,
-	.print = esphttpd_server_print,
-	.locals_dict = (mp_obj_dict_t *)&esphttpd_server_locals_dict,
-};
-
+MP_DEFINE_CONST_OBJ_TYPE(
+	esphttpd_server_type,
+	MP_QSTR_server,
+	MP_TYPE_FLAG_NONE,
+	print, esphttpd_server_print,
+	locals_dict, &esphttpd_server_locals_dict
+	);
 
 static mp_obj_t esphttpd__bufcpy(mp_obj_t dest, mp_obj_t ix, mp_obj_t src)
 {
@@ -1110,5 +1109,5 @@ const mp_obj_module_t esphttpd_user_cmodule =
 	.globals = (mp_obj_dict_t*)&esphttpd_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR__esphttpd, esphttpd_user_cmodule, MODULE_ESPHTTPD_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR__esphttpd, esphttpd_user_cmodule);
 

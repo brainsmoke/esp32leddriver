@@ -9,7 +9,7 @@ LEDDRIVERDIR="$BUILDDIR/esp32leddriver"
 MPYDIR="$BUILDDIR/micropython"
 MPYBUILDDIR="$MPYDIR/ports/esp32"
 
-USER_MODULES="\"$LEDDRIVERDIR/firmware/esp32/modules/cball;$LEDDRIVERDIR/firmware/esp32/modules/esphttpd;$LEDDRIVERDIR/firmware/esp32/modules/uartpixel\""
+USER_C_MODULES="\"$LEDDRIVERDIR/firmware/esp32/modules/micropython.cmake\""
 
 BOARD="LEDBALL"
 PORT="$DEVICE"

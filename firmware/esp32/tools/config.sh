@@ -5,7 +5,7 @@ elif [ -e /dev/ttyUSB0 ]; then
 device=/dev/ttyUSB0
 else
 echo "no serial found"
-exit 1
+[ -n "$IGNORE_SERIAL" ] || exit 1
 fi
 
 do_echo() {

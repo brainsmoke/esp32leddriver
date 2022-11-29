@@ -1,20 +1,14 @@
 
-set(MODULE_SRCS
-${MODULE_DIR}/cball.c
+add_library(cball INTERFACE)
+
+target_sources(cball INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/cball.c
 )
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_SRCS ${MODULE_SRCS}
-)
+target_link_libraries(usermod INTERFACE cball)
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_DEFS "-DMODULE_CBALL_ENABLED=1"
+add_compile_definitions(
+    MODULE_CBALL_ENABLED=1
 )
 
 message(status "cball module called")

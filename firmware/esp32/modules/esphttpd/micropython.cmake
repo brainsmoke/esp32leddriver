@@ -1,20 +1,15 @@
 
-set(MODULE_SRCS
-${MODULE_DIR}/esphttpd.c
+add_library(esphttpd INTERFACE)
+
+target_sources(esphttpd INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/esphttpd.c
 )
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_SRCS ${MODULE_SRCS}
-)
+target_link_libraries(usermod INTERFACE esphttpd)
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_DEFS "-DMODULE_ESPHTTPD_ENABLED=1"
+add_compile_definitions(
+    MODULE_ESPHTTPD_ENABLED=1
 )
 
 message(status "esphttpd module called")
+

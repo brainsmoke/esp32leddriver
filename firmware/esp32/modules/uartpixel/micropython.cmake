@@ -1,20 +1,15 @@
 
-set(MODULE_SRCS
-${MODULE_DIR}/uartpixel.c
+add_library(uartpixel INTERFACE)
+
+target_sources(uartpixel INTERFACE
+    ${CMAKE_CURRENT_LIST_DIR}/uartpixel.c
 )
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_SRCS ${MODULE_SRCS}
-)
+target_link_libraries(usermod INTERFACE uartpixel)
 
-set_property(
-    GLOBAL
-    APPEND
-    PROPERTY
-        MICROPY_MODULE_DEFS "-DMODULE_UARTPIXEL_ENABLED=1"
+add_compile_definitions(
+    MODULE_UARTPIXEL_ENABLED=1
 )
 
 message(status "uartpixel module called")
+

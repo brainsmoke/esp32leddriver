@@ -325,15 +325,14 @@ static const mp_rom_map_elem_t uartpixel_frame_queue_locals_dict_table[] =
 
 static MP_DEFINE_CONST_DICT(uartpixel_frame_queue_locals_dict, uartpixel_frame_queue_locals_dict_table);
 
-
-const mp_obj_type_t frame_queue_type =
-{
-	{ &mp_type_type },
-	.name = MP_QSTR_FrameQueue,
-	.print = uartpixel_frame_queue_print,
-	.make_new = uartpixel_frame_queue_make_new,
-	.locals_dict = (mp_obj_dict_t *)&uartpixel_frame_queue_locals_dict,
-};
+MP_DEFINE_CONST_OBJ_TYPE(
+	frame_queue_type,
+	MP_QSTR_FrameQueue,
+	MP_TYPE_FLAG_NONE,
+	print, uartpixel_frame_queue_print,
+	make_new, uartpixel_frame_queue_make_new,
+	locals_dict, &uartpixel_frame_queue_locals_dict
+	);
 
 /* Add to main task on reset
  *
@@ -359,5 +358,5 @@ const mp_obj_module_t uartpixel_cmodule =
 	.globals = (mp_obj_dict_t*)&uartpixel_module_globals,
 };
 
-MP_REGISTER_MODULE(MP_QSTR__uartpixel, uartpixel_cmodule, MODULE_UARTPIXEL_ENABLED);
+MP_REGISTER_MODULE(MP_QSTR__uartpixel, uartpixel_cmodule);
 
