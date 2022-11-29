@@ -13,7 +13,5 @@ class PinEvent:
         self.pin.irq(handler=lambda _: self.flag.set(), trigger=trigger)
 
     def wait(self):
-        if self.flag._flag == 1:
-            uasyncio.run(self.flag.wait())
-
+        self.flag.clear()
         uasyncio.run(self.flag.wait())
