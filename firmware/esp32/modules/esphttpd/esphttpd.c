@@ -95,8 +95,8 @@ typedef struct
 
 static const int_str_obj_map_t methods[] =
 {
-	{ HTTP_GET,  "GET",  MP_ROM_QSTR(MP_QSTR_GET)   },
-	{ HTTP_POST, "POST", MP_ROM_QSTR(MP_QSTR_POST)  },
+	{ HTTP_GET,  "GET",  MP_OBJ_NEW_QSTR(MP_QSTR_GET)   },
+	{ HTTP_POST, "POST", MP_OBJ_NEW_QSTR(MP_QSTR_POST)  },
 	{ -1,         NULL,  mp_const_none                  },
 };
 
@@ -914,14 +914,14 @@ static mp_obj_t esphttpd_server_start(size_t n_args, const mp_obj_t *args)
 		config.prvtkey_len = key_len;
 		config.cacert_pem = cert;
 		config.cacert_len = cert_len;
-		self->protocol_string = MP_ROM_QSTR(MP_QSTR_https);
+		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_https);
 		err = httpd_ssl_start(&self->handle, &config);
 	}
 	else
 	{
 		httpd_config_t config = (httpd_config_t)HTTPD_DEFAULT_CONFIG();
 		init_httpd_config(self, &config);
-		self->protocol_string = MP_ROM_QSTR(MP_QSTR_http);
+		self->protocol_string = MP_OBJ_NEW_QSTR(MP_QSTR_http);
 		err = httpd_start(&self->handle, &config);
 	}
 
