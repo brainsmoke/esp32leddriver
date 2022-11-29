@@ -12,6 +12,6 @@ MPYBUILDDIR="$MPYDIR/ports/esp32"
 USER_C_MODULES="\"$LEDDRIVERDIR/firmware/esp32/modules/micropython.cmake\""
 
 BOARD="LEDBALL"
-PORT="$DEVICE"
+PORT="$device"
 
 source "$ESPIDFDIR"/export.sh
