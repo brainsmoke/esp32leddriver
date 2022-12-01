@@ -79,6 +79,7 @@ typedef struct
 
 static void timer_task(void *self_ptr)
 {
+	ESP_LOGD(TAG, LOG_FMT("starting"));
 	frame_queue_obj_t *self = self_ptr;
 
 	uint32_t event = 0;
@@ -95,11 +96,13 @@ static void timer_task(void *self_ptr)
 			uart_write_bytes(self->uart_num, (const char *)op.buf, op.size);
 	}
 
+	ESP_LOGD(TAG, LOG_FMT("stopping"));
 	xQueueReceive(self->queue, &op, 0);
 	xSemaphoreTake( self->mutex, portMAX_DELAY );
 	self->task = NULL;
 	vQueueDelete(self->queue);
 	xSemaphoreGive( self->mutex );
+	ESP_LOGD(TAG, LOG_FMT("stopped"));
 	vTaskDelete(NULL);
 }
 
@@ -140,18 +143,25 @@ static void delete_frame_queue(mp_obj_t obj)
 
 static void start_task(frame_queue_obj_t *self)
 {
-	xTaskCreate(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task);
-//	xTaskCreatePinnedToCore(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task, MP_TASK_COREID);
+	BaseType_t result = xTaskCreate(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task);
+//	BaseType_t result = xTaskCreatePinnedToCore(timer_task, "uartpixel", 2048, self, ESP_TASK_PRIO_MIN+2, &self->task, MP_TASK_COREID);
+	if ( result != pdPASS)
+	{
+		ESP_LOGE(TAG, LOG_FMT("error creating task: %d"), result);
+	}
 }
 
 static mp_obj_t uartpixel_frame_queue_deinit(mp_obj_t self_in)
 {
+	ESP_LOGD(TAG, LOG_FMT("deinit"));
 	delete_frame_queue(self_in);
 	frame_queue_obj_t *self = MP_OBJ_TO_PTR(self_in);
 
 	if (self->task)
 	{
+		xSemaphoreTake( self->mutex, portMAX_DELAY );
 		self->quit = 1;
+		xSemaphoreGive( self->mutex );
 		timer_pause(self->timer_group, self->timer_index);
 		timer_isr_callback_remove(self->timer_group, self->timer_index);
 		xTaskNotify(self->task, 1, eSetBits);
