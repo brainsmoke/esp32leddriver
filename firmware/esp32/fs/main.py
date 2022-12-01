@@ -13,6 +13,8 @@ from ani.materials import Checkers, AlienPlanet
 
 import esp
 #esp.osdebug(None)
+import _thread
+_thread.stack_size(8192)
 
 import machine
 machine.freq(240000000)
