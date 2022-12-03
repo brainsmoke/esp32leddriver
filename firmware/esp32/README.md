@@ -48,7 +48,7 @@ git clone https://github.com/brainsmoke/micropython -b leddriver-post-1.19
 
 # Edit setenv.sh to set the correct build directories:
 cd esp32leddriver/firmware/esp32
-"$EDITOR" toosl/setenv.sh
+"$EDITOR" ./tools/setenv.sh
 
 ./tools/domake.sh
 # firmware should be in micropython/ports/esp32/build-LEDBALL/firmware.bin
