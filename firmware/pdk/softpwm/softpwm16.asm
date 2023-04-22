@@ -485,7 +485,7 @@ pre_switch:
 	set0 pinmask, #CHANNEL1; 31 + 1
 	mov a, high1           ; 32 + 1
 	mov cmp1, a            ; 33 + 1
-	nop                    ; 34 + 1
+	wdreset                ; 34 + 1          ; once every 4096 cycles
 	goto l2                ; 35 + 2
 	switchcase_filler (CASE_CHANNEL_INSTR-6) ; should be 0 instructions here
 ; CHANNEL2

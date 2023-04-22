@@ -3,7 +3,7 @@ PIN_UART   = 0
 MASK_UART  = 1<<(PIN_UART)
 START_DELAY = 4
 DATA_DELAY = 3
-RESET_TIMEOUT = 64
+RESET_TIMEOUT = 64 ; 64 * 64 cycles
 
 ;state flags
 IDLE=0
@@ -20,13 +20,15 @@ RESET=3
 	mov a, #MASK_UART
 	mov paph, a
 	clear error
-	mov a, #( (1<<IDLE) | (1<<RESET) )
-	mov uart_state, a
+	set1 error, #NEW_DATA   ; begin with an error state, only read pixel data after the next timeout
+	clear uart_state
+	set1 uart_state, #IDLE  ;
+	mov a, #RESET_TIMEOUT
+	mov reset_count, a
 	clear shiftreg
 	clear high
 	clear low
 	clear bit_count
-	clear reset_count
 	clear wait_count
 	clear uart_tmp
 .endm

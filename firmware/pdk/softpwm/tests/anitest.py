@@ -32,13 +32,14 @@ import intelhex, pdk
 BIT_UART = (1<<0)
 CHANNELS = [ 4, 3, 6 ]
 
-STOP_BITS=5
+STOP_BITS=1
 SAMPLES_PER_BYTE = (9+STOP_BITS)
+RESET_BAUDS=100*3
 program = []
 ix = 0
 
 offset = 3
-uart_data = bytes.fromhex(''.join(c for c in sys.argv[2] if c in '0123456789ABCDEFabcdef'))
+uart_data = bytearray(bytes.fromhex(''.join(c for c in sys.argv[2] if c in '0123456789ABCDEFabcdef'))*9)
 
 def uart_next(ctx):
     global ix
@@ -59,6 +60,11 @@ def uart_next(ctx):
     pdk.set_pin(ctx, val)
 
     ix += 1
+    if ix >= len(uart_data)*SAMPLES_PER_BYTE+RESET_BAUDS:
+        for i in range(4, len(uart_data), 6):
+            uart_data[i] += 1
+        print([int(c) for c in uart_data])
+        ix = 0
 
 with open(sys.argv[1]) as f:
     program = pdk.parse_program(f.read(), arch='pdk14')
@@ -74,6 +80,7 @@ while True:
 
     leds = " 1234567"[sum( int(bool( pa & (1<<c)))<<i for i,c in enumerate(CHANNELS) )]
     if lastleds != leds:
+#        print(pdk.prog_state(program, ctx))
         print ( f"{lastleds}:{t},")
         sys.stdout.flush()
         t=0

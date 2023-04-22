@@ -116,12 +116,16 @@ mov pac, a
 mov a, #0
 mov pa, a
 
+watchdog_enable
+wdreset
+
 find_settings settings p_lo
 read_settings index_const
 
 softpwm_init
 uart_init
 
+wdreset
 softpwm
 
 settings:

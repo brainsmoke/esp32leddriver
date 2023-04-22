@@ -20,6 +20,9 @@ CLKMD_IHRC_DIV8   = (1<<5) | (1<<3)
 CLKMD_IHRC_DIV16  = (0<<5) | (1<<3)
 TYPE_IHRC         = 1
 
+MISC_256          = 3
+MISC_2048         = 0
+MISC_4096         = 1
 MISC_16384        = 2
 
 CLKMD_ENABLE_WATCHDOG = 1<<1
@@ -45,7 +48,7 @@ CLKMD_ENABLE_WATCHDOG = 1<<1
 .endm
 
 .macro watchdog_enable
-	mov a, #MISC_16384
+	mov a, #MISC_256
 	mov misc, a
 	mov a, #CLKMD_ENABLE_WATCHDOG
 	xor clkmd, a
