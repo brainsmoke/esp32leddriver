@@ -636,7 +636,7 @@ cycle_29:
 cycle_38:
 	mov a, out1                 ; 38 + 1
 	xor pa, a                   ; 39 + 1
-	nop2                        ; 40 + 2
+	brownout_erratum_workaround_2cycles ; 40 + 2 (reset in case of a failed brownout)
 	goto cycle_44               ; 42 + 2
 
 no_new_data:

@@ -91,6 +91,7 @@ index_const:    .ds 1
 ; pull mosfets low first
 
 clock_8mhz
+brownout_erratum_workaround_init
 
 ;
 ;   ________                                                                        ________

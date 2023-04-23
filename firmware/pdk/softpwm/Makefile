@@ -7,12 +7,12 @@ TESTS=lowbits16_test-pdk14.ihx
 TARGETS=$(TARGET13) $(TARGET14) $(TESTS)
 
 CLEAN=$(TARGETS)
-DEPS=pdk.asm uart2.asm delay.asm softpwm16.asm settings.asm
+DEPS=pdk.asm uart2.asm delay.asm softpwm16.asm settings.asm pdk13/parts.asm pdk14/parts.asm
 
 DEVICE=/dev/ttyACM0
 
-AS13=sdaspdk13
-AS14=sdaspdk14
+AS13=sdaspdk13 -Ipdk13
+AS14=sdaspdk14 -Ipdk14
 
 PROG=easypdkprog
 

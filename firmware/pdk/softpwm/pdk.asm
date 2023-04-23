@@ -1,8 +1,12 @@
 
+.include "part.asm"
+
 acc   = 0x00
 sp    = 0x02
 
 clkmd = 0x03
+inten = 0x04
+intrq = 0x05
 ihrcr = 0x0b
 misc  = 0x3b
 
