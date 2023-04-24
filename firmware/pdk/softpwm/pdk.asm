@@ -1,4 +1,7 @@
 
+;ugly hack due to missing ifdef functionality
+PMS150C = 1
+PFS154  = 2
 .include "part.asm"
 
 acc   = 0x00
@@ -63,6 +66,14 @@ CLKMD_ENABLE_WATCHDOG = 1<<1
 	.irp b, 'R', 'C', TYPE_IHRC, frequency, frequency>>8, frequency>>16, frequency>>24, millivolt, millivolt>>8, ihrcr
 	and a, #b
 	.endm
+.endm
+
+; AND together all fuse settings
+.macro set_fuse n
+	.area FUSE (ABS)
+	.org (FUSE_ADDRESS*2)
+	.word n
+    .area CODE (ABS)
 .endm
 
 

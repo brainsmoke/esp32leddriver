@@ -88,6 +88,9 @@ index_const:    .ds 1
 .area CODE (ABS)
 .org 0x00
 
+.ifeq DEVICE-PMS150C
+set_fuse FUSE_SET_LVR_2V75
+.endif
 ; pull mosfets low first
 
 clock_8mhz
