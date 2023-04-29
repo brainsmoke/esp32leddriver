@@ -11,13 +11,13 @@ clkmd = 0x03
 inten = 0x04
 intrq = 0x05
 ihrcr = 0x0b
-misc  = 0x3b
 
 pa    = 0x10
 pac   = 0x11
 paph  = 0x12
 
 ACC_ZERO_FLAG = 0
+ACC_CARRY_FLAG = 1
 
 CLKMD_ENABLE_ILRC = 1<<2
 CLKMD_ENABLE_IHRC = 1<<4

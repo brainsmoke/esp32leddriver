@@ -21,6 +21,8 @@ FUSE_SET_IO_DRV_LOW  = (FUSE_BITS & ~(1<<7))
 FUSE_BOOTUP_FAST     = (FUSE_BITS)
 FUSE_BOOTUP_SLOW     = (FUSE_BITS & ~(3 << 10))
 
+misc  = 0x1b
+
 ; see PMS150 datasheet 5.10.3
 .macro brownout_erratum_workaround_init
 	set1 inten, #7

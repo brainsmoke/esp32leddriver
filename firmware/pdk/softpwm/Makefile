@@ -2,9 +2,9 @@
 TARGET13=leddriver16bit-pms150c.ihx
 TARGET14=leddriver16bit-pfs154.ihx
 
-TESTS=lowbits16_test-pfs154.ihx
+TESTS=lowbits16_test-pdk14.ihx
 
-TARGETS=$(TARGET13) $(TARGET14) $(TESTS)
+TARGETS=$(TARGET13) $(TARGET14)
 
 CLEAN=$(TARGETS)
 DEPS=pdk.asm uart2.asm delay.asm softpwm16.asm settings.asm device/pms150c/part.asm device/pfs154/part.asm
@@ -24,7 +24,7 @@ INC14=-Idevice/pfs154
 
 ADDRESS=0
 
-.PHONY: write13 erase13 write14 erase14
+.PHONY: erase13 erase14
 
 all: $(TARGETS)
 
@@ -42,14 +42,9 @@ clean:
 	sdldpdk -muwx -g INDEX=$$(($(ADDRESS)*3)) -i $@ -Y $< -e
 	-rm $(@:.ihx=.cdb) $(@:.ihx=.lst) $(@:.ihx=.map) $(@:.ihx=.rel) $(@:.ihx=.rst) $(@:.ihx=.sym)
 
-write13: $(TARGET13)
-	$(PROG) -p $(DEVICE) -n $(NAME13) write $(TARGET13)
-
 erase13:
 	$(PROG) -p $(DEVICE) -n $(NAME13) erase
 
-write14: $(TARGET14)
-	$(PROG) -p $(DEVICE) -n $(NAME14) write $(TARGET14)
-
 erase14:
 	$(PROG) -p $(DEVICE) -n $(NAME14) erase
+

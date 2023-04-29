@@ -43,12 +43,13 @@ A_INDEX      = MEM_SIZE+1
 STALL_INDEX  = MEM_SIZE+2
 IN_INDEX     = MEM_SIZE+7
 IOREAD_INDEX = MEM_SIZE+8
-FLAGS_INDEX  = MEM_SIZE+9
-IOMAP        = { STACK_POINTER: MEM_SIZE+3, 0x10: MEM_SIZE+4, 0x11: MEM_SIZE+5, 0x12: MEM_SIZE+6, FLAGS: FLAGS_INDEX }
-IOIGNORE     = (0x03, 0x0B, 0x3B)
+INTEN_INDEX  = MEM_SIZE+9
+FLAGS_INDEX  = MEM_SIZE+10
+IOMAP        = { STACK_POINTER: MEM_SIZE+3, 0x04: INTEN_INDEX, 0x10: MEM_SIZE+4, 0x11: MEM_SIZE+5, 0x12: MEM_SIZE+6, FLAGS: FLAGS_INDEX }
+IOIGNORE     = (0x03, 0x05, 0x08, 0x0B, 0x1B)
 
 def new_ctx():
-    return [ 0 ] * 73 + ["BAD"]
+    return [ 0 ] * 74 + ["BAD"]
 
 def copy_ctx(ctx):
     return ctx[:]
@@ -81,6 +82,10 @@ def read_mem(ctx, mem):
 
 def read_mem16(ctx, mem):
     return ctx[MEMMAP[mem]]+256*ctx[MEMMAP[mem+1]]
+
+def read_stack_top_word(ctx):
+    sp = read_io(ctx, STACK_POINTER)
+    return read_mem16(ctx, sp)
 
 def read_flags(ctx):
     return ctx[FLAGS_INDEX]
@@ -242,18 +247,13 @@ def op_nop(ctx):
     return 0
 
 def op_ldsptl(ctx, program):
-    sp = read_io(ctx, STACK_POINTER)
-    code_p = read_mem16(ctx, sp)
-    opcode = program[code_p][2]
+    opcode = program[read_stack_top_word(ctx)][2]
     tl = opcode & 0xff
     write_a(ctx, tl)
     stall(ctx)
-    #print(hex(sp),hex(code_p),hex(tl))
 
 def op_ldspth(ctx, program):
-    sp = read_io(ctx, STACK_POINTER)
-    code_p = read_mem16(ctx, sp)
-    opcode = program[code_p][2]
+    opcode = program[read_stack_top_word(ctx)][2]
     th = opcode >> 8
     write_a(ctx, th)
     stall(ctx)
@@ -375,7 +375,7 @@ def op_test_io_bit_skip(ctx, io, pos, boolean):
         skip_next(ctx)
 
 def op_set_io_bit(ctx, io, pos, boolean):
-    v = read_io(ctx, io)
+    v = read_io_raw(ctx, io)
     if boolean:
         v |= 1<<pos
     else:

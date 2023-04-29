@@ -23,42 +23,66 @@
 # SOFTWARE.
 #
 # (http://opensource.org/licenses/mit-license.html)
-# 
-# Intel HEX file parser
 #
 
-def parse(s):
-	base_addr = 0
-	mem = {}
-	end = False
-	for record in s.split('\n'):
-		if record[0:1] == ':':
-			if end:
-				raise 'meh.'
-			b = bytes.fromhex(record[1:])
-			if sum(b) & 0xff == 0:
-				n_bytes = b[0]
-				addr16 = b[1]<<8 | b[2]
-				rec_type = b[3]
-				data = b[4:-1]
-				if n_bytes != len(data):
-					raise ValueError(record)
-				if rec_type == 0:
-					for i,v in enumerate(data):
-						mem[base_addr+addr16+i] = v
-				elif rec_type == 1:
-					end = True
-				elif rec_type == 2:
-					if len(data) != 2:
-						raise ValueError(record)
-					base_addr = ( data[1]<<8 | data[2] ) <<  4
-				elif rec_type == 4:
-					if len(data) != 2:
-						raise ValueError(record)
-					base_addr = ( data[1]<<8 | data[2] ) << 16
-				else:
-					raise ValueError('rec_type \''+str(rec_type)+'\' unsupported')
-			else:
-				raise ValueError(record)
-	return mem
+import sys
+
+import intelhex, pdk
+
+BIT_UART = (1<<0)
+CHANNELS = [ 4, 3, 6 ]
+
+RESET_SAMPLES=65
+STOP_BITS=5
+SAMPLES_PER_BYTE = (9+STOP_BITS)
+program = []
+ix = -RESET_SAMPLES
+
+offset = 3
+uart_data = bytes.fromhex(''.join(c for c in sys.argv[2] if c in '0123456789ABCDEFabcdef'))
+
+def uart_next(ctx):
+    global ix
+
+    byte = (ix // SAMPLES_PER_BYTE)
+    if byte < 0 or byte >= len(uart_data):
+        val = BIT_UART
+    else:
+        bit = ix % SAMPLES_PER_BYTE
+        val = None
+        if bit == 0:
+            val = 0
+        elif bit > 8:
+            val = BIT_UART
+        else:
+            val = BIT_UART*bool( uart_data[byte] & (1<<(bit-1)) )
+
+    pdk.set_pin(ctx, val)
+
+    ix += 1
+
+with open(sys.argv[1]) as f:
+    program = pdk.parse_program(f.read(), arch='pdk14')
+
+ctx = pdk.new_ctx()
+
+s=[]
+t=0
+lastleds=" "
+while True:
+    pa = pdk.read_io_raw(ctx, 0x10)
+    pc = pdk.get_pc(ctx)
+
+    leds = " 1234567"[sum( int(bool( pa & (1<<c)))<<i for i,c in enumerate(CHANNELS) )]
+    if lastleds != leds:
+        print ( f"{lastleds}:{t},")
+        sys.stdout.flush()
+        t=0
+    lastleds = leds
+
+    if pdk.get_opcode(ctx, program) in ('T0SN IO[0x010].0', 'T1SN IO[0x010].0'):
+        uart_next(ctx)
+    pdk.step(program, ctx)
+
+    t += 1
 
