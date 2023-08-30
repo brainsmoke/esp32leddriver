@@ -82,14 +82,36 @@ bne 0b
 
 
 
+// min reg value: 72+sub*8 (9 cycles)
 .macro delay_reg_div8 reg scratch sub cycleadj
-
 
                                               //  [reg&3==0] [reg&3==1] [reg&3==2] [reg&3==3]
 
    mov \scratch, \reg                         //       1          1          1          1
    addsub \scratch, (\cycleadj-(\sub+5)*8)    //       1          1          1          1
    lsrs \scratch, \scratch, #4                //       1          1          1          1
+   bcs 1f                                     //       1          3          1          3
+   nop                                        //       1                     1
+1: lsrs \scratch, \scratch, #1                //       1          1          1          1
+   bcs 2f                                     //       1          1          3          3
+2: subs \scratch, #1                          //                    reg>>2
+   bne 2b                                     //                 3*(reg>>2)-2
+
+.endm
+
+
+// min reg value: 48+sub*8 (6 cycles delay @ delay_reg_div8_actual)
+.macro delay_reg_div8_setup_3cycles reg scratch sub cycleadj
+
+                                              //  [reg&3==0] [reg&3==1] [reg&3==2] [reg&3==3]
+
+   mov \scratch, \reg                         //       1          1          1          1
+   addsub \scratch, (\cycleadj-(\sub+2)*8)    //       1          1          1          1
+   lsrs \scratch, \scratch, #4                //       1          1          1          1
+.endm
+
+// don't touch scratch register & carry flag in between this and delay_reg_div8_setup_3cycles
+.macro delay_reg_div8_actual scratch
    bcs 1f                                     //       1          3          1          3
    nop                                        //       1                     1
 1: lsrs \scratch, \scratch, #1                //       1          1          1          1
