@@ -43,15 +43,15 @@ ldr r1, =GPIOA_ODR
 ldr r2, =pulse_width8x
 ldrh r2, [r2]
 
-    .global bitbang16
+    .global strip5_bitbang
     .code   16
     .thumb_func
-    .type   bitbang16, %function
+    .type   strip5_bitbang, %function
     .syntax unified
     .thumb
 
 
-bitbang16:
+strip5_bitbang:
 /* push r4-r11 */
 
 push {r4-r7}
@@ -334,5 +334,5 @@ mov r10, r6
 mov r11, r7
 pop {r4-r7}
 bx lr
-    .size   bitbang16, .-bitbang16
+    .size   strip5_bitbang, .-strip5_bitbang
 
