@@ -10,8 +10,7 @@
 
 #include "fsm.h"
 #include "util.h"
-#include "relayball_init.h"
-#include "bitbang16_relay_4strip.h"
+#include "relayball.h"
 
 #define PERIPH_BASE         (                      0x40000000 )
 #define AHBPERIPH_BASE      ( PERIPH_BASE        + 0x00020000 )

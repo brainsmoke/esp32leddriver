@@ -1,7 +1,7 @@
-#ifndef BITBANG16_H
-#define BITBANG16_H
+#ifndef RELAYBALL_H
+#define RELAYBALL_H
 
-#include "util.h"
+#define RECV_BUF_SZ (320)
 
 /* configurable parameters (SRAM needed: more than 9*8*N_LEDS_PER_STRIP + 512 bytes) */
 
@@ -45,6 +45,7 @@
 
 #ifndef __ASSEMBLER__
 
+#include "util.h"
 #include <stdint.h>
 
 extern uint8_t remainders[N_VALUES];
@@ -53,6 +54,8 @@ extern uint16_t *cur;
 void SysTick_Handler(void);
 void bitbang16(uint16_t *buf, volatile uint16_t *gpio_out, uint32_t pulse_width8x);
 
+extern const uint8_t default_route[ROUTING_TABLE_SIZE];
+
 #endif
 
-#endif // BITBANG16_H
+#endif // RELAYBALL_H

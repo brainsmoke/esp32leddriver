@@ -22,13 +22,13 @@ STRIP5_FLAGS=
 
 EDGEBALL16_SRCS=edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
 UARTBALL16_SRCS=uartball16.c util.c $(STARTUP_SRC)
-RELAYBALL_SRCS=relayball.S relayball_init.c default_route.c bitbang16_relay_4strip.S util.c fsm.c $(STARTUP_SRC)
+RELAYBALL_SRCS=relayball.S relayball_init.c relayball_bitbang.S util.c fsm.c $(STARTUP_SRC)
 MAIN_SRCS=main.c bitbang.S util.c $(STARTUP_SRC)
 MAIN16_SRCS=main16.c bitbang16.S util.c $(STARTUP_SRC)
 JITTER_TIMER_SRCS=jitter_timer.c jitter_timer.S $(STARTUP_SRC)
 TIMING_EXPERIMENT_SRCS=timing_experiment.c timing_experiment.S $(STARTUP_SRC)
 STRIP5_SRCS=strip5.S strip5_init.c strip5_bitbang.S util.c fsm.c $(STARTUP_SRC)
-HEADERS=bitbang16.h bitbang16_4strip.h bitbang16_relay_4strip.h bitbang.h util.h m0delay.S fsm.h uartball16.h jitter_timer.h
+HEADERS=bitbang16.h bitbang16_4strip.h bitbang.h util.h m0delay.S fsm.h uartball16.h jitter_timer.h
 
 .PHONY: all clean test
 

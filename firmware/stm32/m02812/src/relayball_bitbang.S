@@ -1,5 +1,5 @@
 
-#include <bitbang16_relay_4strip.h>
+#include <relayball.h>
 
 /* scatter gather bits: (bit-matrix transpose)
  *
