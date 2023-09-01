@@ -81,6 +81,9 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              remap    = leds.remap,
                              framebuf = False )
 
+if config.pulse_width != None:
+    driver.set_pulse_width(config.pulse_width)
+
 form = configform.ConfigRoot("/")
 
 from player import Player

@@ -9,6 +9,8 @@ api_key = None
 
 uart_baudrate, uart_rx, uart_tx = 1000000, None, None
 
+pulse_width, pulse_width_max, pulse_width_min = None, None, None
+
 model_dir = "/conf"
 
 _loaded = False
@@ -89,6 +91,7 @@ def reload():
     import gc
 
     global port, uart_baudrate, uart_rx, uart_tx, model_dir, use_tls, key_file, cert_file, api_key
+    global pulse_width, pulse_width_min, pulse_width_max
     reload_network()
     reload_failsafe()
     gc.collect()
@@ -119,6 +122,13 @@ def reload():
                 uart_rx = int(config['uart']['rx'])
             if 'tx' in config['uart']:
                 uart_tx = int(config['uart']['tx'])
+        if 'driver' in config:
+            if 'pulse_width' in config['driver']:
+                pulse_width = config['driver']['pulse_width']
+            if 'pulse_width_min' in config['driver']:
+                pulse_width_min = config['driver']['pulse_width_min']
+            if 'pulse_width_max' in config['driver']:
+                pulse_width_max = config['driver']['pulse_width_max']
 
     del config
     gc.collect()

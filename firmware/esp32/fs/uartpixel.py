@@ -55,7 +55,7 @@ class UartPixel:
         return bytearray(self.n*3)
 
     def create_framebuffer16(self):
-        return uarray.array('H', 0 for _ in range(self.n*3))
+        return uarray.array('H', (0 for _ in range(self.n*3)))
 
     def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, remap=None, framebuf=True):
         self.n = n
@@ -63,7 +63,7 @@ class UartPixel:
             self.buf = self.create_framebuffer()
 
         self.buf16 = self.create_framebuffer16()
-        self.outbuf = uarray.array('H', 0 for _ in range(n*len(led_order) + 2))
+        self.outbuf = uarray.array('H', (0 for _ in range(n*len(led_order) + 2)))
 
         mv = memoryview(self.outbuf)
         from struct import unpack
@@ -72,7 +72,7 @@ class UartPixel:
         self.framebuffer = mv[:-2]
 
         self.led_order = led_order
-        self.gamma_map = uarray.array('H', 0 for _ in range(256))
+        self.gamma_map = uarray.array('H', (0 for _ in range(256)))
         self.remap = remap
         self.calc_gamma_map(gamma=gamma, cutoff=cutoff, brightness=1.0)
         #self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf)*2)
@@ -98,6 +98,12 @@ class UartPixel:
 
     def reset(self):
         self.queue.push(b'\xff\xff\xff\xff\xf0') # send bad end of frame marker to make the stm32 ignore start-up gibberish
+
+    def set_pulse_width(self, cycles):
+        byte_width_in_cycles = int(cycles)*8
+        lo, hi = byte_width_in_cycles&0xff, (byte_width_in_cycles>>8)&0xff
+        self.reset()
+        self.queue.push(bytes( (lo,hi,0xff,0xff,0xff,0xf3) ) )
 
     def write(self):
         self.writefrom(self.buf)
