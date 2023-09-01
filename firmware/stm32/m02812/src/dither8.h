@@ -1,5 +1,5 @@
-#ifndef BITBANG_H
-#define BITBANG_H
+#ifndef DITHER8_H
+#define DITHER8_H
 
 /* configurable parameters (SRAM needed: more than 9*8*N_LEDS_PER_STRIP + 512 bytes) */
 
@@ -38,4 +38,4 @@ void bitbang(uint8_t *buf, volatile uint16_t *gpio_out);
 
 #endif
 
-#endif // BITBANG_H
+#endif // DITHER8_H

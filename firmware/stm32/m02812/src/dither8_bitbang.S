@@ -1,5 +1,5 @@
 
-#include <bitbang.h>
+#include <dither8.h>
 
 /* scatter gather bits: (bit-matrix transpose)
  *

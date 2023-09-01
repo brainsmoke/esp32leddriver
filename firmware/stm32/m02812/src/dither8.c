@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include "stm32f0xx.h"
 
-#include "bitbang.h"
+#include "dither8.h"
 #include "util.h"
 
 uint8_t framebuf[N_BYTES];
