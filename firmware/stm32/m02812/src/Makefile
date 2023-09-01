@@ -2,11 +2,13 @@
 GCC=arm-none-eabi-gcc
 CFLAGS=-Wall -g -std=c99 -mlittle-endian -mcpu=cortex-m0 -march=armv6-m -mthumb -ffunction-sections -fdata-sections -I platform -I. -Os
 LDFLAGS=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT)
+LDFLAGS_072=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT_072)
 
 LINKER_SCRIPT=platform/stm32f030.ld
+LINKER_SCRIPT_072=platform/stm32f072.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
-TARGETS=main.elf main.bin main16.elf main16.bin edgeball16.elf edgeball16.bin relayball.elf relayball.bin uartball16.elf uartball16.bin jitter_timer.elf jitter_timer.bin timing_experiment.bin
+TARGETS=main.elf main.bin main16.elf main16.bin edgeball16.elf edgeball16.bin relayball.elf relayball.bin uartball16.elf uartball16.bin jitter_timer.elf jitter_timer.bin timing_experiment.bin strip5.bin
 TESTS=test/test.elf test/test16.elf test/test_edgeball16.elf test/test_relay16.elf test/test_edgeball16alt.elf
 
 UARTBALL16_FLAGS=#-DN_VALUES_PER_LED=6 -DN_LEDS_PER_STRIP=8
@@ -20,6 +22,8 @@ TEST_EDGEBALL16ALT_FLAGS=
 TEST_FLAGS=
 RELAYBALL_FLAGS=
 JITTER_TIMER_FLAGS=
+TIMING_EXPERIMENT_FLAGS=
+STRIP5_FLAGS=
 
 
 EDGEBALL16_SRCS=edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
@@ -29,6 +33,7 @@ MAIN_SRCS=main.c bitbang.S util.c $(STARTUP_SRC)
 MAIN16_SRCS=main16.c bitbang16.S util.c $(STARTUP_SRC)
 JITTER_TIMER_SRCS=jitter_timer.c jitter_timer.S $(STARTUP_SRC)
 TIMING_EXPERIMENT_SRCS=timing_experiment.c timing_experiment.S $(STARTUP_SRC)
+STRIP5_SRCS=strip5.S strip5_init.c bitbang16_5strip.S util.c fsm.c $(STARTUP_SRC)
 TEST_SRCS=test/test.c bitbang.S util.c $(STARTUP_SRC)
 TEST16_SRCS=test/test16.c bitbang16.S util.c $(STARTUP_SRC)
 TEST_EDGEBALL16_SRCS=test/test_edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
@@ -69,7 +74,10 @@ jitter_timer.elf: $(JITTER_TIMER_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(JITTER_TIMER_FLAGS) $(JITTER_TIMER_SRCS) -o $@
 
 timing_experiment.elf: $(TIMING_EXPERIMENT_SRCS) $(LINKER_SCRIPT) $(HEADERS) timing_experiment.h
-	$(GCC) $(CFLAGS) $(LDFLAGS) $(JITTER_TIMER_FLAGS) $(TIMING_EXPERIMENT_SRCS) -o $@
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(TIMING_EXPERIMENT_FLAGS) $(TIMING_EXPERIMENT_SRCS) -o $@
+
+strip5.elf: $(STRIP5_SRCS) $(LINKER_SCRIPT) $(HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS_072) $(STRIP5_FLAGS) $(STRIP5_SRCS) -o $@
 
 main.elf: $(MAIN_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(MAIN_FLAGS) $(MAIN_SRCS) -o $@
