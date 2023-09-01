@@ -6,7 +6,7 @@
 #endif
 
 #ifndef N_LEDS
-#define N_LEDS (128)
+#define N_LEDS (1024)
 #endif
 
 #define N_VALUES (N_VALUES_PER_LED*N_LEDS)
@@ -23,6 +23,10 @@
 
 #define T1H_DEFAULT (42)
 #define T1L_DEFAULT (18)
+
+#define LEDS_DEFAULT (128)
+#define LEDS_MIN (1) /* bitbang routine needs to output at least one byte */
+#define LEDS_MAX (N_LEDS)
 
 #ifndef __ASSEMBLER__
 
