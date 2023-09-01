@@ -46,7 +46,7 @@ clean:
 	-rm $(TARGETS) *.elf test/*.pyc
 
 test: $(TARGETS)
-	test/test_bitbang.py dither.elf
+	test/test_bitbang.py dither8.elf
 	test/test_bitbang16.py dither16.elf
 	test/test_strip4.py strip4.elf
 	test/test_strip5.py strip5.elf
