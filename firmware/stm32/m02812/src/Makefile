@@ -8,11 +8,19 @@ LINKER_SCRIPT=platform/stm32f030.ld
 LINKER_SCRIPT_072=platform/stm32f072.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
-TARGETS=main.bin main16.bin edgeball16.bin relayball.bin uartball16.bin jitter_timer.bin timing_experiment.bin strip5.bin
+TARGETS=                  \
+	main.bin              \
+	dither16.bin          \
+	edgeball16.bin        \
+	relayball.bin         \
+	uartball16.bin        \
+	jitter_timer.bin      \
+	timing_experiment.bin \
+	strip5.bin
 
-UARTBALL16_FLAGS=#-DN_VALUES_PER_LED=6 -DN_LEDS_PER_STRIP=8
+UARTBALL16_FLAGS=
 EDGEBALL16_FLAGS=-DN_VALUES_PER_LED=3 -DN_LEDS_PER_STRIP=60
-MAIN16_FLAGS=-DN_VALUES_PER_LED=3 -DN_LEDS_PER_STRIP=15
+DITHER16_FLAGS=
 MAIN_FLAGS=
 RELAYBALL_FLAGS=
 JITTER_TIMER_FLAGS=
@@ -24,11 +32,11 @@ EDGEBALL16_SRCS=edgeball16.c bitbang16_4strip.S util.c $(STARTUP_SRC)
 UARTBALL16_SRCS=uartball16.c util.c $(STARTUP_SRC)
 RELAYBALL_SRCS=relayball.S relayball_init.c relayball_bitbang.S util.c fsm.c $(STARTUP_SRC)
 MAIN_SRCS=main.c bitbang.S util.c $(STARTUP_SRC)
-MAIN16_SRCS=main16.c bitbang16.S util.c $(STARTUP_SRC)
+DITHER16_SRCS=dither16.c dither16_bitbang.S util.c $(STARTUP_SRC)
 JITTER_TIMER_SRCS=jitter_timer.c jitter_timer.S $(STARTUP_SRC)
 TIMING_EXPERIMENT_SRCS=timing_experiment.c timing_experiment.S $(STARTUP_SRC)
 STRIP5_SRCS=strip5.S strip5_init.c strip5_bitbang.S util.c fsm.c $(STARTUP_SRC)
-HEADERS=bitbang16.h bitbang16_4strip.h bitbang.h util.h m0delay.S fsm.h uartball16.h jitter_timer.h
+HEADERS=dither16.h bitbang16_4strip.h bitbang.h util.h m0delay.S fsm.h uartball16.h jitter_timer.h
 
 .PHONY: all clean test
 
@@ -42,14 +50,14 @@ clean:
 test: $(TARGETS)
 	test/test_relay16.py relayball.elf
 	test/test_bitbang.py main.elf 
-	test/test_bitbang16.py main16.elf
+	test/test_bitbang16.py dither16.elf
 	test/test_edgeball16.py edgeball16.elf
 
 %.bin: %.elf
 	arm-none-eabi-objcopy -O binary $< $@
 
-main16.elf: $(MAIN16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
-	$(GCC) $(CFLAGS) $(LDFLAGS) $(MAIN16_FLAGS) $(MAIN16_SRCS) -o $@
+dither16.elf: $(DITHER16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(DITHER16_FLAGS) $(DITHER16_SRCS) -o $@
 
 edgeball16.elf: $(EDGEBALL16_SRCS) $(LINKER_SCRIPT) $(HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(EDGEBALL16_FLAGS) $(EDGEBALL16_SRCS) -o $@
