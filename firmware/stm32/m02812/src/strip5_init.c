@@ -1,8 +1,7 @@
 #include <stdlib.h>
 #include "stm32f0xx.h"
 
-#include "bitbang16_5strip.h"
-#include "strip5_init.h"
+#include "strip5.h"
 #include "util.h"
 #include "fsm.h"
 

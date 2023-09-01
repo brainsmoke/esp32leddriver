@@ -10,8 +10,7 @@
 
 #include "fsm.h"
 #include "util.h"
-#include "strip5_init.h"
-#include "bitbang16_5strip.h"
+#include "strip5.h"
 
 #define PERIPH_BASE         (                      0x40000000 )
 #define AHBPERIPH_BASE      ( PERIPH_BASE        + 0x00020000 )

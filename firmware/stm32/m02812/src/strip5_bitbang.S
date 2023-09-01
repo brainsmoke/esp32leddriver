@@ -1,5 +1,5 @@
 
-#include "bitbang16_5strip.h"
+#include "strip5.h"
 
 #if N_STRIPS != 5
 #error bad number of strips
