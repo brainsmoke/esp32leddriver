@@ -1,5 +1,5 @@
-#ifndef BITBANG16_H
-#define BITBANG16_H
+#ifndef STRIP4_H
+#define STRIP4_H
 
 /* configurable parameters (SRAM needed: more than 9*8*N_LEDS_PER_STRIP + 512 bytes) */
 
@@ -9,7 +9,7 @@
 #endif
 
 #ifndef N_LEDS_PER_STRIP
-#define N_LEDS_PER_STRIP (64)
+#define N_LEDS_PER_STRIP (60)
 #endif
 
 /* static constants */
@@ -37,4 +37,4 @@ void bitbang16(uint16_t *buf, volatile uint16_t *gpio_out);
 
 #endif
 
-#endif // BITBANG16_H
+#endif // STRIP4_H

@@ -1,5 +1,5 @@
 
-#include <bitbang16_4strip.h>
+#include <strip4.h>
 
 /* scatter gather bits: (bit-matrix transpose)
  *
