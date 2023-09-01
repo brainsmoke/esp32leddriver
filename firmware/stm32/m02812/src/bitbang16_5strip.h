@@ -29,6 +29,10 @@
 #define WS2812TIMEOUT (F_CPU/1000000*280)
 #define FRAME_BYTE_COUNT (N_VALUES_PER_STRIP)  /* count includes skipped pulse */
 
+#define PULSE_WIDTH_MIN (44*8)
+#define PULSE_WIDTH_MAX (90*8)
+#define PULSE_WIDTH_DEFAULT (45*8)
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
@@ -37,7 +41,7 @@ extern uint8_t remainders[N_VALUES];
 extern uint16_t *cur;
 
 void SysTick_Handler(void);
-void bitbang16(uint16_t *buf, volatile uint16_t *gpio_out, uint32_t pulse_width);
+void bitbang16(uint16_t *buf, volatile uint16_t *gpio_out, uint32_t pulse_width8x);
 
 #endif
 

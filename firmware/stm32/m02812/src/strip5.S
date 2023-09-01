@@ -53,8 +53,8 @@ bl init
 #define rCUR      r10
 #define rFSM      r11
 
-ldr rSCRATCH, =pulse_width
-ldr rDATA, =(60)
+ldr rSCRATCH, =pulse_width8x
+ldr rDATA, =(PULSE_WIDTH_DEFAULT)
 strh rDATA, [rSCRATCH]
 
 ldr r0, =(FRAME_BYTE_COUNT)
@@ -219,19 +219,19 @@ timing:
 #define rSYSTICKRESET   rSTATE
 
 	ldrh rPULSEWIDTH, [rNEXT, #0]
-	ldr rSCRATCH, =(44)
+	ldr rSCRATCH, =(PULSE_WIDTH_MIN)
 	cmp rPULSEWIDTH, rSCRATCH
 		bgt 1f
 		mov rPULSEWIDTH, rSCRATCH
 	1:
 
-	ldr rSCRATCH, =(90)
+	ldr rSCRATCH, =(PULSE_WIDTH_MAX)
 	cmp rPULSEWIDTH, rSCRATCH
 		blt 1f
 		mov rPULSEWIDTH, rSCRATCH
 	1:
 
-	ldr rSCRATCH, =pulse_width
+	ldr rSCRATCH, =pulse_width8x
 	ldrh rOLDPULSEWIDTH, [rSCRATCH]
 	cmp rPULSEWIDTH, rOLDPULSEWIDTH
 	bgt 1f                                /* lengthen pulse: set systick first */

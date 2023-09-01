@@ -35,7 +35,6 @@
 import sys, subprocess
 
 RAM_START=0x20000000
-RAM_END=0x20001000
 
 def from_le(arr):
     n=0
@@ -85,7 +84,7 @@ def read_mem(ctx, addr, size):
     return tuple( mem[addr+i] for i in range(size) )
 
 def write_mem(ctx, addr, arr):
-    if not (RAM_START <= addr <= addr+len(arr) <= RAM_END):
+    if not (RAM_START <= addr <= addr+len(arr) <= RAM_START+ctx['ramsize']):
         raise AssertionError("write to read-only memory")
     mem = ctx['mem']
     for i,v in enumerate(arr):
@@ -641,7 +640,7 @@ def parse_opcode(mem, addr, opcodes, fields):
     field_patterns, op_func = argbest
     return (op_func, 2, { fields[k][0]:fields[k][1](v) for k, v in field_patterns.items() })
 
-def init_ctx(pc, code, mem, ioread=None, iowrite=None):
+def init_ctx(pc, code, mem, ioread=None, iowrite=None, ramsize=0x1000):
     return {
         'r0': None,
         'r1': None,
@@ -666,6 +665,7 @@ def init_ctx(pc, code, mem, ioread=None, iowrite=None):
         'code' : dict(code),
         'stall': 0,
         'ts': 0,
+        'ramsize': ramsize,
     }
 
 def get_lines(argv):
@@ -742,7 +742,12 @@ def step(ctx):
         #print (ctx['ts'], hex(ctx['r15']-2), op_func.__name__, ', '.join(k+': '+print_fields[k](v) for k,v in op_args.items()))
         #print (hex(ctx['r15']-2)[2:], op_func.__name__, ', '.join(k+': '+print_fields[k](v) for k,v in op_args.items()))
         ctx['r15'] += op_size
-        op_func(ctx, **op_args)
+        try:
+            op_func(ctx, **op_args)
+        except:
+            print (hex(ctx['r15']-2)[2:], op_func.__name__, ', '.join(k+': '+print_fields[k](v) for k,v in op_args.items()))
+            print_regs(ctx)
+            raise
 
 def run(ctx, n_cycles=-1, end_pc=None):
     while (n_cycles==-1 or ctx['ts'] < n_cycles) and end_pc != ctx['r15']-2:

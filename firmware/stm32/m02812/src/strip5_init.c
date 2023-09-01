@@ -9,7 +9,7 @@
 uint16_t frame_a[N_VALUES];
 uint16_t frame_b[N_VALUES];
 uint16_t *cur;
-uint16_t pulse_width;
+uint16_t pulse_width8x;
 
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 
