@@ -1079,4 +1079,23 @@ Wire Wire Line
 Connection ~ 1450 6350
 Wire Wire Line
 	1850 6650 1850 6700
+Text GLabel 7700 3900 0    50   Input ~ 0
+3V3
+Wire Wire Line
+	7700 3900 7800 3900
+$Comp
+L power:GND #PWR?
+U 1 1 64F46701
+P 7400 3950
+F 0 "#PWR?" H 7400 3700 50  0001 C CNN
+F 1 "GND" H 7405 3777 50  0000 C CNN
+F 2 "" H 7400 3950 50  0001 C CNN
+F 3 "" H 7400 3950 50  0001 C CNN
+	1    7400 3950
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	7400 3950 7400 3800
+Wire Wire Line
+	7400 3800 7800 3800
 $EndSCHEMATC
