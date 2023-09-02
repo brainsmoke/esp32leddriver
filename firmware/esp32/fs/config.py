@@ -124,11 +124,11 @@ def reload():
                 uart_tx = int(config['uart']['tx'])
         if 'driver' in config:
             if 'pulse_width' in config['driver']:
-                pulse_width = config['driver']['pulse_width']
+                pulse_width = int(config['driver']['pulse_width'])
             if 'pulse_width_min' in config['driver']:
-                pulse_width_min = config['driver']['pulse_width_min']
+                pulse_width_min = int(config['driver']['pulse_width_min'])
             if 'pulse_width_max' in config['driver']:
-                pulse_width_max = config['driver']['pulse_width_max']
+                pulse_width_max = int(config['driver']['pulse_width_max'])
 
     del config
     gc.collect()
