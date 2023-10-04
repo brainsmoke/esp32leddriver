@@ -1,3 +1,23 @@
+
+.macro nop3
+b 1f
+1:
+.endm
+
+.macro delay_simple cycles
+	.ifge \cycles-3
+		nop3
+		delay_simple (\cycles-3)
+	.else
+		.ifge \cycles-2
+			nop
+		.endif
+		.ifge \cycles-1
+			nop
+		.endif
+	.endif
+.endm
+
 // cycles == n * 4 - 1
 .macro delay_loop_4n_m1 reg iter
 movs \reg, #(\iter)
