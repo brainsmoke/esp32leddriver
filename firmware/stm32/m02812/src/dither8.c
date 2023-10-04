@@ -9,10 +9,6 @@ uint8_t framebuf[N_BYTES];
 //static uint8_t *outbuf;
 uint8_t *frame;
 
-#define O(c) (1<<(2*c))
-#define ALT_FN(c) (2<<(2*c))
-#define SWD (ALT_FN(13)|ALT_FN(14))
-
 void SysTick_Handler(void)
 {
 	bitbang(framebuf, &GPIOA->ODR);

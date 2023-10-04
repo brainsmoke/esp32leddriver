@@ -4,14 +4,10 @@
 //#include "util.h"
 #include "jitter_timer.h"
 
-#define O(c) (1<<(2*(c)))
-#define ALT_FN(c) (2<<(2*(c)))
-#define SWD (ALT_FN(13)|ALT_FN(14))
 #define MASK(c) (3<<(2*(c)))
 
 #define AFR_REG(n) ( (n)>>3 )
 #define AFR_SHIFT(n) ( 1 << ( ((n)&7) * 4 ) )
-#define PIN_MODE(n) (1<<(2*(n)))
 
 #define INPUT_CAPTURE_PIN (6)
 

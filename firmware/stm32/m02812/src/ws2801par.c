@@ -21,10 +21,6 @@ frame_t * volatile next;
 #define RECV_BUF_SZ (2048)
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 
-#define O(c) (1<<(2*c))
-#define ALT_FN(c) (2<<(2*c))
-#define SWD (ALT_FN(13)|ALT_FN(14))
-
 /*
 # emulate original single strip order expected by software
 facet_order = [
@@ -223,6 +219,7 @@ void SysTick_Handler(void)
 	bitbang_ws2801(cur->transpose, N_VALUES_PER_STRIP, CLK_MASK, GPIOB);
 }
 
+
 static void init(void)
 {
 	int i;
@@ -238,7 +235,7 @@ static void init(void)
 	GPIOA->ODR = 0;
 	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
-	usart1_rx_pa10_dma3_enable(recv_buf, RECV_BUF_SZ, 48e6/2e6);
+	usart2_rx_pa3_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/2e6);
 	enable_sys_tick(SYS_TICK_FRAMERATE);
 }
 
@@ -326,8 +323,7 @@ static int read_next_frame(void)
 
 		transposed_t *t = &next->transpose[high_byte_index[i]];
 		int pin = high_byte_pin[i];
-		write_value(t, pin, c);
-/*
+		//write_value(t, pin, c); // faster, but there's plenty cycle budget
 		if (c & 0x01)
 			t->bit0 |= pin;
 		if (c & 0x02)
@@ -344,7 +340,6 @@ static int read_next_frame(void)
 			t->bit6 |= pin;
 		if (c & 0x80)
 			t->bit7 |= pin;
-*/
 	}
 
 	int s=GOOD;

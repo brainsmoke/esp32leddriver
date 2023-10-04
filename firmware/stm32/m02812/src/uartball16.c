@@ -55,10 +55,6 @@ volatile uint8_t *recv_p;
 #define RECV_BUF_SZ (1024)
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 
-#define O(c) (1<<(2*c))
-#define ALT_FN(c) (2<<(2*c))
-#define SWD (ALT_FN(13)|ALT_FN(14))
-
 volatile uint8_t frame_ready;
 int cur_baud;
 #define MIN_WAIT_BAUD (70)

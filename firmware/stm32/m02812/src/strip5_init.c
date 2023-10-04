@@ -12,10 +12,6 @@ uint16_t pulse_width8x;
 
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 
-#define O(c) (1<<(2*c))
-#define ALT_FN(c) (2<<(2*c))
-#define SWD (ALT_FN(13)|ALT_FN(14))
-
 void init(void)
 {
 	int i;

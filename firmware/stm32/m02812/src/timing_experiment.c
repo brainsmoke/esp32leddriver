@@ -10,7 +10,6 @@
 
 #define AFR_REG(n) ( (n)>>3 )
 #define AFR_SHIFT(n) ( 1 << ( ((n)&7) * 4 ) )
-#define PIN_MODE(n) (1<<(2*(n)))
 
 #define INPUT_CAPTURE_PIN (6)
 
