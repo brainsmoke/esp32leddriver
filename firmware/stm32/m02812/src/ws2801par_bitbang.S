@@ -19,10 +19,10 @@
 
 /* ORDER MATTERS FOR LDM */
 #define rCARRY    r3
-#define rOUT      r4
-#define rTMP      r5
-#define rIN0      r6
-#define rIN1      r7
+#define rIN0      r4
+#define rIN1      r5
+#define rTMP      r6
+#define rOUT      r7
 
 #define rBITS_A   r8
 #define rBITS_B   r9
@@ -52,7 +52,7 @@ mov rGPIO, r3
 
 	eors \reg, rCARRY
 	bics rCARRY, \reg
-	lsls rCARRY, #16
+	lsrs rCARRY, #16
 	eors \reg, rCARRY
 	bics rCARRY, \reg
 	lsls rCARRY, #16
@@ -64,14 +64,14 @@ bne 1f
 b bitbang_ws2801_end
 1:
 
-ldm rBUF!, {rCARRY, rOUT, rTMP, rIN0, rIN1}
-apply_carry rOUT
-apply_carry rTMP
+ldm rBUF!, {rCARRY, rIN0, rIN1, rTMP, rOUT}
 apply_carry rIN0
 apply_carry rIN1
+apply_carry rTMP
+apply_carry rOUT
+mov rBITS_C, rIN0
+mov rBITS_B, rIN1
 mov rBITS_A, rTMP
-mov rBITS_B, rIN0
-mov rBITS_C, rIN1
 
 cmp rBUF, rBUFEND
 bne 1f
@@ -168,13 +168,13 @@ delay_simple EXTRA_CYCLES_POST_CLK
 /*   BIT 0  */
 /*    0 + 2 */                                            strh rTMP, [rGPIO, #GPIO_ODR_OFFSET]
 delay_simple EXTRA_CYCLES_PRE_CLK
-/*    2 + 1|4 */ beq bitbang_ws2801_loop_exit
+/*    2 + 1|4 */ bne bitbang_ws2801_loop_continue
 /*    3 + 3 */ delay_simple 3
 /*    6 + 2 */                                            str rCLK, [rGPIO, #GPIO_BSRR_OFFSET]
 delay_simple EXTRA_CYCLES_POST_CLK
-/*    8 + 4 */ b bitbang_ws2801_loop_start
+/*    8 + 4 */ b bitbang_ws2801_epilogue
 
-bitbang_ws2801_loop_exit:
+bitbang_ws2801_loop_continue:
 /*    6 + 2 */                                            str rCLK, [rGPIO, #GPIO_BSRR_OFFSET]
 delay_simple EXTRA_CYCLES_POST_CLK
 /*    8 + 4 */ b bitbang_ws2801_loop_start
