@@ -121,3 +121,7 @@ class UartPixel:
         cball.framebuffer_gamma(self.framebuffer, self.gamma_map, self.cutoff)
         #self.uart.write(self.outbuf)
         self.queue.push(self.outbuf)
+
+    def writeraw16(self, buf16):
+        cball.framebuffer_remap(self.framebuffer, buf16, self.remap, self.led_order)
+        self.queue.push(self.outbuf)
