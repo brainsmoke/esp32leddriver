@@ -1,23 +1,16 @@
 #ifndef WS2812_NEW_H
 #define WS2812_NEW_H
 
-#include "util.h"
+#include "ws2812_new_config.h"
 
-/* configurable parameters (SRAM needed: more than 9*8*N_LEDS_PER_STRIP + 512 bytes) */
-
-/* no bigger than 80x3 or 60x4 */
-#ifndef N_VALUES_PER_LED
-#define N_VALUES_PER_LED  (3)
-#endif
-
-#ifndef N_LEDS_PER_STRIP
-#define N_LEDS_PER_STRIP (80)
-#endif
-
-/* static constants */
-
-#define N_STRIPS (16) /* code changes needed to change this */
+/* don't change, needs some work to make this configurable */
 #define PIN_MASK (0xffff)
+#define N_STRIPS POPCNT16(PIN_MASK)
+
+
+#if PIN_MASK & 0xffff != PIN_MASK
+#error "only pins 0..15 supported"
+#endif
 
 /* derived constants */
 
@@ -41,7 +34,7 @@
 #error "timings not specified for CPU speed"
 #endif
 
-#define FRAME_CYCLES (T_PULSE*8*N_VALUES_PER_STRIP)
+#define FRAME_CYCLES (T_PULSE*N_BITS_PER_STRIP)
 #define SYSTICK_DIV (F_CPU/F_SYS_TICK_CLK)
 #define SYSTICK_PERIOD ( (FRAME_CYCLES+SYSTICK_DIV-1)/SYSTICK_DIV )
 
@@ -84,7 +77,7 @@ _Static_assert( (1<<4) == sizeof(transposed_t), "size of transposed_t not 1<<4")
 _Static_assert( 16 == N_STRIPS, "N_STRIPS != 16");
 _Static_assert( OLD_CARRY_OFFSET == LOW_BYTES_OFFSET*2, "weird frame_t layout" );
 
-void ws2812_dma_start(volatile uint16_t *buf, uint32_t length);
+void ws2812_dma_start(volatile uint16_t buf[], uint32_t length);
 void ws2812_half_transfer(void);
 void ws2812_full_transfer(void);
 void ws2812_dma_init(GPIO_TypeDef *gpio, uint16_t mask, int t0h, int t1h, int t_pulse);

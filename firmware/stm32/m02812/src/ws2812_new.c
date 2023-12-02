@@ -1,3 +1,30 @@
+/*
+ * Copyright (c) 2023 Erik Bosman <erik@minemu.org>
+ *
+ * Permission  is  hereby  granted,  free  of  charge,  to  any  person
+ * obtaining  a copy  of  this  software  and  associated documentation
+ * files (the "Software"),  to deal in the Software without restriction,
+ * including  without  limitation  the  rights  to  use,  copy,  modify,
+ * merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software,  and to permit persons to whom the Software is furnished to
+ * do so, subject to the following conditions:
+ *
+ * The  above  copyright  notice  and this  permission  notice  shall be
+ * included  in  all  copies  or  substantial portions  of the Software.
+ *
+ * THE SOFTWARE  IS  PROVIDED  "AS IS", WITHOUT WARRANTY  OF ANY KIND,
+ * EXPRESS OR IMPLIED,  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY,  FITNESS  FOR  A  PARTICULAR  PURPOSE  AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM,  DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT,  TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN
+ * CONNECTION  WITH THE SOFTWARE  OR THE USE  OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * (http://opensource.org/licenses/mit-license.html)
+ *
+ */
+
 #include <stdlib.h>
 #include <string.h>
 #include "stm32f0xx.h"
@@ -24,10 +51,10 @@ frame_t * volatile next;
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 void SysTick_Handler(void)
 {
-	ws2812_dma_start((uint16_t *)cur->transpose, N_VALUES_PER_STRIP);
+	ws2812_dma_start((uint16_t *)cur->transpose, N_BITS_PER_STRIP);
 }
 
-#define SAFE_HALF_TRANSFER ( (N_VALUES_PER_STRIP+1)/2 )
+#define SAFE_HALF_TRANSFER ( (N_VALUES_PER_STRIP)/2 )
 
 void ws2812_half_transfer(void)
 {
@@ -58,16 +85,24 @@ static void clear_buf(frame_t *f)
 	memset(&f->low_bytes, 0x00, sizeof(f->low_bytes));
 }
 
-static void init(void)
+static void ws2812_init(void)
 {
 	int i;
 	for (i=0; i<N_VALUES; i++)
 		residual[i] = i*157;
 
+	bufstate = STATE_CONTINUE;
 	cur = &frame_a;
 	next = &frame_b;
 	clear_buf(cur);
+	clear_buf(next);
 
+	ws2812_asm_apply_dither(cur, 0, N_VALUES_PER_STRIP, residual);
+	ws2812_dma_init(GPIOB, PIN_MASK, T0H, T1H, T_PULSE);
+}
+
+static void init(void)
+{
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; 	// enable the clock to GPIOA
 	GPIOA->ODR = 0;
@@ -77,7 +112,7 @@ static void init(void)
 	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
 	usart2_rx_pa3_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/6e6);
-	ws2812_dma_init(GPIOB, PIN_MASK, T0H, T1H, T_PULSE);
+	ws2812_init();
 	enable_sys_tick(SYSTICK_PERIOD);
 }
 
@@ -152,7 +187,7 @@ static int read_next_frame(void)
 			dma_wait();
 
 		c = *recv_p++;
-		next->low_bytes[i*16] = c;
+		next->low_bytes[i*16+p] = c;
 
 		if (recv_p == recv_end)
 			dma_wait();

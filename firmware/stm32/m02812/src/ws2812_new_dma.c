@@ -1,3 +1,30 @@
+/*
+ * Copyright (c) 2023 Erik Bosman <erik@minemu.org>
+ *
+ * Permission  is  hereby  granted,  free  of  charge,  to  any  person
+ * obtaining  a copy  of  this  software  and  associated documentation
+ * files (the "Software"),  to deal in the Software without restriction,
+ * including  without  limitation  the  rights  to  use,  copy,  modify,
+ * merge, publish, distribute, sublicense, and/or sell copies of the
+ * Software,  and to permit persons to whom the Software is furnished to
+ * do so, subject to the following conditions:
+ *
+ * The  above  copyright  notice  and this  permission  notice  shall be
+ * included  in  all  copies  or  substantial portions  of the Software.
+ *
+ * THE SOFTWARE  IS  PROVIDED  "AS IS", WITHOUT WARRANTY  OF ANY KIND,
+ * EXPRESS OR IMPLIED,  INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY,  FITNESS  FOR  A  PARTICULAR  PURPOSE  AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM,  DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT,  TORT OR OTHERWISE,  ARISING FROM, OUT OF OR IN
+ * CONNECTION  WITH THE SOFTWARE  OR THE USE  OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ *
+ * (http://opensource.org/licenses/mit-license.html)
+ *
+ */
+
 #include <stdlib.h>
 #include "stm32f0xx.h"
 
@@ -29,8 +56,8 @@ static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
 {
 	pin_mask = mask;
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-	DMA_CHANNEL_SET->CPAR = (uint32_t)&pin_mask;
-	DMA_CHANNEL_SET->CMAR = (uint32_t)&gpio->BSRR;
+	DMA_CHANNEL_SET->CPAR = (uint32_t)&gpio->BSRR;
+	DMA_CHANNEL_SET->CMAR = (uint32_t)&pin_mask;
 	DMA_CHANNEL_SET->CCR  = DMA_CONFIG_MEM_TO_PERIPH_16BIT;
 
 	DMA_CHANNEL_DATA->CPAR = (uint32_t)&gpio->BRR;
@@ -38,8 +65,8 @@ static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
 	DMA_CHANNEL_DATA->CCR  = DMA_CONFIG_BUF_TO_PERIPH_16BIT |
 	                         DMA_CONFIG_INTERRUPT_HALF_TRANSFER;
 
-	DMA_CHANNEL_CLEAR->CPAR = (uint32_t)&pin_mask;
-	DMA_CHANNEL_CLEAR->CMAR = (uint32_t)&gpio->BRR;
+	DMA_CHANNEL_CLEAR->CPAR = (uint32_t)&gpio->BRR;
+	DMA_CHANNEL_CLEAR->CMAR = (uint32_t)&pin_mask;
 	DMA_CHANNEL_CLEAR->CCR  = DMA_CONFIG_MEM_TO_PERIPH_16BIT |
 	                          DMA_CONFIG_INTERRUPT_FULL_TRANSFER;
 
@@ -47,7 +74,7 @@ static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
 	NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
 }
 
-void ws2812_dma_start(volatile uint16_t *buf, uint32_t length)
+void ws2812_dma_start(volatile uint16_t buf[], uint32_t length)
 {
 	/* clear flags, ... */
 
@@ -60,9 +87,6 @@ void ws2812_dma_start(volatile uint16_t *buf, uint32_t length)
 	DMA_CHANNEL_DATA->CCR |= DMA_CCR_EN;
 	DMA_CHANNEL_CLEAR->CCR |= DMA_CCR_EN;
 
-	TIM1->CNT = 0;
-	TIM1->SR  = 0;
-
 	/* start timer */
 	TIM1->CR1 |= TIM_CR1_CEN;
 }
@@ -71,23 +95,36 @@ static void ws2812_dma_stop(void)
 {
 	/* stop timer */
 	TIM1->CR1 &= ~TIM_CR1_CEN;
+	TIM1->DIER &=~ ( TIM_DIER_CC1DE | TIM_DIER_CC2DE | TIM_DIER_CC4DE );
+
+	/* disable dma */
+	DMA_CHANNEL_SET->CCR &=~ DMA_CCR_EN;
+	DMA_CHANNEL_DATA->CCR &=~ DMA_CCR_EN;
+	DMA_CHANNEL_CLEAR->CCR &=~ DMA_CCR_EN;
+
+	TIM1->DIER |= ( TIM_DIER_CC1DE | TIM_DIER_CC2DE | TIM_DIER_CC4DE );
+
+	TIM1->CNT = 0;
+	TIM1->SR  = 0;
 }
 
 /* half-transfer */
 void DMA1_Channel2_3_IRQHandler(void)
 {
+	__enable_irq();
 	ws2812_half_transfer();
 
-	DMA1->IFCR &= DMA_ISR_HTIF2;
+	DMA1->IFCR = DMA_ISR_HTIF2;
 }
 
 /* full-transfer */
 void DMA1_Channel4_5_IRQHandler(void)
 {
 	ws2812_dma_stop();
+	__enable_irq();
 	ws2812_full_transfer();
 
-	DMA1->IFCR &= DMA_ISR_TCIF4;
+	DMA1->IFCR = DMA_ISR_TCIF4;
 }
 
 static void ws2812_timer_setup(int t0h, int t1h, int t_pulse)
@@ -113,9 +150,9 @@ static void ws2812_timer_setup(int t0h, int t1h, int t_pulse)
 
 	TIMER_PULSELEN      = t_pulse - 1;
 
-	TIMER_COMPARE_SET   = 1;
-	TIMER_COMPARE_DATA  = t0h+1;
-	TIMER_COMPARE_CLEAR = t1h+1;
+	TIMER_COMPARE_SET   = t_pulse - 1 - t1h;
+	TIMER_COMPARE_DATA  = t_pulse - 1 + t0h - t1h;
+	TIMER_COMPARE_CLEAR = t_pulse - 1;
 }
 
 
