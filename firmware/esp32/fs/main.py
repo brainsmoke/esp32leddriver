@@ -78,6 +78,7 @@ driver = uartpixel.UartPixel(baudrate = config.uart_baudrate,
                              rx       = config.uart_rx,
                              tx       = config.uart_tx,
                              n        = leds.n_leds,
+                             led_order= config.led_order,
                              remap    = leds.remap,
                              framebuf = False )
 
