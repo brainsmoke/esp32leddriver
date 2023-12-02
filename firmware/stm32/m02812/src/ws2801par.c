@@ -153,18 +153,18 @@ for line in range(0, n_values, 30):
 	31,30,32,34,33,35,37,36,38,40,39,41,43,42,44,46,45,47,49,48,50,52,51,53,55,54,56,58,57,59,
 };
 
-#define P0 (1<<1)
-#define P1 (1<<2)
-#define P2 (1<<3)
-#define P3 (1<<4)
-#define P4 (1<<5)
-#define P5 (1<<6)
-#define P6 (1<<8)
-#define P7 (1<<9)
-#define P8 (1<<11)
-#define P9 (1<<12)
-#define PA (1<<13)
-#define PB (1<<14)
+#define P0 (1<<9)
+#define P1 (1<<10)
+#define P2 (1<<11)
+#define P3 (1<<12)
+#define P4 (1<<13)
+#define P5 (1<<14)
+#define P6 (1<<1)
+#define P7 (1<<2)
+#define P8 (1<<3)
+#define P9 (1<<4)
+#define PA (1<<5)
+#define PB (1<<6)
 
 static const uint16_t high_byte_pin[] =
 {
@@ -225,7 +225,7 @@ static void init(void)
 	GPIOA->MODER = SWD;
 
 	GPIOB->ODR = 0;
-	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
+	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(8)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
 	usart2_rx_pa3_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/2e6);
 	enable_sys_tick(SYS_TICK_FRAMERATE);

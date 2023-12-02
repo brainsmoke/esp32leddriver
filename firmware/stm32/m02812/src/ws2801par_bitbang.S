@@ -324,19 +324,19 @@ adcs rCARRY, rCARRY
 .endm
 
 movs rCARRY, #0
-do_temp_dither 11
-do_temp_dither 10
-do_temp_dither 9
-do_temp_dither 8
-do_temp_dither 7
-do_temp_dither 6
-lsls rCARRY, #2
 do_temp_dither 5
 do_temp_dither 4
 do_temp_dither 3
 do_temp_dither 2
 do_temp_dither 1
 do_temp_dither 0
+lsls rCARRY, #2
+do_temp_dither 11
+do_temp_dither 10
+do_temp_dither 9
+do_temp_dither 8
+do_temp_dither 7
+do_temp_dither 6
 lsls rCARRY, #17
 
 str rCARRY, [rBUF, #0]
