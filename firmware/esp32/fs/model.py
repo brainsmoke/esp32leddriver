@@ -6,6 +6,9 @@ def load_json(name):
     config.load()
     return config.load_json(config.model_dir + '/' + name)
 
+def open_file(name, *args, **kwargs):
+    return open(config.model_dir + '/' + name, *args, **kwarg)
+
 class Model:
     def __init__(self, n_leds, positions, normals, inside, remap=None, circuits={}):
         self.n_leds = n_leds

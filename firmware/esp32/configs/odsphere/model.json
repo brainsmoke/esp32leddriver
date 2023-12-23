@@ -1,0 +1,5 @@
+{
+	"model": "/models/odsphere",
+	"led_order": "RGB",
+	"cutoff": 12
+}

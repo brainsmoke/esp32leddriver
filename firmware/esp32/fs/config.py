@@ -13,6 +13,7 @@ pulse_width, pulse_width_max, pulse_width_min = None, None, None
 
 model_dir = "/conf"
 led_order = "GRB"
+cutoff = 24
 
 _loaded = False
 
@@ -91,7 +92,7 @@ def write_failsafe_conf(essid, password, ip):
 def reload():
     import gc
 
-    global port, uart_baudrate, uart_rx, uart_tx, model_dir, led_order, use_tls, key_file, cert_file, api_key
+    global port, uart_baudrate, uart_rx, uart_tx, model_dir, led_order, cutoff, use_tls, key_file, cert_file, api_key
     global pulse_width, pulse_width_min, pulse_width_max
     reload_network()
     reload_failsafe()
@@ -141,6 +142,8 @@ def reload():
             model_dir = config['model']
         if 'led_order' in config:
             led_order = config['led_order'].upper()
+        if 'cutoff' in config:
+            cutoff = int(config['cutoff'])
 
     del config
     gc.collect()
