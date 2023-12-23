@@ -99,6 +99,17 @@ class Wobble:
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*24576), int(phi*6144), 0)
         cball.wobble(fbuf, self.rotations, 2, phi)
 
+class InsideWobble(Wobble):
+
+    def __init__(self, leds, config=None, **kwargs):
+        assert True in leds.inside
+        self.mask = uarray.array('H', int(leds.inside[i//3])*0xffff0 for i in range(leds.n_leds*3))
+        super().__init__(leds, config, **kwargs)
+
+    def next_frame(self, fbuf):
+        super().next_frame(fbuf)
+        cball.array_interval_multiply(fbuf, fbuf, self.mask)
+
 class ConfigMode:
 
     def __init__(self, leds, config=None, **kwargs):
