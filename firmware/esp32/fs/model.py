@@ -1,13 +1,15 @@
 
 import uarray
 
+import config
+
 def load_json(name):
-    import config
     config.load()
     return config.load_json(config.model_dir + '/' + name)
 
 def open_file(name, *args, **kwargs):
-    return open(config.model_dir + '/' + name, *args, **kwarg)
+    config.load()
+    return open(config.model_dir + '/' + name, *args, **kwargs)
 
 class Model:
     def __init__(self, n_leds, positions, normals, inside, remap=None, circuits={}):
