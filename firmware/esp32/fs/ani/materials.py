@@ -5,6 +5,8 @@ import cball
 class Checkers:
 
     def __init__(self, leds, tmpfloat, config=None, **kwargs):
+        # hacky determination of it being the right sphere
+        assert leds.n_leds == 240
         self.leds = leds
         self.Gmdt2 = -6.674e-11*5.97219e24*1.*1./(6.371e6**3)
         self.objects = uarray.array('f',

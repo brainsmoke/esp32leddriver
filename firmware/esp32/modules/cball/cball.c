@@ -1114,22 +1114,83 @@ STATIC mp_obj_t cball_gradient(size_t n_args, const mp_obj_t *args)
 	size_t bwave_len = cball_get_uint16_array(args[4], &bwave, MP_BUFFER_READ,
 	                   "bwave needs to be a uarray.array('H',...)");
 
-	int phi_r = (rwave_len+(mp_obj_get_int(args[5])%rwave_len))%rwave_len,
-	    phi_g = (gwave_len+(mp_obj_get_int(args[6])%gwave_len))%gwave_len,
-	    phi_b = (bwave_len+(mp_obj_get_int(args[7])%bwave_len))%bwave_len;
+	unsigned int phi_r = (rwave_len+(mp_obj_get_int(args[5])%rwave_len))%rwave_len,
+	             phi_g = (gwave_len+(mp_obj_get_int(args[6])%gwave_len))%gwave_len,
+	             phi_b = (bwave_len+(mp_obj_get_int(args[7])%bwave_len))%bwave_len;
 
 	int i;
 	for (i=0; i<fb_len; i+=3)
 	{
-		fb[i  ] = rwave[ (rwave_len + rot[i  ] + phi_r) % rwave_len ];
-		fb[i+1] = gwave[ (gwave_len + rot[i+1] + phi_g) % gwave_len ];
-		fb[i+2] = bwave[ (bwave_len + rot[i+2] + phi_b) % bwave_len ];
+		fb[i  ] = rwave[ (rot[i  ] + phi_r) % rwave_len ];
+		fb[i+1] = gwave[ (rot[i+1] + phi_g) % gwave_len ];
+		fb[i+2] = bwave[ (rot[i+2] + phi_b) % bwave_len ];
 	}
 
 	return mp_const_none;
 }
 
 STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_gradient_obj, 8, 8, cball_gradient);
+
+
+STATIC mp_obj_t cball_grouped_gradient(size_t n_args, const mp_obj_t *args)
+{
+	/* args:
+	 * -     framebuffer  [n_elements]  uint16,
+	 * -     rotations    [n_elements]  uint16,
+	 * -     groups       [n_elements]  uint16,
+	 * -     wave         [...]         uint16,
+	 * -     intensities  [n_groups]    uint16,
+	 * -     phases       [n_groups]    uint16,
+	 */
+
+	uint16_t *fb;
+	size_t fb_len = cball_get_uint16_array(args[0], &fb, MP_BUFFER_WRITE,
+	                "framebuffer needs to be a uarray.array('H',...)");
+
+	uint16_t *rot;
+	size_t rot_len = cball_get_uint16_array(args[1], &rot, MP_BUFFER_READ,
+	                 "rotations needs to be a uarray.array('H',...)");
+
+	uint16_t *groups;
+	size_t groups_len = cball_get_uint16_array(args[2], &groups, MP_BUFFER_READ,
+	                    "groups needs to be a uarray.array('H',...)");
+
+	if ( (fb_len != rot_len) || (fb_len != groups_len) )
+		mp_raise_ValueError("Array sizes don't match");
+
+	uint16_t *wave;
+	size_t wave_len = cball_get_uint16_array(args[3], &wave, MP_BUFFER_READ,
+	                  "wave needs to be a uarray.array('H',...)");
+
+	if ( wave_len == 0 )
+		mp_raise_ValueError("wave array needs to have at least one element");
+
+	uint16_t *intensities;
+	size_t intensities_len = cball_get_uint16_array(args[4], &intensities, MP_BUFFER_READ,
+	                         "intensities needs to be a uarray.array('H',...)");
+
+	uint16_t *phases;
+	size_t phases_len = cball_get_uint16_array(args[5], &phases, MP_BUFFER_READ,
+	                    "phases needs to be a uarray.array('H',...)");
+
+	if (intensities_len < phases_len)
+		phases_len = intensities_len;
+
+	int i;
+	for (i=0; i<fb_len; i++)
+	{
+		size_t ix = groups[i];
+		if (ix < phases_len)
+			fb[i] = (((uint32_t)intensities[ix]+1ul) * (uint32_t)wave[ (rot[i] + phases[ix]) % wave_len ])>>16;
+		else
+			fb[i] = 0;
+	}
+
+	return mp_const_none;
+}
+
+
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_grouped_gradient_obj, 6, 6, cball_grouped_gradient);
 
 /* needed for the wobble animation, couldn't really mould it into a generic computation */
 STATIC mp_obj_t cball_wobble(size_t n_args, const mp_obj_t *args)
@@ -1581,6 +1642,7 @@ STATIC const mp_rom_map_elem_t cball_module_globals_table[] =
 
 	{ MP_ROM_QSTR(MP_QSTR_shader), MP_ROM_PTR(&cball_shader_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_gradient), MP_ROM_PTR(&cball_gradient_obj) },
+	{ MP_ROM_QSTR(MP_QSTR_grouped_gradient), MP_ROM_PTR(&cball_grouped_gradient_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_wobble), MP_ROM_PTR(&cball_wobble_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_ca_update), MP_ROM_PTR(&cball_ca_update_obj) },
 	{ MP_ROM_QSTR(MP_QSTR_orbit_update), MP_ROM_PTR(&cball_orbit_update_obj) },

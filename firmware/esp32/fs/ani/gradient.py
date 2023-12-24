@@ -9,10 +9,11 @@ import cball
 #    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2 * 255)
 
 smooth_wave = None
+smooth_wave_size = 4096
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
-        smooth_wave = uarray.array('H', 0 for _ in range(2048))
+        smooth_wave = uarray.array('H', 0 for _ in range(smooth_wave_size))
         cball.wave_for_gradient_lut(smooth_wave) # same calculation, speed up boot time
 #        for i in range(1025):
 #            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
@@ -20,9 +21,10 @@ def get_smooth_wave():
 
 class BaseGradient:
     def next_frame(self, fbuf):
-        self.phase = (self.phase+self.speed)%self.phase_max
-        phi = int(2048. * self.phase / self.phase_max)
-        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, -phi*7, -phi*8, -phi*9)
+        self.phase = (self.phase_max+self.phase-self.speed)%self.phase_max
+        phi = smooth_wave_size * self.phase / self.phase_max
+        phi_r, phi_g, phi_b = int(phi * 7), int(phi * 8), int(phi * 9)
+        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, phi_r, phi_g, phi_b)
 
     def get_speed(self):
         return self.speed
@@ -33,8 +35,8 @@ class BaseGradient:
 class Gradient(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
-        n = 2048
         self.wave = get_smooth_wave()
+        n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
         for i in range(leds.n_leds):
@@ -52,8 +54,8 @@ class Gradient(BaseGradient):
 class Spiral(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
-        n = 2048
         self.wave = get_smooth_wave()
+        n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
         for i in range(leds.n_leds):
@@ -71,8 +73,8 @@ class Spiral(BaseGradient):
 class Wobble:
 
     def __init__(self, leds, config=None, **kwargs):
-        n = 2048
         self.wave = get_smooth_wave()
+        n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
         for i in range(leds.n_leds):
@@ -114,11 +116,12 @@ class ConfigMode:
 
     def __init__(self, leds, config=None, **kwargs):
         self.wave = get_smooth_wave()
+        n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
         for i in range(leds.n_leds):
             x,y,z = leds.positions[i]
-            self.rotations[i*3  ] = int( (768*y) % 2048 )
+            self.rotations[i*3  ] = int( (768*y) % n )
             self.rotations[i*3+1] = 0
             self.rotations[i*3+2] = 0
 
