@@ -2,14 +2,9 @@
 import machine, network, utime, uarray, gc, re
 
 import config, model, uartpixel, cball, configform, csrf
+from conf.load import get_animations
 
-from ani.orbit import Orbit
-from ani.lorenz import Lorenz
-from ani.fire import Fire
-from ani.gradient import Gradient, Spiral, Wobble, ConfigMode
-from ani.spot import Spots, Chroma
-from ani.rutherford import Rutherford
-from ani.materials import Checkers, AlienPlanet
+from ani.gradient import ConfigMode
 
 import esp
 #esp.osdebug(None)
@@ -108,7 +103,7 @@ tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
 
 player.start()
 
-for Ani in (Lorenz, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
+for Ani in get_animations():
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:
