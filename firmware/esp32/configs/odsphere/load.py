@@ -8,7 +8,8 @@ from ani.rutherford import Rutherford
 from ani.materials import Checkers, AlienPlanet
 from ani.multiwave import MultiWave
 from ani.movie import Earth
+from ani.shadowplay import ShadowPlay
 
 def get_animations():
-	return (MultiWave, Lorenz, Gradient, Earth, Fire, Spiral, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
+	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, Fire, Spiral, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
 
