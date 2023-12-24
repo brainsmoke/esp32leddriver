@@ -14,7 +14,7 @@ class ShadowWalk:
 
         self.color = cball.ColorDrift(1024, 3)
         self.set_speed(6)
-        self.set_brightness(.333)
+        self.set_brightness(.4)
         self.set_distance(.5)
         if config:
             config.add_slider('speed', 0, 25, 1, self.get_speed, self.set_speed, caption="speed")
