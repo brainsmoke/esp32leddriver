@@ -110,7 +110,7 @@ tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
 
 player.start()
 
-for Ani in (Lorenz, InsideWobble, Earth, Rutherford, Fire, Gradient, MultiWave, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
+for Ani in (Lorenz, InsideWobble, Earth, Fire, Gradient, MultiWave, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:
