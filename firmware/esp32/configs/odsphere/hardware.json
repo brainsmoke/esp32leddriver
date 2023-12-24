@@ -1,4 +1,10 @@
 {
+	"uart":
+	{
+		"baudrate": 2000000,
+		"tx": 13,
+		"rx": 35
+	},
 	"model": "/models/odsphere",
 	"led_order": "RGB",
 	"cutoff": 12,

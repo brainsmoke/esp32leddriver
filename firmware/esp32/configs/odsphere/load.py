@@ -1,7 +1,7 @@
 
 from ani.orbit import Orbit
 from ani.lorenz import Lorenz
-from ani.fire import Fire
+from conf.fire import Fire
 from ani.gradient import Gradient, Spiral, Wobble, InsideWobble
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford

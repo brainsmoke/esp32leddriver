@@ -115,7 +115,7 @@ def reload():
     del config
     gc.collect()
 
-    config = load_json("/conf/board.json")
+    config = load_json("/conf/hardware.json")
 
     if config != None:
         if 'uart' in config:
@@ -132,13 +132,6 @@ def reload():
                 pulse_width_min = int(config['driver']['pulse_width_min'])
             if 'pulse_width_max' in config['driver']:
                 pulse_width_max = int(config['driver']['pulse_width_max'])
-
-    del config
-    gc.collect()
-
-    config = load_json("/conf/model.json")
-
-    if config != None:
         if 'model' in config:
             model_dir = config['model']
         if 'led_order' in config:
