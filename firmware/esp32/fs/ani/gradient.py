@@ -101,7 +101,6 @@ class Spiral(BaseGradient):
         self.speed = 10
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
-            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
 
         if config and util.have_inside(leds):
             self.inside_mask = util.get_inside_mapping(leds)
