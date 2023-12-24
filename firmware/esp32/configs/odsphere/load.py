@@ -9,7 +9,8 @@ from ani.materials import Checkers, AlienPlanet
 from ani.multiwave import MultiWave
 from ani.movie import Earth
 from ani.shadowplay import ShadowPlay
+from ani.shadowwalk import ShadowWalk
 
 def get_animations():
-	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, Fire, Spiral, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
+	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Spiral, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
 
