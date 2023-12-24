@@ -43,6 +43,19 @@ class MultiWave:
 
         self.phase_inc = uarray.array('H', ( int(0x10000/((i+1)*2000/n_groups)) for i in range(n_groups)) )
         self.phase_pre = uarray.array('H', (0 for _ in range(n_groups)))
+        self.set_speed(32)
+
+        if config:
+            config.add_slider('speed', 6, 58, 1, self.get_speed, self.set_speed, caption="speed")
+
+    def get_speed(self):
+        return self.speed
+
+    def set_speed(self, speed):
+        self.speed = speed
+        x = speed*len(self.phase_inc)
+        for i in range(len(self.phase_inc)):
+            self.phase_inc[i] = int(x/(i+1))
 
     @micropython.native
     def next_frame(self, out):
