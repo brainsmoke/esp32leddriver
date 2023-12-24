@@ -41,12 +41,14 @@ class MultiWave:
                  self.rotations[l*3+1] = phase
                  self.rotations[l*3+2] = phase
 
-        self.phase_inc = uarray.array('H', ( int(0x10000/((i+1)*2000/n_groups)) for i in range(n_groups)) )
+        self.phase_inc = uarray.array('H', (0 for _ in range(n_groups)) )
         self.phase_pre = uarray.array('H', (0 for _ in range(n_groups)))
         self.set_speed(32)
+        self.chroma = 0
 
         if config:
             config.add_slider('speed', 6, 58, 1, self.get_speed, self.set_speed, caption="speed")
+            config.add_slider('chroma', 0, n//3, 1, self.get_chroma, self.set_chroma, caption="chroma")
 
     def get_speed(self):
         return self.speed
@@ -57,6 +59,13 @@ class MultiWave:
         for i in range(len(self.phase_inc)):
             self.phase_inc[i] = int(x/(i+1))
 
+
+    def get_chroma(self):
+        return self.chroma
+
+    def set_chroma(self, chroma):
+        self.chroma = chroma
+
     @micropython.native
     def next_frame(self, out):
         phase_inc = self.phase_inc
@@ -65,7 +74,10 @@ class MultiWave:
         n = len(self.wave)
 
         for i in range(len(phase_pre)):
-            phases[i*3+2] = phases[i*3+1] = phases[i*3] = (phase_pre[i]*n)>>16
+            p = (phase_pre[i]*n)>>16
+            phases[i*3  ] = (p+self.chroma)%n
+            phases[i*3+1] =  p
+            phases[i*3+2] = (p-self.chroma)%n
             phase_pre[i] = (phase_pre[i] + phase_inc[i]) & 0xffff
             self.colors[i].next_color_into(self.intensities, i*3)
 
