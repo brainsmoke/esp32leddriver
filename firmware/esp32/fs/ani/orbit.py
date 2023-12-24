@@ -1,6 +1,7 @@
 
 import uarray
 import cball
+import util
 
 class Orbit:
 
@@ -34,6 +35,7 @@ class Orbit:
             config.add_slider('speed', 0, 30, 1, self.get_speed, self.set_speed, caption="speed")
 
         self.tmpfloat = tmpfloat
+        self.mask = util.get_outside_mapping(leds)
 
     def set_speed(self, speed):
         self.speed = speed
@@ -63,4 +65,7 @@ class Orbit:
         self.update(self.speed)
         cball.shader(self.tmpfloat, self.leds.flat_data, self.shader_flat)
         cball.framebuffer_floatto16(fbuf, self.tmpfloat)
+        if self.mask:
+            cball.array_interval_multiply(fbuf, fbuf, self.mask)
+
 
