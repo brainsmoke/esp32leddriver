@@ -2,27 +2,12 @@
 import uarray, math, cmath
 import cball
 
-#def clamp_byte(x):
-#    return min(255, max(0, int(x)))
-#
-#def smooth_wave_point(theta):
-#    return clamp_byte( ((1-math.cos(theta*2*math.pi))/2)**2 * 255)
-
-smooth_wave = None
-smooth_wave_size = 4096
-def get_smooth_wave():
-    global smooth_wave
-    if not smooth_wave:
-        smooth_wave = uarray.array('H', 0 for _ in range(smooth_wave_size))
-        cball.wave_for_gradient_lut(smooth_wave) # same calculation, speed up boot time
-#        for i in range(1025):
-#            smooth_wave[i] = smooth_wave[-i] = smooth_wave_point( i/2048 )
-    return smooth_wave
+from ani.util import get_smooth_wave
 
 class BaseGradient:
     def next_frame(self, fbuf):
         self.phase = (self.phase_max+self.phase-self.speed)%self.phase_max
-        phi = smooth_wave_size * self.phase / self.phase_max
+        phi = len(self.wave) * self.phase / self.phase_max
         phi_r, phi_g, phi_b = int(phi * 7), int(phi * 8), int(phi * 9)
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, phi_r, phi_g, phi_b)
 
