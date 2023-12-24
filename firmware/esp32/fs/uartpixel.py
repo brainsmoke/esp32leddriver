@@ -57,7 +57,7 @@ class UartPixel:
     def create_framebuffer16(self):
         return uarray.array('H', (0 for _ in range(self.n*3)))
 
-    def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, remap=None, framebuf=True):
+    def __init__(self, baudrate, rx, tx, n, led_order="GRB", gamma=2.5, cutoff=0x18, remap=None, fps=60., framebuf=True):
         self.n = n
         if framebuf:
             self.buf = self.create_framebuffer()
@@ -78,7 +78,7 @@ class UartPixel:
         #self.uart = machine.UART(1, baudrate=baudrate, rx=rx, tx=tx, txbuf=len(self.outbuf)*2)
         self.queue = _uartpixel.FrameQueue(uart=1, timer=3,
                                            baudrate=baudrate, rx=rx, tx=tx,
-                                           fps=60.,
+                                           fps=fps,
                                            framesize=len(self.outbuf)*2, framecount=12)
         self.reset()
 

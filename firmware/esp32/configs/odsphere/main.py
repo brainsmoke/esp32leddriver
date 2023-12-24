@@ -11,6 +11,7 @@ from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
 from ani.materials import Checkers, AlienPlanet
 from ani.movie import Earth
+from ani.multiwave import MultiWave
 
 import esp
 #esp.osdebug(None)
@@ -109,7 +110,7 @@ tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
 
 player.start()
 
-for Ani in (Lorenz, InsideWobble, Earth, Rutherford, Fire, Gradient, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
+for Ani in (Lorenz, InsideWobble, Earth, Rutherford, Fire, Gradient, MultiWave, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma):
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:

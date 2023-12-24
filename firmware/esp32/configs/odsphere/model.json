@@ -1,5 +1,6 @@
 {
 	"model": "/models/odsphere",
 	"led_order": "RGB",
-	"cutoff": 12
+	"cutoff": 12,
+	"fps": 100
 }
