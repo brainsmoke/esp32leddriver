@@ -2,7 +2,7 @@
 import uarray, math, cmath
 import cball
 
-from ani.util import get_smooth_wave
+import util
 
 class BaseGradient:
     def next_frame(self, fbuf):
@@ -10,6 +10,8 @@ class BaseGradient:
         phi = len(self.wave) * self.phase / self.phase_max
         phi_r, phi_g, phi_b = int(phi * 7), int(phi * 8), int(phi * 9)
         cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, phi_r, phi_g, phi_b)
+        if self.mask:
+            cball.array_interval_multiply(fbuf, fbuf, self.mask)
 
     def get_speed(self):
         return self.speed
@@ -17,10 +19,47 @@ class BaseGradient:
     def set_speed(self, speed):
         self.speed = speed
 
+    def get_mask(self):
+        if self.mask == self.inside_mask:
+            return 0
+        elif self.mask == self.outside_mask:
+            return 1
+        else:
+            return 2
+
+    def set_mask(self, mask):
+        if mask == 0:
+            self.mask = self.inside_mask
+        elif mask == 1:
+            self.mask = self.outside_mask
+        else:
+            self.mask = None
+
+    def set_wave(self, wave):
+        if wave == 0:
+            self.wave = util.get_half_duty_pwm()
+        elif wave == 1:
+            self.wave = util.get_small_duty_pwm()
+        elif wave == 2:
+            self.wave = util.get_sawtooth_wave()
+        else:
+            self.wave = util.get_smooth_wave()
+
+    def get_wave(self):
+        if self.wave == util.get_half_duty_pwm():
+            return 0
+        elif self.wave == util.get_small_duty_pwm():
+            return 1
+        elif self.wave == util.get_sawtooth_wave():
+            return 2
+        else:
+            return 3
+
 class Gradient(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
-        self.wave = get_smooth_wave()
+        self.wave = util.get_smooth_wave()
+        self.mask = None
         n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -35,11 +74,19 @@ class Gradient(BaseGradient):
         self.speed = 10
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
+            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
+
+        if config and util.have_inside(leds):
+            self.inside_mask = util.get_inside_mapping(leds)
+            self.outside_mask = util.get_outside_mapping(leds)
+            self.mask = self.outside_mask
+            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
 
 class Spiral(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
-        self.wave = get_smooth_wave()
+        self.wave = util.get_smooth_wave()
+        self.mask = None
         n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -54,11 +101,19 @@ class Spiral(BaseGradient):
         self.speed = 10
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
+            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
 
-class Wobble:
+        if config and util.have_inside(leds):
+            self.inside_mask = util.get_inside_mapping(leds)
+            self.outside_mask = util.get_outside_mapping(leds)
+            self.mask = self.outside_mask
+            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
+
+class Wobble(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
-        self.wave = get_smooth_wave()
+        self.wave = util.get_smooth_wave()
+        self.mask = None
         n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 
@@ -74,33 +129,24 @@ class Wobble:
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
-    def get_speed(self):
-        return self.speed
-
-    def set_speed(self, speed):
-        self.speed = speed
+        if config and util.have_inside(leds):
+            self.inside_mask = util.get_inside_mapping(leds)
+            self.outside_mask = util.get_outside_mapping(leds)
+            self.mask = self.outside_mask
+            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
 
     def next_frame(self, fbuf):
         self.phase = (self.phase+self.speed)%self.phase_max
         phi = self.phase / self.phase_max
-        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*24576), int(phi*6144), 0)
+        cball.gradient(fbuf, self.rotations, self.wave, self.wave, self.wave, int(phi*49152), int(phi*12288), 0)
         cball.wobble(fbuf, self.rotations, 2, phi)
-
-class InsideWobble(Wobble):
-
-    def __init__(self, leds, config=None, **kwargs):
-        assert True in leds.inside
-        self.mask = uarray.array('H', int(leds.inside[i//3])*0xffff0 for i in range(leds.n_leds*3))
-        super().__init__(leds, config, **kwargs)
-
-    def next_frame(self, fbuf):
-        super().next_frame(fbuf)
-        cball.array_interval_multiply(fbuf, fbuf, self.mask)
+        if self.mask:
+            cball.array_interval_multiply(fbuf, fbuf, self.mask)
 
 class ConfigMode:
 
     def __init__(self, leds, config=None, **kwargs):
-        self.wave = get_smooth_wave()
+        self.wave = util.get_smooth_wave()
         n = len(self.wave)
         self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
 

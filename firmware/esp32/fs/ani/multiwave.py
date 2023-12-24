@@ -2,7 +2,7 @@
 import uarray, cmath
 import cball
 
-from ani.util import get_smooth_wave
+from util import get_smooth_wave
 
 class MultiWave:
 

@@ -1,7 +1,7 @@
 
 import uarray
 import cball
-from ani.util import get_smooth_wave
+from util import get_smooth_wave
 
 class Faces:
 
