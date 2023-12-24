@@ -43,8 +43,8 @@ class MultiWave:
 
         self.phase_inc = uarray.array('H', (0 for _ in range(n_groups)) )
         self.phase_pre = uarray.array('H', (0 for _ in range(n_groups)))
-        self.set_speed(32)
-        self.chroma = 0
+        self.set_speed(40)
+        self.chroma = n//9
 
         if config:
             config.add_slider('speed', 6, 58, 1, self.get_speed, self.set_speed, caption="speed")

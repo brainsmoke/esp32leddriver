@@ -10,5 +10,5 @@ from ani.multiwave import MultiWave
 from ani.movie import Earth
 
 def get_animations():
-	return (Lorenz, Gradient, Earth, Fire, Spiral, MultiWave, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
+	return (MultiWave, Lorenz, Gradient, Earth, Fire, Spiral, Orbit, Wobble, Checkers, AlienPlanet, Spots, Chroma)
 
