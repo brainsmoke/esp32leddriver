@@ -10,7 +10,8 @@ from ani.multiwave import MultiWave
 from ani.movie import Earth
 from ani.shadowplay import ShadowPlay
 from ani.shadowwalk import ShadowWalk
+from ani.topo import Topo
 
 def get_animations():
-	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Spiral, Orbit, Wobble, AlienPlanet, Spots, Chroma)
+	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Topo, Spiral, Orbit, Wobble, AlienPlanet, Spots, Chroma)
 
