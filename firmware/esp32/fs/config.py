@@ -97,7 +97,6 @@ def reload():
     global pulse_width, pulse_width_min, pulse_width_max
     reload_network()
     reload_failsafe()
-    gc.collect()
 
     config = load_json("/secret/httpd.json")
 
@@ -113,7 +112,6 @@ def reload():
             api_key = str(config['api_key'])
 
     del config
-    gc.collect()
 
     config = load_json("/conf/hardware.json")
 

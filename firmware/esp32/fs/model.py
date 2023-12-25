@@ -12,7 +12,7 @@ def open_file(name, *args, **kwargs):
     return open(config.model_dir + '/' + name, *args, **kwargs)
 
 class Model:
-    def __init__(self, n_leds, positions, normals, inside, remap=None, circuits={}):
+    def __init__(self, n_leds, positions, normals, inside, remap=None, circuits={}, groups={}):
         self.n_leds = n_leds
         self.positions = positions
         self.normals = normals
@@ -27,6 +27,7 @@ class Model:
             self.remap = uarray.array('H', remap )
 
         self.circuits = circuits
+        self.groups = groups
 
         self.inside = inside
 
@@ -45,14 +46,16 @@ def load():
     gc.collect()
 
     remap = load_json('remap.json')
-
-    gc.collect()
-
     circuits = load_json('circuits.json')
 
     if circuits == None:
         circuits = {}
 
+    groups = load_json('groups.json')
+
+    if groups == None:
+        groups = {}
+
     gc.collect()
 
-    return Model(n_leds, positions, normals, inside, remap, circuits)
+    return Model(n_leds, positions, normals, inside, remap, circuits, groups)
