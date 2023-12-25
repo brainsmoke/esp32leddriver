@@ -18,7 +18,7 @@ def get_sawtooth_wave():
     if not sawtooth_wave:
         sawtooth_wave = uarray.array('H', (0 for _ in range(_sawtooth_wave_size)))
         for i in range(_sawtooth_wave_size):
-            ix = (5120-i)%4096
+            ix = (1024+i)%4096
             sawtooth_wave[i] = (ix*ix)>>8
     return sawtooth_wave
 
