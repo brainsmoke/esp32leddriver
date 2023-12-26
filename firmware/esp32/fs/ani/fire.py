@@ -41,7 +41,8 @@ class Fire:
 
     def set_speed(self, speed):
         self.speed = speed
-        self.speed_f = speed/200
+        steps_per_frame = speed/100.
+        self.speed_f = 1-0.75**steps_per_frame
 
     def get_speed(self):
         return self.speed
