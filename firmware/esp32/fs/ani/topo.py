@@ -82,6 +82,6 @@ class Topo:
         cball.array_copy(out, self.fbuf_blend)
 
         self.phase += 1
-        self.phase %= 512
+        self.phase %= 256
 
 
