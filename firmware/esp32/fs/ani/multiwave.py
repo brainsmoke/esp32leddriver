@@ -7,12 +7,12 @@ from util import get_smooth_wave
 class MultiWave:
 
     def __init__(self, leds, config=None, **kwargs):
-        assert 'facets' in leds.circuits
+        assert 'leds' in leds.groups
         self.wave = get_smooth_wave()
         n = len(self.wave)
 
-        facets = leds.circuits['facets']
-        n_groups = max(len(f) for f in facets)
+        groups = leds.groups['leds']
+        n_groups = max(groups)+1
 
         self.colors = [ cball.ColorDrift(128*(i+3), 1) for i in range(n_groups) ]
         self.phases = uarray.array('H', (0 for _ in range(n_groups*3)))
@@ -23,25 +23,19 @@ class MultiWave:
 
         axes = ( (1, 2), (2, 0), (0, 1), (2, 1), (1, 0), (0, 2) )
 
-        for f in facets:
-            for i, l in enumerate(f):
-                 self.groups[l*3  ] = i*3
-                 self.groups[l*3+1] = i*3+1
-                 self.groups[l*3+2] = i*3+2
-                 pos = leds.positions[l]
-                 a, b = axes[i%len(axes)]
-                 signbits = i//6
-                 a, b = pos[a], pos[b]
-                 if signbits&1:
-                     a=-a
-                 if signbits&2:
-                     b=-b
-                 phase = int((n * (1+cmath.phase(complex(a,b)) / (cmath.pi*2))) % n)
-                 self.rotations[l*3  ] = phase
-                 self.rotations[l*3+1] = phase
-                 self.rotations[l*3+2] = phase
+        for led, group in enumerate(groups):
+             self.groups[led*3  ] = group*3
+             self.groups[led*3+1] = group*3+1
+             self.groups[led*3+2] = group*3+2
+             pos = leds.positions[led]
+             a, b = axes[group%len(axes)]
+             a, b = pos[a], pos[b]
+             phase = int((n * (1+cmath.phase(complex(a,b)) / (cmath.pi*2))) % n)
+             self.rotations[led*3  ] = phase
+             self.rotations[led*3+1] = phase
+             self.rotations[led*3+2] = phase
 
-        self.phase_inc = uarray.array('H', (0 for _ in range(n_groups)) )
+        self.phase_inc = uarray.array('H', (0 for _ in range(n_groups)))
         self.phase_pre = uarray.array('H', (0 for _ in range(n_groups)))
         self.set_speed(40)
         self.chroma = n//9
