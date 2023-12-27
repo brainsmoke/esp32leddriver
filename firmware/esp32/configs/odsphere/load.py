@@ -11,7 +11,8 @@ from ani.movie import Earth
 from ani.shadowplay import ShadowPlay
 from ani.shadowwalk import ShadowWalk
 from ani.topo import Topo
+from ani.snake import Snake
 
 def get_animations():
-	return (MultiWave, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Topo, Spiral, Orbit, Wobble, AlienPlanet, Spots, Chroma)
+	return (MultiWave, Snake, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Topo, Spiral, Orbit, Wobble, AlienPlanet, Spots, Chroma)
 
