@@ -30,6 +30,8 @@ class Snake:
         n_read = f.readinto(self.turns)
         assert n_read == 2*n_choices*n_positions
 
+        f.close()
+
         self.who = bytearray(leds.n_leds)
         self.max_snake_len = 7
         self.snake_len = self.max_snake_len
