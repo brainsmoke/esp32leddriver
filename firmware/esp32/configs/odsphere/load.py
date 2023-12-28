@@ -2,7 +2,7 @@
 from ani.orbit import Orbit
 from ani.lorenz import Lorenz
 from conf.fire import Fire
-from ani.gradient import Gradient, Spiral, Wobble
+from ani.gradient import WaveSelectGradient, Spiral, Wobble
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
 from ani.materials import AlienPlanet
@@ -14,5 +14,5 @@ from ani.topo import Topo
 from ani.snake import Snake
 
 def get_animations():
-	return (MultiWave, Snake, Lorenz, ShadowPlay, Gradient, Earth, ShadowWalk, Fire, Topo, Spiral, Orbit, Wobble, AlienPlanet)
+	return (MultiWave, Snake, Lorenz, ShadowPlay, WaveSelectGradient, Earth, ShadowWalk, Fire, Topo, Spiral, Orbit, Wobble, AlienPlanet)
 

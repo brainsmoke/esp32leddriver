@@ -61,7 +61,7 @@ class Gradient(BaseGradient):
         self.wave = util.get_smooth_wave()
         self.mask = None
         n = len(self.wave)
-        self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
+        self.rotations = uarray.array('H', (0 for _ in range(leds.n_leds*3)))
 
         for i in range(leds.n_leds):
             x,y,z = leds.positions[i]
@@ -74,7 +74,6 @@ class Gradient(BaseGradient):
         self.speed = 10
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
-            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
 
         if config and util.have_inside(leds):
             self.inside_mask = util.get_inside_mapping(leds)
@@ -82,13 +81,19 @@ class Gradient(BaseGradient):
             self.mask = self.outside_mask
             config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
 
+class WaveSelectGradient(Gradient):
+    def __init__(self, leds, config=None, **kwargs):
+        super().__init__(leds, config, **kwargs)
+        if config:
+            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
+
 class Spiral(BaseGradient):
 
     def __init__(self, leds, config=None, **kwargs):
         self.wave = util.get_smooth_wave()
         self.mask = None
         n = len(self.wave)
-        self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
+        self.rotations = uarray.array('H', (0 for _ in range(leds.n_leds*3)))
 
         for i in range(leds.n_leds):
             x,y,z = leds.positions[i]
@@ -114,7 +119,7 @@ class Wobble(BaseGradient):
         self.wave = util.get_smooth_wave()
         self.mask = None
         n = len(self.wave)
-        self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
+        self.rotations = uarray.array('H', (0 for _ in range(leds.n_leds*3)))
 
         for i in range(leds.n_leds):
             x,y,z = leds.positions[i]
@@ -147,7 +152,7 @@ class ConfigMode:
     def __init__(self, leds, config=None, **kwargs):
         self.wave = util.get_smooth_wave()
         n = len(self.wave)
-        self.rotations = uarray.array('H', 0 for _ in range(leds.n_leds*3))
+        self.rotations = uarray.array('H', (0 for _ in range(leds.n_leds*3)))
 
         for i in range(leds.n_leds):
             x,y,z = leds.positions[i]
