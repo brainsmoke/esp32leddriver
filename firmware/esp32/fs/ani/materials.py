@@ -23,7 +23,7 @@ class Checkers:
                -1,-1,-1,   1.25,  1.25,  1.25   ]
         )
 
-        self.magnitude = [ .394/255, .394/255, 1500/255 ]
+        self.magnitude = [ .394/255, .394/255, 1.25/255 ]
 
         self.colors = [ (0xff,0xe5,0x99), (0xff,0x99,23) ]
         self.checkers = uarray.array('H', 0 for i in range(leds.n_leds * 3) )
@@ -113,7 +113,7 @@ class AlienPlanet:
                -1,-1,-1,   1.25,  0.3125,  1.25   ]
         )
 
-        self.magnitude = [ .394/255, .394/255, 1500/255 ]
+        self.magnitude = [ .394/255, .394/255, 1.25/255 ]
 
         from ani.gradient import Spiral
         self.spiral = Spiral(leds, None)
