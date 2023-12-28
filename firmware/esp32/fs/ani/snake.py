@@ -40,7 +40,7 @@ class Snake:
         self.dir = [0,0]
         self.who[0] = len(self.pos)*self.snake_len
 
-        self.color = [ cball.ColorDrift(128, 3) for _ in range(2) ]
+        self.color = [ cball.ColorDrift(128, 3, 42) for _ in range(2) ]
         self.fb = uarray.array('H', (0 for _ in range( leds.n_leds * 3 ) ) )
         self.bfb = uarray.array('H', (0 for _ in range( leds.n_leds * 3 ) ) )
         self.phase = 0
