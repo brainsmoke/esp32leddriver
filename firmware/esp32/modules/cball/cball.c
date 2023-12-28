@@ -851,7 +851,9 @@ STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 	 * -     cells    [w*h]  uint8,
 	 * -     w               int,
 	 * -     h               int,
-	 * -     cap_map  [511]  uint8,
+	 * -     ca_map   [n]    uint8,
+	 * -     hi              int
+	 * -     low             int
 	 */
 
 	mp_buffer_info_t cells_info;
@@ -865,8 +867,21 @@ STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 	if ( (w < 2) || (h < 2) || (w*h != n_cells) || (n_cells/h != w) )
 		mp_raise_ValueError("width / height & cell buffer don't match");
 
+	int hi = 56, lo = 0;
+	if ( n_args > 4 )
+		hi = mp_obj_get_int(args[4]);
+	if ( n_args > 5 )
+		lo = mp_obj_get_int(args[5]);
+
+	if ( ( (hi|lo) & ~0xff ) != 0 )
+		mp_raise_ValueError("high / low need to be in the range [0..255]");
+
 	mp_buffer_info_t ca_map_info;
 	mp_get_buffer_raise(args[3], &ca_map_info, MP_BUFFER_READ);
+
+	if ( (ca_map_info.len == 0) )
+		mp_raise_ValueError("ca_map cannot be empty");
+
 	uint8_t *ca_map = ca_map_info.buf;
 	size_t ca_map_max = ca_map_info.len-1;
 
@@ -901,7 +916,7 @@ STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 			r=rand();
 			rmax=RAND_MAX;
 		}
-		cells[(h-1)*w+x] = (r&1) * 56;
+		cells[(h-1)*w+x] = (r&1) ? hi : lo;
 		r >>= 1;
 		rmax >>= 1;
 	}
@@ -909,7 +924,7 @@ STATIC mp_obj_t cball_ca_update(size_t n_args, const mp_obj_t *args)
 	return mp_const_none;
 }
 
-STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_ca_update_obj, 4, 4, cball_ca_update);
+STATIC MP_DEFINE_CONST_FUN_OBJ_VAR_BETWEEN(cball_ca_update_obj, 4, 6, cball_ca_update);
 
 STATIC mp_obj_t cball_orbit_update(mp_obj_t object_list, mp_obj_t obj_gmdt2, mp_obj_t count)
 {
@@ -1483,6 +1498,15 @@ typedef struct
 
 } colordrift_obj_t;
 
+static void get_random_color(uint16_t *rgb)
+{
+	uint32_t random = esp_random();
+	float h = (float)(random&0xffff)/65535.f;
+	float s = (float)(((random>>16)&0xffff)+0x10000)/131071.f;
+	float i = 1.f;
+	HSItoRGB(h, s, i, rgb);
+}
+
 static mp_obj_t cball_colordrift_make_new(const mp_obj_type_t *type,
                                           size_t n_args,
                                           size_t n_kw, const mp_obj_t *all_args)
@@ -1520,16 +1544,12 @@ static mp_obj_t cball_colordrift_make_new(const mp_obj_type_t *type,
 	self->colors = m_new(uint16_t, 3*self->n_colors);
 	memset(self->colors, 0, sizeof(uint16_t)*3*self->n_colors);
 
-	return MP_OBJ_FROM_PTR(self);
-}
+	int i;
+	for (i=0; i<self->n_colors; i++)
+		if ( self->phase >= self->phase_dt+i*self->phase_shift )
+			get_random_color(&self->colors[i*3]);
 
-static void get_random_color(uint16_t *rgb)
-{
-	uint32_t random = esp_random();
-	float h = (float)(random&0xffff)/65535.f;
-	float s = 1.f;
-	float i = (float)(((random>>16)&0xffff)+0x10000)/131071.f;
-	HSItoRGB(h, s, i, rgb);
+	return MP_OBJ_FROM_PTR(self);
 }
 
 static void colordrift_next_color(colordrift_obj_t *self, uint16_t *rgb)
