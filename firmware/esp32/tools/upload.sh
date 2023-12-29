@@ -1,28 +1,33 @@
 #!/bin/bash
+
 . "$(dirname "$0")/config.sh"
+
+check_model
 
 kill_screen
 
-MODEL="greatcircles"
-
-if [ "x$1" != "x" ];
-then
-    MODEL="$1"
-fi
-
-echo "$MODEL"
-exit 1
+try_echo pushd "$(dirname "$0")"/../fs/
 
 for dir in {ani,conf,secret,models}/ models/"$MODEL";
 do
-	[ -f "$dir" ] || do_echo ampy -p "$device" mkdir "${dir%/}"
+	[ -f "$dir" ] || try_echo ampy -p "$device" mkdir --exists-okay "${dir%/}"
 done
 
-for f in *.py {ani,conf}/* secret/httpd.json models/"$MODEL"/*;
+for f in *.py ani/* secret/httpd.json models/"$MODEL"/*;
 do
-	[ -f "$f" ] && 	do_echo ampy -p "$device" put "$f" "/$f";
+	[ -f "$f" ] && try_echo ampy -p "$device" put "$f" "/$f";
 done
+
+try_echo popd
+
+try_echo pushd "$(dirname "$0")"/../conf/"$MODEL"/
+
+for f in *;
+do
+	[ -f "$f" ] && try_echo ampy -p "$device" put "$f" "/conf/$f";
+done
+
+try_echo popd
 
 micropython_reset
-
 

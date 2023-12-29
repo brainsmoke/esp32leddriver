@@ -15,12 +15,9 @@ sudo apt install python3-pip
 sudo pip3 install esptool
 sudo pip3 install adafruit-ampy
 
-# the following assumes the serial device belonging to the 
-esptool.py --port /dev/ttyUSB0 erase_flash
-esptool.py --chip esp32 -p /dev/ttyUSB0 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 40m --flash_size 16MB 0x1000 bin/firmware-ledball.bin
-cd fs
-../tools/upload.sh
-screen /dev/ttyUSB0 115200
+# replace "/dev/ttyUSB0" with the correct device name
+ESPTTY="/dev/ttyUSB0" tools/flash.py
+tools/micropython_screen.sh
 ctrl-c
 >>>setup()
 (enter wifi creds, will be stored in flash)
