@@ -37,7 +37,7 @@ micropython_reset() {
 }
 
 if [ "x$ESPTTY" != "x" ]; then
-	if [ ! -c "ESPTTY" ]; then
+	if [ ! -c "$ESPTTY" ]; then
 		die "Bad tty: \$ESPTTY \"$ESPTTY\""
 	fi
 	device="$ESPTTY"
