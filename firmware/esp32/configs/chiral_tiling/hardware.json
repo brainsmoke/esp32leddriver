@@ -6,5 +6,5 @@
 		"rx": 35
 	},
 
-	"model": "chiral_tiling"
+	"model": "/models/chiral_tiling"
 }
