@@ -45,7 +45,7 @@ outside_map=None
 
 def _cache_mappings(leds):
     global inside_map, outside_map, _maps_cached
-    if True in leds.inside:
+    if True in leds.inside and False in leds.inside:
         inside_map=uarray.array('H', int(leds.inside[i//3])*0xffff0 for i in range(leds.n_leds*3))
         outside_map=uarray.array('H', int(not leds.inside[i//3])*0xffff0 for i in range(leds.n_leds*3))
     _maps_cached=True
@@ -60,5 +60,5 @@ def get_outside_mapping(leds):
         _cache_mappings(leds)
     return outside_map
 
-def have_inside(leds):
+def has_sides(leds):
     return get_inside_mapping(leds) != None

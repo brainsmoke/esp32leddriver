@@ -1,0 +1,13 @@
+{
+	"uart":
+	{
+		"baudrate": 1000000,
+		"tx": 13,
+		"rx": 35
+	},
+
+	"model": "/models/aluball",
+	"led_order": "BRG",
+	"cut_off": 0,
+	"brightness": 0.5
+}

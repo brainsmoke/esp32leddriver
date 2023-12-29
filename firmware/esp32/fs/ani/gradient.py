@@ -75,7 +75,7 @@ class Gradient(BaseGradient):
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
-        if config and util.have_inside(leds):
+        if config and util.has_sides(leds):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
@@ -107,7 +107,7 @@ class Spiral(BaseGradient):
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
-        if config and util.have_inside(leds):
+        if config and util.has_sides(leds):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
@@ -133,7 +133,7 @@ class Wobble(BaseGradient):
         if config:
             config.add_slider('speed', 0, 20, 1, self.get_speed, self.set_speed, caption="speed")
 
-        if config and util.have_inside(leds):
+        if config and util.has_sides(leds):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
