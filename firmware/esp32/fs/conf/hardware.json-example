@@ -12,4 +12,11 @@
 		"pulse_width_min" : 44,
 		"pulse_width_max" : 60
 	}
+
+	"model": "/models/chiral_tiling"
+
+	"led_order": "GRB",
+	"cutoff": 24,
+	"fps": 60
 }
+
