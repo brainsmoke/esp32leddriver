@@ -16,7 +16,8 @@ sudo pip3 install esptool
 sudo pip3 install adafruit-ampy
 
 # replace "/dev/ttyUSB0" with the correct device name
-ESPTTY="/dev/ttyUSB0" tools/flash.py
+export ESPTTY="/dev/ttyUSB0"
+tools/flash.py
 tools/micropython_screen.sh
 ctrl-c
 >>>setup()
