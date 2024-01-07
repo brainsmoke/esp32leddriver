@@ -99,8 +99,8 @@ cur_animation = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-tmpfloat = uarray.array('f', 0 for _ in range(leds.n_leds * 3))
-tmp16 = uarray.array('H', 0 for _ in range(leds.n_leds * 3))
+tmpfloat = uarray.array('f', (0 for _ in range(leds.n_leds * 3)))
+tmp16 = uarray.array('H', (0 for _ in range(leds.n_leds * 3)))
 
 player.start()
 
@@ -315,12 +315,19 @@ def wait_for_buttonpress():
         if event.pin() == 0:
             break
 
+def wait_for_interrupt():
+    while True:
+        utime.sleep(60)
+
 # normal mode
 try:
     player.on()
     server.start()
     gc.collect()
-    wait_for_buttonpress()
+    if config.failsafe_essid == None:
+        wait_for_interrupt()
+    else:
+        wait_for_buttonpress()
 finally:
     player.stop()
     try:
