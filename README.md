@@ -1,10 +1,12 @@
 
 # LED Driver for 3D sculptures based on an ESP32 with PSRAM + an STM32F0XX
 
-<img src="img/ball_greatcircles.jpg" width="256"> <img src="img/ball_aluball.jpg" width="256"> <img src="img/ball_chiral_tiling.jpg" width="256">
+<img src="img/ball_greatcircles.jpg" width="256"> <img src="img/ball_aluball.jpg" width="256"> <img src="img/ball_chiral_tiling.jpg" width="256"> <img src="img/ball_odsphere.jpg" width="256"> <img src="img/ball_minipoly.jpg" width="256">
 
 
 <img src="img/driver.jpg" width="512">
+
+<img src="img/driver_slim.jpg" width="400">
 
 
 # Design:
