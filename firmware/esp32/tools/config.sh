@@ -1,5 +1,8 @@
 #!/bin/bash
 
+TOOLS_DIR="$(dirname "$BASH_SOURCE" )"
+BASE_DIR="$(dirname "$TOOLS_DIR" )"
+
 die() {
 	echo $'\033[1;31m'"$@"$'\033[0m' >&2
 	exit 1
@@ -18,10 +21,28 @@ try_echo() {
 	do_echo "$@" || die "error: $?"
 }
 
-check_model() {
-	message "Using model: $MODEL"
-	[ -d "$(dirname "$0")/../conf/$MODEL" ] || \
-	die "No config found for model: \"$(dirname "$0")/../conf/$MODEL\" does not exist"
+get_model() {
+    "${TOOLS_DIR}/get_model.py" "${BASE_DIR}/conf/${CONFIG}" ||\
+	die "cannot determine model"
+}
+
+check_config() {
+	message "Using configuration: ${CONFIG}"
+
+	CONFIG_DIR="${BASE_DIR}/conf/${CONFIG}"
+	[ -d "${CONFIG_DIR}" ] || \
+	die "Configuration not found: \"${CONFIG_DIR}\" does not exist"
+
+	FS_DIR="${BASE_DIR}/fs"
+	[ -d "${FS_DIR}" ] || \
+	die "Filesystem directory not found: \"${FS_DIR}\" does not exist"
+
+	MODEL="$(get_model)"
+	message "Using model: ${MODEL}"
+
+	MODEL_DIR="${BASE_DIR}/${MODEL}"
+	[ -d "${MODEL_DIR}" ] || \
+	die "Model directory not found: \"${MODEL_DIR}\" does not exist"
 }
 
 
@@ -51,11 +72,11 @@ else
 	[ -n "$IGNORE_SERIAL" ] || exit 1
 fi
 
-MODEL="greatcircles"
+CONFIG="greatcircles"
 
 if [ "x$1" != "x" ];
 then
-    MODEL="$1"
+    CONFIG="$1"
 fi
 
 

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 ca_key=secret/ca_key.pem
 ca_cert=secret/ca_cert.pem
 csr=secret/csr.pem

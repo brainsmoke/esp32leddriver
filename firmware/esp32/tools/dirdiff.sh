@@ -3,14 +3,20 @@
 . "$(dirname "$0")/config.sh"
 
 kill_screen
+check_config
 
-SHATREE="$(dirname "$0")/../test/shatree.py"
+SHATREE="${BASE_DIR}/test/shatree.py"
 
-DIR="."
-if [ "x$1" != "x" ]; then
-	DIR="$1"
-fi
+diff <((
 
-diff <(python3 "$SHATREE" "$DIR"|sort) <(ampy -p "$device" run "$SHATREE"|sort|tr -d $'\r')|grep '^[<>]'|sed 's:^> [^ ]* :BOARD:'|sed 's:< [^ ]* :HOST:'|sort -t ' ' -k 2
+	python3 "$SHATREE" "$FS_DIR" ""
+	python3 "$SHATREE" "$CONFIG_DIR" "/conf"
+	python3 "$SHATREE" "$MODEL_DIR" "$MODEL"
+
+)|sort) <((
+
+	ampy -p "$device" run "$SHATREE"
+
+)|sort|tr -d $'\r')|grep '^[<>]'|sed 's:^> [^ ]* :BOARD:'|sed 's:< [^ ]* :HOST:'|sort -t ' ' -k 2
 
 micropython_reset
