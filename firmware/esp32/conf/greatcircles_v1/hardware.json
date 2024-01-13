@@ -1,0 +1,10 @@
+{
+	"uart":
+	{
+		"baudrate": 1000000,
+		"tx": 13,
+		"rx": 35
+	},
+
+	"model": "/models/greatcircles_v1"
+}
