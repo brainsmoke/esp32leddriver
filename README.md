@@ -23,7 +23,7 @@
 
 ```
 
-<img src="img/img/ball_greatcircles.jpg" width="256"> <img src="img/img/ball_aluball.jpg" width="256"> <img src="img/img/ball_chiral_tiling.jpg" width="256">
+<img src="img/ball_greatcircles.jpg" width="256"> <img src="img/ball_aluball.jpg" width="256"> <img src="img/ball_chiral_tiling.jpg" width="256">
 
 # ESP Code `firmware/esp32/`
 
