@@ -7,8 +7,8 @@ class ShadowPlay:
 
     def __init__(self, leds, config=None, **kwargs):
 
-        self.n_colors = 6;
-        max_colors = 32;
+        self.n_colors = min(6, leds.n_leds)
+        max_colors = min(32, leds.n_leds)
         self.colors = [ cball.ColorDrift(512, 1) for i in range(max_colors) ]
         self.mapping = tuple( i*3 for i, x in enumerate(leds.inside) if x )
         self.occupied = [ False for _ in self.mapping ]
@@ -22,6 +22,9 @@ class ShadowPlay:
             config.add_slider('lights',1, 32, 1, self.get_lights, self.set_lights, caption="lights")
 
     def try_allocate_random_spot(self, ix):
+        if self.active >= len(self.occupied):
+            return False
+
         free_spaces = len(self.occupied)-self.active
         n = random.randrange(0, free_spaces)
         for i, v in enumerate(self.occupied):
