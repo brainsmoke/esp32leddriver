@@ -28,6 +28,9 @@ ctrl-d
 
 ```
 
+For spheres other than the default 'greatcircles', replace `tools/flash.sh` with 
+`tools/flash.sh <configuration>` (see: [[conf]](conf/)).
+
 ## Build firmware
 
 ```bash
