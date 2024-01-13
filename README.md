@@ -8,6 +8,7 @@
 
 <img src="img/driver_slim.jpg" width="400">
 
+<img src="img/driver_aluball.jpg" width="480">
 
 # Design:
 
