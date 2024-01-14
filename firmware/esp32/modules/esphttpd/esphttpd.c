@@ -463,7 +463,7 @@ static mp_obj_t esphttpd_request_get_path(mp_obj_t self_in)
 
 	const char *path = self->req->uri;
 	const char *path_end = strchr(path, '?');
-	size_t len = path_end ? (path - path_end) : strlen(path);
+	size_t len = path_end ? (path_end - path) : strlen(path);
 	return mp_obj_new_bytes((const uint8_t *)path, len);
 }
 MP_DEFINE_CONST_FUN_OBJ_1( esphttpd_request_get_path_obj, esphttpd_request_get_path );
