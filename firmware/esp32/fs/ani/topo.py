@@ -28,7 +28,7 @@ class Topo:
 
         self.set_lights(max_colors//3)
         if config:
-            config.add_slider('topo', 0, len(self.groups)-1, 1, self.get_topo, self.set_topo, caption="topology")
+            config.add_multiple_choice('topo', leds.groups.keys(), self.get_topo, self.set_topo, caption="topology")
             config.add_slider('lights',0, max_colors, 1, self.get_lights, self.set_lights, caption="lights")
 
     def set_topo(self,ix):

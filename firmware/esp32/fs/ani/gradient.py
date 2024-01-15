@@ -79,13 +79,13 @@ class Gradient(BaseGradient):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
-            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
+            config.add_multiple_choice('mask', ['inside', 'outside', 'all'], self.get_mask, self.set_mask, caption="illuminate")
 
 class WaveSelectGradient(Gradient):
     def __init__(self, leds, config=None, **kwargs):
         super().__init__(leds, config, **kwargs)
         if config:
-            config.add_slider('wave', 0, 3, 1, self.get_wave, self.set_wave, caption="waveform")
+            config.add_multiple_choice('wave', ('50%', '10%', 'sawtooth', 'smooth'), self.get_wave, self.set_wave, caption="waveform")
 
 class Spiral(BaseGradient):
 
@@ -111,7 +111,7 @@ class Spiral(BaseGradient):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
-            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
+            config.add_multiple_choice('mask', ['inside', 'outside', 'all'], self.get_mask, self.set_mask, caption="illuminate")
 
 class Wobble(BaseGradient):
 
@@ -137,7 +137,7 @@ class Wobble(BaseGradient):
             self.inside_mask = util.get_inside_mapping(leds)
             self.outside_mask = util.get_outside_mapping(leds)
             self.mask = self.outside_mask
-            config.add_slider('mask', 0, 2, 1, self.get_mask, self.set_mask, caption="mask")
+            config.add_multiple_choice('mask', ['inside', 'outside', 'all'], self.get_mask, self.set_mask, caption="illuminate")
 
     def next_frame(self, fbuf):
         self.phase = (self.phase+self.speed)%self.phase_max

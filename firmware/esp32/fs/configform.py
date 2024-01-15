@@ -139,6 +139,9 @@ class ConfigGroup(ConfigElem):
     def add_slider(self, name, min, max, step, getter, setter, caption=None):
         self[name] = Slider(min, max, step, getter, setter, caption=caption)
 
+    def add_multiple_choice(self, name, choices, getter, setter, caption=None):
+        self[name] = MultipleChoice(choices, getter, setter, caption=caption)
+
     def add_action(self, name, action_func, enabled_func, caption=None):
         self[name] = Action(action_func, enabled_func, caption=caption)
 
@@ -260,8 +263,10 @@ class Slider(ConfigFormElem):
         self._set_form_content('<input name="value" type="range" min="{}" max="{}" step="{}" value="{}" onchange="this.form.submit();" /><noscript><input type="submit" value="set" /></noscript>'.format(self.min, self.max, self.step, self.getter()))
 
     def _set(self, formdata):
-        self.setter(self.type(formdata['value']))
-        self._update_content()
+        v = self.type(formdata['value'])
+        if self.min <= v <= self.max:
+            self.setter(v)
+            self._update_content()
 
     def print(self, indent='', name=''):
         print('{}{}: cur={}, min={}, max={}, step={}'.format(indent, name, self.getter(), self.min, self.max, self.step))
@@ -286,4 +291,32 @@ class Action(ConfigFormElem):
         out.write('<input type="submit" value="{}"{} />'.format(self._text, (' disabled','')[bool(self.enabled_func())]))
         out.write(csrf_tag);
         out.write(self._end);
+
+
+class MultipleChoice(ConfigFormElem):
+    def __init__(self, choices, getter, setter, caption=None):
+        self.getter = getter
+        self.setter = setter
+        self._choices_esc = tuple('<button name="value" value="{}"{{}} />{}</button>'.format(i, htmlencode(v)) for i,v in enumerate(choices))
+        super().__init__(caption=caption)
+        self._set_css_class('multiple_choice')
+        self._update_content()
+
+    def _update_content(self):
+        try:
+            cur = int(self.getter())
+        except TypeError:
+            cur = -1
+
+        en = ('',' disabled')
+        self._set_form_content('<fieldset>'+''.join(v.format(en[int(i==cur)]) for i,v in enumerate(self._choices_esc))+'</fieldset>')
+
+    def _set(self, formdata):
+        v = int(formdata['value'])
+        if 0 <= v < len(self._choices_esc):
+            self.setter(v)
+        self._update_content()
+
+    def print(self, indent='', name=''):
+        print('{}{}: multiple_choices, choices={}, selected={}'.format(indent, name, self.enabled_func()))
 
