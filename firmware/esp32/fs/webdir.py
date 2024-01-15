@@ -98,17 +98,18 @@ def safe_utf8(s):
     except UnicodeError:
         return None
 
-def add_webdir(server, path, directory, index=False, compression=None, mime_dict=MIME_DICT):
+def add_webdir(server, path, directory, index=False, compression=None, cache_control=None, mime_dict=MIME_DICT):
     directory = directory.rstrip('/')
     basepath = path.rstrip('/')
     content_encoding, ext = None, ''
     if compression:
         content_encoding, ext = COMPRESSION_EXTENSION[compression]
-        
 
     @server.route(basepath+'/*', "GET")
     def webdir(req):
-        path = safe_utf8(urldecode(req.get_path()))
+        path = req.get_path()
+        path = urldecode(path)
+        path = safe_utf8(path)
         if path == None:
             return error(req, 404, "not found")
 
@@ -134,17 +135,23 @@ def add_webdir(server, path, directory, index=False, compression=None, mime_dict
                 else:
                     return redirect(req, req.get_path()+b'/', 303)
 
+        mime = get_mime(filepath, mime_dict)
+
         if ext:
             filepath = filepath+ext
 
         if has_trailing_slash or not is_reg(filepath):
             return error(req, 404, "not found")
 
-        req.set_content_type(get_mime(filepath, mime_dict))
+        req.set_content_type(mime)
 
         if content_encoding:
             req.add_header('Content-Encoding', content_encoding)
 
+        if cache_control:
+            req.add_header('Cache-Control', cache_control)
+
         write_file(req, filepath)
+        print("[webdir] {}".format(filepath))
         
 

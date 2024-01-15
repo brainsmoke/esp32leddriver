@@ -137,162 +137,30 @@ if config.use_tls:
 else:
     server = HTTP_Server()
 
-#import webdir
+import webdir
 #webdir.add_webdir(server, '/script', '/webroot/script', index=True, compression='gzip')
-#webdir.add_webdir(server, '/css', '/webroot/css', index=True, compression='gzip')
+webdir.add_webdir(server, '/css', '/webroot/css', index=True, compression='gzip', cache_control="max-age=86400")
 #webdir.add_webdir(server, '/models', '/models', index=True)
 
 #form.print()
 
-@server.route("/", "GET")
-@server.buffered
-def index(req, out):
-    out.write("""<!DOCTYPE html><html><head>
+web_header = '''<!DOCTYPE html><html><head>
 <link rel="icon" href="data:,">
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<style type="text/css">
+<link rel="stylesheet" type="text/css" href="/css/style.css?boot=''' + csrf.get_boot_token() + '''">
+<body>'''
 
-body
-{
-    font-family: Sans;
-}
-
-main
-{
-    max-width: 30em;
-    margin: .5em;
-}
-
-.group
-{
-    width: 100%;
-}
-
-main, .group
-{
-    display: flex;
-    flex-wrap: wrap;
-    margin-left: auto;
-    margin-right: auto;
-}
-
-form[action="/on"]       > input,
-form[action="/off"]      > input
-{
-    flex-grow: 3;
-    width: auto;
-}
-
-form[action="/on"]       > input:disabled,
-form[action="/off"]      > input:disabled
-{
-    display: none;
-}
-
-form[action="/next"]     > input,
-form[action="/previous"] > input
-{
-    flex-grow: 2;
-    width: auto;
-}
-
-.select_group, .action
-{
-    display: contents;
-}
-
-dl { display: flex; flex-wrap: wrap; }
-dt { width: 30%;margin:1em 0 0 0;}
-dd { width: 69%;margin:1em 0 0 0;}
-dd input { width:100% }
-.network input[type=submit]{width: 30%; font-size: 100%;margin-bottom: 1em}
-
-.color, .slider
-{
-    display: flex;
-    flex-wrap: wrap;
-    width: 100%;
-}
-
-input[type=color]
-{
-    height: 2em;
-}
-
-input[type=submit]
-{
-    height: 2em;
-    font-size: 200%;
-}
-
-.slider  input[type=submit],
-.color  input[type=submit]
-{
-    width: 4em;
-    font-size: 100%;
-}
-
-h2,h4,label
-{
-    text-align: center;
-    width: 100%;
-}
-
-h4,label
-{
-    font-size: 14pt;
-    margin-bottom: .2em;
-    margin-top: .5em;
-}
-
-input
-{
-    flex-grow: 1;
-}
-</style>
-<body>
-""")
+@server.route("/", "GET")
+@server.buffered
+def index(req, out):
+    out.write(web_header)
     #print ( "server ({}:{}) client ({}:{}) protocol ({})".format(
     #        req.get_server_host(), req.get_server_port(),
     #        req.get_remote_host(), req.get_remote_port(),
     #        req.get_protocol() ) )
     csrf_tag = b'<input type="hidden" name="csrf" value="'+csrf.get_csrf_token( req )+b'" />'
     form.html(out, csrf_tag=csrf_tag)
-
-#import uctypes,cball,binascii
-#
-#@server.route("/read", "POST")
-#def handler(req):
-#    value, token = get_val(req)
-#    values = value.split(',')
-#    addr = int(values[0], 16)
-#    size = int(values[1], 16)
-#    b = uctypes.bytes_at(addr, size)
-#    req.write_all(binascii.hexlify(b))
-#
-#uint32 = { 'val': 0 | uctypes.UINT32 }
-#@server.route("/write4", "POST")
-#def handler(req):
-#    value, token = get_val(req)
-#    values = value.split(',')
-#    addr = int(values[0], 16)
-#    val = int(values[1], 16)
-#    v = uctypes.struct(addr, uint32, uctypes.NATIVE)
-#    v.val = val
-#    req.write_all(hex(v.val))
-#
-#
-#@server.route("/write", "POST")
-#def handler(req):
-#    value, token = get_val(req)
-#    values = value.split(',')
-#    addr = int(values[0], 16)
-#    b = binascii.unhexlify(values[1])
-#    ba = uctypes.bytearray_at(addr, len(b))
-#    cball.bytearray_memcpy(ba, b)
-#    b = uctypes.bytes_at(addr, len(b))
-#    req.write_all(binascii.hexlify(b))
 
 @server.route("/*", "POST")
 def handler(req):

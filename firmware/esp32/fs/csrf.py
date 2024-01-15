@@ -10,6 +10,15 @@ def host_random():
         _host_random = os.urandom(16)
     return _host_random
 
+# file.html?boot=<token>
+# easy cache control
+_boot_token = None
+def get_boot_token():
+    global _boot_token
+    if _boot_token == None:
+        _boot_token = os.urandom(16).hex()
+    return _boot_token
+
 # Generating tokens
 
 def generate_csrf_cookie():
