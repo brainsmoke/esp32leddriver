@@ -7,7 +7,8 @@ import util
 class Topo:
 
     def __init__(self, leds, tmp16=None, config=None, **kwargs):
-        self.groups = tuple( bytearray(leds.groups[k]) for k in sorted(leds.groups.keys()) )
+        group_keys = tuple(sorted(leds.groups.keys()))
+        self.groups = tuple( bytearray(leds.groups[k]) for k in group_keys )
         self.set_topo(0)
 
         max_groups = max(len(g) for g in self.groups)
@@ -28,7 +29,7 @@ class Topo:
 
         self.set_lights(max_colors//3)
         if config:
-            config.add_multiple_choice('topo', leds.groups.keys(), self.get_topo, self.set_topo, caption="topology")
+            config.add_multiple_choice('topo', group_keys, self.get_topo, self.set_topo, caption="topology")
             config.add_slider('lights',0, max_colors, 1, self.get_lights, self.set_lights, caption="lights")
 
     def set_topo(self,ix):
