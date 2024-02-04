@@ -7,7 +7,7 @@ MAGIC=b'\1RANDOMWALK'
 
 class Snake:
 
-    def __init__(self, leds, config=None, **kwargs):
+    def __init__(self, leds, config=None, snake_len = 7, snake_count = 2, max_speed = 200, **kwargs):
 
         f = model.open_file("randomwalk.bin", "rb")
         magic = f.read(11)
@@ -32,23 +32,25 @@ class Snake:
 
         f.close()
 
-        self.occupied = bytearray(leds.n_leds)
-        self.max_snake_len = 7
-        self.snake_len = self.max_snake_len
-        self.n_choices = n_choices
-        self.pos = ( [0]*self.max_snake_len, [0]*self.max_snake_len )
-        self.dir = [0,0]
-        self.occupied[0] = len(self.pos)*self.snake_len
+        assert snake_len * snake_count <= 65535
 
-        self.color = [ cball.ColorDrift(128, 3, 42) for _ in range(2) ]
+        self.occupied = uarray.array('H', (0 for _ in range( leds.n_leds ) ) )
+        self.snake_len = snake_len
+        self.n_choices = n_choices
+        self.pos = tuple( [0]*self.snake_len for _ in range(snake_count) )
+        self.dir = [0] * snake_count
+        self.occupied[0] = snake_count*self.snake_len
+
+        self.color = [ cball.ColorDrift(128, 3, 42) for _ in range(snake_count) ]
         self.fb = uarray.array('H', (0 for _ in range( leds.n_leds * 3 ) ) )
         self.bfb = uarray.array('H', (0 for _ in range( leds.n_leds * 3 ) ) )
         self.phase = 0
         self.phase_max = 2000
 
-        self.set_speed(100)
+        max_speed = min(self.phase_max, max(1, int(max_speed)))
+        self.set_speed(max_speed/2)
         if config:
-            config.add_slider('speed', 0, 200, 1, self.get_speed, self.set_speed, caption="speed")
+            config.add_slider('speed', 0, max_speed, 1, self.get_speed, self.set_speed, caption="speed")
 
     def set_speed(self, speed):
         self.speed = speed
