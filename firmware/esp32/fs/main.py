@@ -104,12 +104,12 @@ tmp16 = uarray.array('H', (0 for _ in range(leds.n_leds * 3)))
 
 player.start()
 
-for Ani in get_animations():
+for Ani, settings in get_animations():
     name = Ani.__name__.lower()
     caption = Ani.__name__
     try:
         print (caption)
-        player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=cur_animation.add_group(name, caption=caption) ) )
+        player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=cur_animation.add_group(name, caption=caption), **settings) )
     except KeyboardInterrupt as err:
         raise err
     except Exception as err:
