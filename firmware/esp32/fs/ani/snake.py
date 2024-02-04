@@ -7,7 +7,7 @@ MAGIC=b'\1RANDOMWALK'
 
 class Snake:
 
-    def __init__(self, leds, config=None, snake_len = 7, snake_count = 2, max_speed = 300, **kwargs):
+    def __init__(self, leds, config=None, snake_len = 7, snake_count = 2, max_speed = 300, mirror_leds=False, **kwargs):
 
         f = model.open_file("randomwalk.bin", "rb")
         magic = f.read(11)
@@ -17,7 +17,9 @@ class Snake:
         n_choices = d[0]
         n_weight_rows = d[1] | (d[2]<<8)
         n_positions = d[3] | (d[4]<<8)
-        assert n_positions == leds.n_leds
+
+        self.mirror = mirror_leds
+        assert n_positions*(1 + int(bool(mirror_leds))) == leds.n_leds
 
         self.weights = f.read(n_choices*n_weight_rows)
         assert len(self.weights) == n_choices*n_weight_rows
@@ -34,7 +36,7 @@ class Snake:
 
         assert snake_len * snake_count <= 65535
 
-        self.occupied = uarray.array('H', (0 for _ in range( leds.n_leds ) ) )
+        self.occupied = uarray.array('H', (0 for _ in range( n_positions ) ) )
         self.snake_len = snake_len
         self.n_choices = n_choices
         self.pos = tuple( [0]*self.snake_len for _ in range(snake_count) )
@@ -92,18 +94,34 @@ class Snake:
                 self.occupied[last_pos] -= 1
                 if self.occupied[last_pos] == 0:
                     self.occupied[last_pos] = 0
-                    fb[last_pos*3  ] = 0
-                    fb[last_pos*3+1] = 0
-                    fb[last_pos*3+2] = 0
+                    if self.mirror:
+                        ix = last_pos*6
+                        fb[ix+3] = 0
+                        fb[ix+4] = 0
+                        fb[ix+5] = 0
+                    else:
+                        ix = last_pos*3
+
+                    fb[ix  ] = 0
+                    fb[ix+1] = 0
+                    fb[ix+2] = 0
                 for i in range(self.snake_len-1, 0, -1):
                     p[i] = p[i-1]
                 self.random_step(x)
                 new_pos = p[0]
                 self.occupied[new_pos] += 1
                 r,g,b = self.color[x].next_color()
-                fb[new_pos*3  ] = r
-                fb[new_pos*3+1] = g
-                fb[new_pos*3+2] = b
+                if self.mirror:
+                    ix = new_pos*6
+                    fb[ix+3] = r
+                    fb[ix+4] = g
+                    fb[ix+5] = b
+                else:
+                    ix = new_pos*3
+
+                fb[ix  ] = r
+                fb[ix+1] = g
+                fb[ix+2] = b
 
         self.phase %= self.phase_max
 
