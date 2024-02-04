@@ -32,13 +32,13 @@ class Snake:
 
         f.close()
 
-        self.who = bytearray(leds.n_leds)
+        self.occupied = bytearray(leds.n_leds)
         self.max_snake_len = 7
         self.snake_len = self.max_snake_len
         self.n_choices = n_choices
         self.pos = ( [0]*self.max_snake_len, [0]*self.max_snake_len )
         self.dir = [0,0]
-        self.who[0] = len(self.pos)*self.snake_len
+        self.occupied[0] = len(self.pos)*self.snake_len
 
         self.color = [ cball.ColorDrift(128, 3, 42) for _ in range(2) ]
         self.fb = uarray.array('H', (0 for _ in range( leds.n_leds * 3 ) ) )
@@ -87,9 +87,9 @@ class Snake:
             for x in range(len(self.pos)):
                 p = self.pos[x]
                 last_pos = p[snake_len-1]
-                self.who[last_pos] -= 1
-                if self.who[last_pos] == 0:
-                    self.who[last_pos] = 0
+                self.occupied[last_pos] -= 1
+                if self.occupied[last_pos] == 0:
+                    self.occupied[last_pos] = 0
                     fb[last_pos*3  ] = 0
                     fb[last_pos*3+1] = 0
                     fb[last_pos*3+2] = 0
@@ -97,7 +97,7 @@ class Snake:
                     p[i] = p[i-1]
                 self.random_step(x)
                 new_pos = p[0]
-                self.who[new_pos] += 1
+                self.occupied[new_pos] += 1
                 r,g,b = self.color[x].next_color()
                 fb[new_pos*3  ] = r
                 fb[new_pos*3+1] = g
