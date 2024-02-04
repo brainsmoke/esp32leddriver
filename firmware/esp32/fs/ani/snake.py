@@ -7,7 +7,7 @@ MAGIC=b'\1RANDOMWALK'
 
 class Snake:
 
-    def __init__(self, leds, config=None, snake_len = 7, snake_count = 2, max_speed = 200, **kwargs):
+    def __init__(self, leds, config=None, snake_len = 7, snake_count = 2, max_speed = 300, **kwargs):
 
         f = model.open_file("randomwalk.bin", "rb")
         magic = f.read(11)
@@ -48,7 +48,7 @@ class Snake:
         self.phase_max = 2000
 
         max_speed = min(self.phase_max, max(1, int(max_speed)))
-        self.set_speed(max_speed/2)
+        self.set_speed(max_speed//3)
         if config:
             config.add_slider('speed', 0, max_speed, 1, self.get_speed, self.set_speed, caption="speed")
 
