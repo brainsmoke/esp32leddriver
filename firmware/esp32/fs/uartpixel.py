@@ -52,13 +52,28 @@ class UartPixel:
         return self.cutoff
 
     def create_framebuffer(self):
-        return bytearray(self.n*3)
+        return bytearray(self.sz)
 
     def create_framebuffer16(self):
-        return uarray.array('H', (0 for _ in range(self.n*3)))
+        return uarray.array('H', (0 for _ in range(self.sz)))
+
+    def create_framebuffer_float(self):
+        return uarray.array('f', (0 for _ in range(self.sz)))
 
     def __init__(self, baudrate, rx, tx, n, led_order="GRB", brightness=1.0, gamma=2.5, cutoff=0x18, remap=None, fps=60., framebuf=True):
         self.n = n
+        self.sz = n*3
+
+        if led_order.lower() == "monochrome":
+            led_order = "m"
+
+        if led_order.lower() == "m":
+            self.sz = n
+            self.writefrom16 = self._writefrom16_mono
+            self.writeraw16  = self._writeraw16_mono
+            self.__getitem__ = self._getmono
+            self.__setitem__ = self._setmono
+
         if framebuf:
             self.buf = self.create_framebuffer()
 
@@ -119,9 +134,35 @@ class UartPixel:
     def writefrom16(self, buf16):
         cball.framebuffer_remap(self.framebuffer, buf16, self.remap, self.led_order)
         cball.framebuffer_gamma(self.framebuffer, self.gamma_map, self.cutoff)
-        #self.uart.write(self.outbuf)
         self.queue.push(self.outbuf)
 
     def writeraw16(self, buf16):
         cball.framebuffer_remap(self.framebuffer, buf16, self.remap, self.led_order)
         self.queue.push(self.outbuf)
+
+    @micropython.native
+    def mono_remap(self, dst, src, remap):
+        for i in range(len(dst)):
+            dst[remap[i]] = src[i]
+
+    def _writefrom16_mono(self, buf16):
+        if self.remap:
+            self.mono_remap(self.framebuffer, buf16, self.remap)
+        else:
+            cball.array_copy(self.framebuffer, buf16)
+        cball.framebuffer_gamma(self.framebuffer, self.gamma_map, self.cutoff)
+        self.queue.push(self.outbuf)
+
+    def _writeraw16_mono(self, buf16):
+        if self.remap:
+            self.mono_remap(self.framebuffer, buf16, self.remap)
+        else:
+            cball.array_copy(self.framebuffer, buf16)
+        self.queue.push(self.outbuf)
+
+    def _setmono(self, index, val):
+        self.buf[index] = val
+
+    def _getmono(self, index):
+        return self.buf[index]
+

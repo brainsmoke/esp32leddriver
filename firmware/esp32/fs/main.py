@@ -1,5 +1,5 @@
 
-import machine, network, utime, uarray, gc, re
+import machine, network, utime, gc, re
 
 import config, model, uartpixel, cball, configform, csrf
 from conf.load import get_animations
@@ -99,8 +99,8 @@ cur_animation = form.add_select_group('ani', player.get_selected)
 form.add_slider('brightness', 0.01, 1, .01, player.get_brightness, player.set_brightness, caption="brightness" )
 form.add_slider('gamma',         1, 4, .1,  player.get_gamma,      player.set_gamma,      caption="gamma"      )
 
-tmpfloat = uarray.array('f', (0 for _ in range(leds.n_leds * 3)))
-tmp16 = uarray.array('H', (0 for _ in range(leds.n_leds * 3)))
+tmpfloat = driver.create_framebuffer_float()
+tmp16 = driver.create_framebuffer16()
 
 player.start()
 
