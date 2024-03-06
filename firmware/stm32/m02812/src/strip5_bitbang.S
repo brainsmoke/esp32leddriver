@@ -38,7 +38,7 @@ SysTick_Handler:
 ldr r0, =cur
 ldr r0, [r0]
 
-ldr r1, =GPIOA_ODR
+ldr r1, =GPIO_LEDDATA_ODR
 
 ldr r2, =pulse_width8x
 ldrh r2, [r2]

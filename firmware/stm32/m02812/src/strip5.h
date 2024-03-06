@@ -23,6 +23,19 @@
 #define N_BYTES (N_VALUES*2)
 
 #define GPIOA_ODR (0x48000014)
+#define GPIOB_ODR (0x48000414)
+
+#ifdef USE_GPIOB
+
+#define GPIO_LEDDATA_ODR GPIOB_ODR
+#define GPIO_LEDDATA GPIOB
+
+#else
+
+#define GPIO_LEDDATA_ODR GPIOA_ODR
+#define GPIO_LEDDATA GPIOA
+
+#endif
 
 #define WS2812TIMEOUT (F_CPU/1000000*280)
 #define FRAME_BYTE_COUNT (N_VALUES_PER_STRIP)  /* count includes skipped pulse */

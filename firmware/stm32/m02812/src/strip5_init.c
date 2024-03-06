@@ -20,11 +20,8 @@ void init(void)
 
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; 	// enable the clock to GPIOA
-	GPIOA->ODR = 0;
-	GPIOA->MODER = SWD|O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7);
+	GPIO_LEDDATA->MODER |= O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7);
 
-	GPIOB->ODR = 1<<1;
-	GPIOB->MODER = O(1);
 	usart1_rx_pa10_dma3_enable(recv_buf, RECV_BUF_SZ, 48e6/2e6);
 }
 

@@ -1,6 +1,7 @@
 
 GCC=arm-none-eabi-gcc
 CFLAGS=-Wall -g -std=c99 -mlittle-endian -mcpu=cortex-m0 -march=armv6-m -mthumb -ffunction-sections -fdata-sections -I platform -I. -Os
+CFLAGS_GPIOB=$(CFLAGS) -DUSE_GPIOB=1
 LDFLAGS=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT)
 LDFLAGS_072=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT_072)
 LDFLAGS_030CC=-Wl,--gc-sections -Lplatform -T../$(LINKER_SCRIPT_030CC)
@@ -15,6 +16,7 @@ TARGETS=                  \
 	dither16.bin          \
 	strip4.bin            \
 	strip5.bin            \
+	strip5_gpiob.bin      \
 	relayball.bin         \
 	uartball16.bin        \
 	ws2801par.bin         \
@@ -74,6 +76,9 @@ strip4.elf: $(STRIP4_SRCS) $(LINKER_SCRIPT) $(STRIP4_HEADERS)
 
 strip5.elf: $(STRIP5_SRCS) $(LINKER_SCRIPT_072) $(STRIP5_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS_072) $(STRIP5_FLAGS) $(STRIP5_SRCS) -o $@
+
+strip5_gpiob.elf: $(STRIP5_SRCS) $(LINKER_SCRIPT_072) $(STRIP5_HEADERS)
+	$(GCC) $(CFLAGS_GPIOB) $(LDFLAGS_072) $(STRIP5_FLAGS) $(STRIP5_SRCS) -o $@
 
 relayball.elf: $(RELAYBALL_SRCS) $(LINKER_SCRIPT) $(RELAYBALL_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(RELAYBALL_FLAGS) $(RELAYBALL_SRCS) -o $@
