@@ -1,0 +1,10 @@
+{
+	"uart":
+	{
+		"baudrate": 4800000,
+		"tx": 13,
+		"rx": 35
+	},
+
+	"model": "/models/chiral_big"
+}
