@@ -285,6 +285,10 @@ bx lr
 
 dma_wait_a:
 
+//                      ldr rPCNT, =#0x48000014
+//                      ldr rSCRATCH, [rPCNT]
+//                      mvns rSCRATCH, rSCRATCH
+//                      str rSCRATCH, [rPCNT]
 /*  0 + 1 */ cmp rPREAD, hiDMA_END
 /*  1 + 3 */ bne 1f
 /*  2 + 2 */ ldr rPREAD, =recv_buf
@@ -299,10 +303,18 @@ dma_wait_a:
 /* 13 + 1 */     mov rSCRATCH, hiDMA_END
 1:
 /* 15 + 1 */     mov hiPWRITTEN, rSCRATCH
+//                      ldr rPCNT, =#0x48000014
+//                      ldr rSCRATCH, [rPCNT]
+//                      mvns rSCRATCH, rSCRATCH
+//                      str rSCRATCH, [rPCNT]
 b dma_wait_a_ret
 
 dma_wait_b:
 
+//                      ldr rPCNT, =#0x48000014
+//                      ldr rSCRATCH, [rPCNT]
+//                      mvns rSCRATCH, rSCRATCH
+//                      str rSCRATCH, [rPCNT]
 /*  0 + 1 */ cmp rPREAD, hiDMA_END
 /*  1 + 3 */ bne 1f
 /*  2 + 2 */ ldr rPREAD, =recv_buf
@@ -317,6 +329,10 @@ dma_wait_b:
 /* 13 + 1 */     mov rSCRATCH, hiDMA_END
 1:
 /* 15 + 1 */     mov hiPWRITTEN, rSCRATCH
+//                      ldr rPCNT, =#0x48000014
+//                      ldr rSCRATCH, [rPCNT]
+//                      mvns rSCRATCH, rSCRATCH
+//                      str rSCRATCH, [rPCNT]
 b dma_wait_b_ret
 
 asm_read_frame_loop:

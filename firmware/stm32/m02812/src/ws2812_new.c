@@ -64,7 +64,9 @@ void ws2812_half_transfer(void)
 		cur = next;
 		next = tmp;
 	}
+//GPIOA->ODR |= (1<<9);
 	ws2812_asm_apply_dither(cur, 0, SAFE_HALF_TRANSFER, residual);
+//GPIOA->ODR &=~ (1<<9);
 }
 
 void ws2812_full_transfer(void)
@@ -72,7 +74,9 @@ void ws2812_full_transfer(void)
 	if (bufstate == STATE_SWAPPING)
 		bufstate = STATE_CONTINUE;
 
+//GPIOA->ODR |= (1<<9);
 	ws2812_asm_apply_dither(cur, SAFE_HALF_TRANSFER, N_VALUES_PER_STRIP, residual);
+//GPIOA->ODR &=~ (1<<9);
 }
 
 static void clear_buf(frame_t *f)
@@ -142,13 +146,14 @@ static void init(void)
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; 	// enable the clock to GPIOA
 	GPIOA->ODR = 0;
-	GPIOA->MODER = SWD;
+	GPIOA->MODER = SWD;// | O(9);
 
 	GPIOB->ODR = 0;
 	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
 	usart1_rx_pa10_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/48e5);
 	ws2812_init();
+	NVIC_SetPriority (SysTick_IRQn, 0);
 	enable_sys_tick(SYSTICK_PERIOD);
 }
 

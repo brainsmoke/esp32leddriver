@@ -29,7 +29,7 @@
 #define T0H           (13)
 #define T1H           (31)
 #define T_PULSE       (44)
-#define T_LATCH     (50000)//(13440)
+#define T_LATCH     (13440)
 
 #else
 #error "timings not specified for CPU speed"

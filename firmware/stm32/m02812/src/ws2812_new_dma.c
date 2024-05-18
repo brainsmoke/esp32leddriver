@@ -71,7 +71,9 @@ static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
 	                          DMA_CONFIG_INTERRUPT_FULL_TRANSFER;
 
 	NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
+	NVIC_SetPriority (DMA1_Channel2_3_IRQn, 1);
 	NVIC_EnableIRQ(DMA1_Channel4_5_IRQn);
+	NVIC_SetPriority (DMA1_Channel4_5_IRQn, 1);
 }
 
 void ws2812_dma_start(volatile uint16_t buf[], uint32_t length)
@@ -113,7 +115,6 @@ void DMA1_Channel2_3_IRQHandler(void)
 {
 	__enable_irq();
 	ws2812_half_transfer();
-
 	DMA1->IFCR = DMA_ISR_HTIF2;
 }
 
@@ -123,7 +124,6 @@ void DMA1_Channel4_5_IRQHandler(void)
 	ws2812_dma_stop();
 	__enable_irq();
 	ws2812_full_transfer();
-
 	DMA1->IFCR = DMA_ISR_TCIF4;
 }
 
