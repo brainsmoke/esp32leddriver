@@ -17,7 +17,7 @@ MEMORY
 }
 
 /* highest address of the user mode stack */
-_estack = 0x20004000;
+_estack = 0x20008000;
 
 INCLUDE "sections_flash.ld"
 

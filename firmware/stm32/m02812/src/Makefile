@@ -42,7 +42,7 @@ STRIP5_SRCS=strip5.S strip5_init.c strip5_bitbang.S util.c fsm.c $(STARTUP_SRC)
 RELAYBALL_SRCS=relayball.S relayball_init.c relayball_bitbang.S util.c fsm.c $(STARTUP_SRC)
 UARTBALL16_SRCS=uartball16.c util.c $(STARTUP_SRC)
 WS2801PAR_SRCS=ws2801par.c ws2801par_bitbang.S util.c $(STARTUP_SRC)
-WS2812_NEW_SRCS=ws2812_new.c ws2812_new_dma.c ws2812_new_bitbang.S util.c $(STARTUP_SRC)
+WS2812_NEW_SRCS=ws2812_new.c ws2812_new_dma.c ws2812_new_asm.S util.c $(STARTUP_SRC)
 JITTER_TIMER_SRCS=jitter_timer.c jitter_timer.S $(STARTUP_SRC)
 TIMING_EXPERIMENT_SRCS=timing_experiment.c timing_experiment.S $(STARTUP_SRC)
 

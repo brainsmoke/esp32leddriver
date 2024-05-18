@@ -47,7 +47,6 @@ int volatile bufstate;
 frame_t * volatile cur;
 frame_t * volatile next;
 
-#define RECV_BUF_SZ (2048)
 volatile uint8_t recv_buf[RECV_BUF_SZ];
 void SysTick_Handler(void)
 {
@@ -101,6 +100,43 @@ static void ws2812_init(void)
 	ws2812_dma_init(GPIOB, PIN_MASK, T0H, T1H, T_PULSE);
 }
 
+void usart1_rx_dma5_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale)
+{
+    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+
+    DMA1_Channel5->CPAR = (uint32_t)&USART1->RDR;
+    DMA1_Channel5->CMAR = (uint32_t)buf;
+    DMA1_Channel5->CNDTR = size;
+    DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0);
+
+    if (baudrate_prescale < 0x10)
+    {
+        USART1->CR1 = USART_CR1_OVER8;
+        USART1->BRR = baudrate_prescale+(baudrate_prescale&~7);
+    }
+    else
+    {
+        USART1->CR1 = 0;
+        USART1->BRR = baudrate_prescale;
+    }
+
+    USART1->CR3 = USART_CR3_DMAR;
+    USART1->CR1 |= USART_CR1_RE | USART_CR1_UE;
+    /* enable dma on usart1_rx */
+	#define PSEL *(uint32_t *)(DMA1_BASE+0xa8)
+	PSEL |= (8<<16);
+    DMA1_Channel5->CCR |= DMA_CCR_EN;
+}
+
+void usart1_rx_pa10_dma5_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale)
+{
+    GPIOA->MODER |= ALT_FN(10); /* alternate function mode for PA10 */
+    GPIOA->AFR[AFR_REG(10)] |= AFR_SHIFT(10); /* mux PA10 to usart1_rx */
+    usart1_rx_dma5_enable(buf, size, baudrate_prescale);
+}
+
+
 static void init(void)
 {
 	clock48mhz();
@@ -111,25 +147,14 @@ static void init(void)
 	GPIOB->ODR = 0;
 	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
-	usart2_rx_pa3_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/6e6);
+	usart1_rx_pa10_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/48e5);
 	ws2812_init();
 	enable_sys_tick(SYSTICK_PERIOD);
 }
 
-static volatile uint8_t *recv_p=recv_buf, *recv_end=recv_buf;
-
-static void dma_wait(void)
-{
-	if (recv_p == &recv_buf[RECV_BUF_SZ])
-		recv_p = recv_end = &recv_buf[0];
-
-	while(recv_p == recv_end)
-	{
-		recv_end = &recv_buf[RECV_BUF_SZ-DMA1_Channel5->CNDTR];
-		if (recv_p > recv_end)
-			recv_end = &recv_buf[RECV_BUF_SZ];
-	}	
-}
+volatile uint8_t * dma_in_p = &recv_buf[0];
+_Static_assert(DMA_CHANNEL_CNDTR == (uint32_t)&DMA1_Channel5->CNDTR, "DMA channel register define is wrong");
+int dma_getchar(void);
 
 enum
 {
@@ -174,52 +199,13 @@ static const uint8_t fsm[STATE_COUNT][8] =
 
 };
 
+
 static int read_next_frame(void)
 {
-	int i, p, c;
+	int i, c=0;
 
 	clear_buf(next);
-
-	for(p=0; p<16; p++)
-	for(i=0; i<N_VALUES_PER_STRIP; i++)
-	{
-		if (recv_p == recv_end)
-			dma_wait();
-
-		c = *recv_p++;
-		next->low_bytes[i*16+p] = c;
-
-		if (recv_p == recv_end)
-			dma_wait();
-
-		c |= (*recv_p++)<<8;
-
-		if (c > 0xff00)
-			break;
-
-		c >>= 8;
-
-		transposed_t *t = &next->transpose[i];
-		int pin = 1<<p;
-		/* bits are inverted, since we use BRR */
-		if (c & 0x01)
-			t->bit0 &=~ pin;
-		if (c & 0x02)
-			t->bit1 &=~ pin;
-		if (c & 0x04)
-			t->bit2 &=~ pin;
-		if (c & 0x08)
-			t->bit3 &=~ pin;
-		if (c & 0x10)
-			t->bit4 &=~ pin;
-		if (c & 0x20)
-			t->bit5 &=~ pin;
-		if (c & 0x40)
-			t->bit6 &=~ pin;
-		if (c & 0x80)
-			t->bit7 &=~ pin;
-	}
-
+	c = asm_read_frame(next);
 	int s=GOOD;
 
 	if (c == 0xffff)
@@ -229,10 +215,7 @@ static int read_next_frame(void)
 
 	for(;;)
 	{
-		if (recv_p == recv_end)
-			dma_wait();
-
-		c = *recv_p++;
+		c = dma_getchar();
 
 		if (c == 0)
 			i = IN_00;

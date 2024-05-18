@@ -43,7 +43,7 @@
 
 	                                   /* v------- 16 bit ------v */             
 #define DMA_CONFIG_MEM_TO_PERIPH_16BIT ( (1*DMA_CCR_MSIZE_0) | (1*DMA_CCR_PSIZE_0) | \
-                                         (1*DMA_CCR_DIR) | (2*DMA_CCR_PL) )
+                                         (1*DMA_CCR_DIR) | (2*DMA_CCR_PL_0) )
 
 #define DMA_CONFIG_BUF_TO_PERIPH_16BIT ( DMA_CCR_MINC | DMA_CONFIG_MEM_TO_PERIPH_16BIT )
 

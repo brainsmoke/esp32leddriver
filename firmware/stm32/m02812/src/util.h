@@ -12,12 +12,6 @@
 #define AFR_REG(n) ( (n)>>3 )
 #define AFR_SHIFT(n) ( 1 << ( ((n)&7) * 4 ) )
 
-#define POPCNT2(x) ( (((x)>>1)&1) + ((x)&1) )
-#define POPCNT4(x) ( POPCNT2((x)>>2) + POPCNT2(x) )
-#define POPCNT8(x) ( POPCNT4((x)>>4) + POPCNT4(x) )
-#define POPCNT16(x) ( POPCNT8((x)>>8) + POPCNT8(x) )
-#define POPCNT32(x) ( POPCNT16((x)>>16) + POPCNT16(x) )
-
 #ifndef __ASSEMBLER__
 
 void clock48mhz(void);

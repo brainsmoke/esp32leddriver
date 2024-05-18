@@ -45,8 +45,17 @@ void usart1_rx_dma3_enable(volatile uint8_t *buf, uint32_t size, long baudrate_p
 	DMA1_Channel3->CNDTR = size;
 	DMA1_Channel3->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0);
 
-	USART1->CR1 = 0;
-	USART1->BRR = baudrate_prescale;
+	if (baudrate_prescale < 0x10)
+	{
+		USART1->CR1 = USART_CR1_OVER8;
+		USART1->BRR = baudrate_prescale+(baudrate_prescale&~7);
+	}
+	else
+	{
+		USART1->CR1 = 0;
+		USART1->BRR = baudrate_prescale;
+	}
+
 	USART1->CR3 = USART_CR3_DMAR;
 	USART1->CR1 |= USART_CR1_RE | USART_CR1_UE;
 	/* enable dma on usart1_rx */
@@ -70,8 +79,17 @@ void usart2_rx_dma5_enable(volatile uint8_t *buf, uint32_t size, long baudrate_p
 	DMA1_Channel5->CNDTR = size;
 	DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0);
 
-	USART2->CR1 = 0;
-	USART2->BRR = baudrate_prescale;
+	if (baudrate_prescale < 0x10)
+	{
+		USART2->CR1 = USART_CR1_OVER8;
+		USART2->BRR = baudrate_prescale+(baudrate_prescale&~7);
+	}
+	else
+	{
+		USART2->CR1 = 0;
+		USART2->BRR = baudrate_prescale;
+	}
+
 	USART2->CR3 = USART_CR3_DMAR;
 	USART2->CR1 |= USART_CR1_RE | USART_CR1_UE;
 	/* enable dma on usart2_rx */
