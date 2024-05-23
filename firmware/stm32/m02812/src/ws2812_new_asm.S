@@ -271,8 +271,10 @@ mov hiDMA_END, rSCRATCH
 ldr rSCRATCH, =#0xFF00
 mov hiFF00, rSCRATCH
 
+push {rLO_BUF}
 b asm_read_frame_loop
 asm_read_frame_exit:
+pop {rLO_BUF}
 ldr rSCRATCH, =dma_in_p
 str rPREAD, [rSCRATCH]
 pop {r4-r7}
@@ -351,7 +353,7 @@ dma_wait_b_ret:
 /* 12 + 1 */ cmp rDATA, hiFF00
 /* 13 + 1 */ bgt asm_read_frame_exit
 /* 14 + 2 */ strb rDATA, [rLO_BUF]
-/* 16 + 1 */ adds rLO_BUF, #1
+/* 16 + 1 */ adds rLO_BUF, #16
 /* 17 + 3 */ push {rLO_BUF, rPREAD}
 
 #unset rLO_BUF
@@ -424,7 +426,10 @@ dma_wait_b_ret:
 /* amort...*/ ldr rFRAME, =-FRAME_SIZE
               add rFRAME, hiFRAME_END
               lsls rPIN, #1
-              cmp rPIN, hiFF00 // we have this constant already anyway
+              pop {rLO_BUF}
+              adds rLO_BUF, #1
+              push {rLO_BUF}
+              cmp rPIN, hiFF00 // we have this constant already anyway, use as: if ( (1<<x) > (1<<15) )
               blt asm_read_frame_loop
 b asm_read_frame_exit
     .size   asm_read_frame, .-asm_read_frame
