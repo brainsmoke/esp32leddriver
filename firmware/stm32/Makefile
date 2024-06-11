@@ -85,7 +85,7 @@ TARGETS=$(patsubst %.elf, %.bin, $(ELFS))
 all:$(TARGETS)
 
 clean:
-	-rm $(TARGETS) *.elf test/*.pyc
+	-rm $(TARGETS) $(ELFS) test/*.pyc
 
 test: $(TARGETS)
 	test/test_bitbang.py dither8.elf
