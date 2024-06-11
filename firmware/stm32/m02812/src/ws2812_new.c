@@ -148,8 +148,9 @@ static void init(void)
 	GPIOA->ODR = 0;
 	GPIOA->MODER = SWD;// | O(9);
 
+    GPIOB->OSPEEDR = 0xaaaaaaaa;
 	GPIOB->ODR = 0;
-	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(9)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
+	GPIOB->MODER = O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7)|O(8)|O(9)|O(10)|O(11)|O(12)|O(13)|O(14)|O(15);
 
 	usart1_rx_pa10_dma5_enable(recv_buf, RECV_BUF_SZ, 48e6/48e5);
 	ws2812_init();
