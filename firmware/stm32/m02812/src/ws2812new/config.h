@@ -1,5 +1,5 @@
-#ifndef WS2812_NEW_CONFIG_H
-#define WS2812_NEW_CONFIG_H
+#ifndef CONFIG_H
+#define CONFIG_H
 
 #include "util.h"
 
@@ -13,4 +13,4 @@
 #define N_LEDS_PER_STRIP (88)
 #endif
 
-#endif // WS2812_NEW_CONFIG_H
+#endif // CONFIG_H

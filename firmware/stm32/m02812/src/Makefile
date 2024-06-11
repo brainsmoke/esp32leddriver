@@ -11,18 +11,10 @@ LINKER_SCRIPT_072=platform/stm32f072.ld
 LINKER_SCRIPT_030CC=platform/stm32f030cc.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
-TARGETS=                  \
-	dither8.bin           \
-	dither16.bin          \
-	strip4.bin            \
-	strip5.bin            \
-	strip5_gpiob.bin      \
-	relayball.bin         \
-	uartball16.bin        \
-	ws2801par.bin         \
-	ws2812_new.bin        \
-	jitter_timer.bin      \
-	timing_experiment.bin
+WS2812NEW_ELF=ws2812new/ws2812new.bin
+WS2812NEW_HEADERS=ws2812new/ws2812_new.h ws2812new/config.h common/ws2812_dma16.h common/util.h common/m0delay.S
+WS2812NEW_SRCS=ws2812new/ws2812_new.c common/ws2812_dma16.c ws2812new/ws2812_new_asm.S common/util.c $(STARTUP_SRC)
+WS2812NEW_FLAGS=-I ws2812new
 
 DITHER8_HEADERS=dither8.h common/util.h common/m0delay.S
 DITHER16_HEADERS=dither16.h common/util.h common/m0delay.S
@@ -31,7 +23,6 @@ STRIP4_HEADERS=strip4.h common/util.h fsm.h common/m0delay.S
 RELAYBALL_HEADERS=relayball.h common/util.h fsm.h common/m0delay.S
 UARTBALL16_HEADERS=uartball16.h common/util.h
 WS2801PAR_HEADERS=ws2801par.h common/util.h common/m0delay.S
-WS2812_NEW_HEADERS=ws2812_new.h common/util.h common/m0delay.S
 JITTER_TIMER_HEADERS=jitter_timer.h common/m0delay.S
 TIMING_EXPERIMENT_HEADERS=timing_experiment.h common/m0delay.S
 
@@ -42,9 +33,23 @@ STRIP5_SRCS=strip5.S strip5_init.c strip5_bitbang.S common/util.c fsm.c $(STARTU
 RELAYBALL_SRCS=relayball.S relayball_init.c relayball_bitbang.S common/util.c fsm.c $(STARTUP_SRC)
 UARTBALL16_SRCS=uartball16.c common/util.c $(STARTUP_SRC)
 WS2801PAR_SRCS=ws2801par.c ws2801par_bitbang.S common/util.c $(STARTUP_SRC)
-WS2812_NEW_SRCS=ws2812_new.c ws2812_new_dma.c ws2812_new_asm.S common/util.c $(STARTUP_SRC)
 JITTER_TIMER_SRCS=jitter_timer.c jitter_timer.S $(STARTUP_SRC)
 TIMING_EXPERIMENT_SRCS=timing_experiment.c timing_experiment.S $(STARTUP_SRC)
+
+ELFS=                  \
+	dither8.elf           \
+	dither16.elf          \
+	strip4.elf            \
+	strip5.elf            \
+	strip5_gpiob.elf      \
+	relayball.elf         \
+	uartball16.elf        \
+	ws2801par.elf         \
+	$(WS2812NEW_ELF) \
+	jitter_timer.elf      \
+	timing_experiment.elf
+
+TARGETS=$(patsubst %.elf, %.bin, $(ELFS))
 
 .PHONY: all clean test
 
@@ -89,8 +94,8 @@ uartball16.elf: $(UARTBALL16_SRCS) $(LINKER_SCRIPT) $(UARTBALL16_HEADERS)
 ws2801par.elf: $(WS2801PAR_SRCS) $(LINKER_SCRIPT_072) $(WS2801PAR_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS_072) $(WS2801PAR_FLAGS) $(WS2801PAR_SRCS) -o $@
 
-ws2812_new.elf: $(WS2812_NEW_SRCS) $(LINKER_SCRIPT_030CC) $(WS2812_NEW_HEADERS)
-	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(WS2812_NEW_FLAGS) $(WS2812_NEW_SRCS) -o $@
+$(WS2812NEW_ELF): $(WS2812NEW_SRCS) $(LINKER_SCRIPT_030CC) $(WS2812NEW_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(WS2812NEW_FLAGS) $(WS2812NEW_SRCS) -o $@
 
 jitter_timer.elf: $(JITTER_TIMER_SRCS) $(LINKER_SCRIPT) $(JITTER_TIMER_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(JITTER_TIMER_FLAGS) $(JITTER_TIMER_SRCS) -o $@
