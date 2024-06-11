@@ -41,7 +41,7 @@ enum
 	STATE_SWAPPING,
 };
 
-uint8_t residual[N_VALUES];
+uint8_t residual[MAX_VALUES];
 
 int volatile bufstate;
 frame_t * volatile cur;
@@ -91,7 +91,7 @@ static void clear_buf(frame_t *f)
 static void ws2812_init(void)
 {
 	int i;
-	for (i=0; i<N_VALUES; i++)
+	for (i=0; i<MAX_VALUES; i++)
 		residual[i] = i*157;
 
 	bufstate = STATE_CONTINUE;

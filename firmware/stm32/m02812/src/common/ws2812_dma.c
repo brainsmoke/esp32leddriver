@@ -28,7 +28,7 @@
 #include <stdlib.h>
 #include "stm32f0xx.h"
 
-#include "ws2812_new.h"
+#include "ws2812_dma.h"
 
 /* each timer channel/compare register is mapped onto one DMA channel by hardware  */
 
@@ -41,33 +41,47 @@
 #define TIMER_COMPARE_CLEAR (TIM1->CCR4)
 #define TIMER_PULSELEN      (TIM1->ARR)
 
-	                                   /* v------- 16 bit ------v */             
+	                                   /* v------- 16 bit ------v */
 #define DMA_CONFIG_MEM_TO_PERIPH_16BIT ( (1*DMA_CCR_MSIZE_0) | (1*DMA_CCR_PSIZE_0) | \
                                          (1*DMA_CCR_DIR) | (2*DMA_CCR_PL_0) )
 
 #define DMA_CONFIG_BUF_TO_PERIPH_16BIT ( DMA_CCR_MINC | DMA_CONFIG_MEM_TO_PERIPH_16BIT )
 
+	                                  /* v------- 8 bit -------v */
+#define DMA_CONFIG_MEM_TO_PERIPH_8BIT ( (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0) | \
+                                        (1*DMA_CCR_DIR) | (2*DMA_CCR_PL_0) )
+
+#define DMA_CONFIG_BUF_TO_PERIPH_8BIT ( DMA_CCR_MINC | DMA_CONFIG_MEM_TO_PERIPH_16BIT )
+
+#if DMA_WIDTH == 8
+#define DMA_CONFIG_MEM_TO_PERIPH DMA_CONFIG_MEM_TO_PERIPH_8BIT
+#define DMA_CONFIG_BUF_TO_PERIPH DMA_CONFIG_BUF_TO_PERIPH_8BIT
+#elif DMA_WIDTH == 16
+#define DMA_CONFIG_MEM_TO_PERIPH DMA_CONFIG_MEM_TO_PERIPH_16BIT
+#define DMA_CONFIG_BUF_TO_PERIPH DMA_CONFIG_BUF_TO_PERIPH_16BIT
+#endif
+
 #define DMA_CONFIG_INTERRUPT_HALF_TRANSFER (DMA_CCR_HTIE)
 #define DMA_CONFIG_INTERRUPT_FULL_TRANSFER (DMA_CCR_TCIE)
 
-static uint16_t pin_mask;
+static transfer_t pin_mask;
 
-static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
+static void ws2812_dma_setup(GPIO_TypeDef *gpio, transfer_t mask)
 {
 	pin_mask = mask;
 	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
 	DMA_CHANNEL_SET->CPAR = (uint32_t)&gpio->BSRR;
 	DMA_CHANNEL_SET->CMAR = (uint32_t)&pin_mask;
-	DMA_CHANNEL_SET->CCR  = DMA_CONFIG_MEM_TO_PERIPH_16BIT;
+	DMA_CHANNEL_SET->CCR  = DMA_CONFIG_MEM_TO_PERIPH;
 
 	DMA_CHANNEL_DATA->CPAR = (uint32_t)&gpio->BRR;
 	//DMA_CHANNEL_DATA->CMAR = ...
-	DMA_CHANNEL_DATA->CCR  = DMA_CONFIG_BUF_TO_PERIPH_16BIT |
+	DMA_CHANNEL_DATA->CCR  = DMA_CONFIG_BUF_TO_PERIPH |
 	                         DMA_CONFIG_INTERRUPT_HALF_TRANSFER;
 
 	DMA_CHANNEL_CLEAR->CPAR = (uint32_t)&gpio->BRR;
 	DMA_CHANNEL_CLEAR->CMAR = (uint32_t)&pin_mask;
-	DMA_CHANNEL_CLEAR->CCR  = DMA_CONFIG_MEM_TO_PERIPH_16BIT |
+	DMA_CHANNEL_CLEAR->CCR  = DMA_CONFIG_MEM_TO_PERIPH |
 	                          DMA_CONFIG_INTERRUPT_FULL_TRANSFER;
 
 	NVIC_EnableIRQ(DMA1_Channel2_3_IRQn);
@@ -76,14 +90,14 @@ static void ws2812_dma_setup(GPIO_TypeDef *gpio, uint16_t mask)
 	NVIC_SetPriority (DMA1_Channel4_5_IRQn, 1);
 }
 
-void ws2812_dma_start(volatile uint16_t buf[], uint32_t length)
+void ws2812_dma_start(volatile transfer_t buf[], uint32_t n_transfers)
 {
 	/* clear flags, ... */
 
 	DMA_CHANNEL_DATA->CMAR = (uint32_t)buf;
-	DMA_CHANNEL_SET->CNDTR = length;
-	DMA_CHANNEL_DATA->CNDTR = length;
-	DMA_CHANNEL_CLEAR->CNDTR = length;
+	DMA_CHANNEL_SET->CNDTR = n_transfers;
+	DMA_CHANNEL_DATA->CNDTR = n_transfers;
+	DMA_CHANNEL_CLEAR->CNDTR = n_transfers;
 
 	DMA_CHANNEL_SET->CCR |= DMA_CCR_EN;
 	DMA_CHANNEL_DATA->CCR |= DMA_CCR_EN;
@@ -156,7 +170,7 @@ static void ws2812_timer_setup(int t0h, int t1h, int t_pulse)
 }
 
 
-void ws2812_dma_init(GPIO_TypeDef *gpio, uint16_t mask, int t0h, int t1h, int t_pulse)
+void ws2812_dma_init(GPIO_TypeDef *gpio, transfer_t mask, int t0h, int t1h, int t_pulse)
 {
 	ws2812_dma_setup(gpio, mask);
 	ws2812_timer_setup(t0h, t1h, t_pulse);

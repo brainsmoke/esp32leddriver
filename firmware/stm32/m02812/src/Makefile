@@ -12,8 +12,8 @@ LINKER_SCRIPT_030CC=platform/stm32f030cc.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
 WS2812NEW_ELF=ws2812new/ws2812new.bin
-WS2812NEW_HEADERS=ws2812new/ws2812_new.h ws2812new/config.h common/ws2812_dma16.h common/util.h common/m0delay.S
-WS2812NEW_SRCS=ws2812new/ws2812_new.c common/ws2812_dma16.c ws2812new/ws2812_new_asm.S common/util.c $(STARTUP_SRC)
+WS2812NEW_HEADERS=ws2812new/ws2812_new.h ws2812new/config.h common/ws2812_dma.h common/util.h common/m0delay.S
+WS2812NEW_SRCS=ws2812new/ws2812_new.c common/ws2812_dma.c ws2812new/ws2812_new_asm.S common/util.c $(STARTUP_SRC)
 WS2812NEW_FLAGS=-I ws2812new
 
 DITHER8_HEADERS=dither8.h common/util.h common/m0delay.S

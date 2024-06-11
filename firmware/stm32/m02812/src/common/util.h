@@ -14,6 +14,8 @@
 
 #ifndef __ASSEMBLER__
 
+#include <stdint.h>
+
 void clock48mhz(void);
 void enable_sys_tick(uint32_t ticks);
 void usart1_rx_pa10_dma3_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale);

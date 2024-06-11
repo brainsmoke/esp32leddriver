@@ -13,4 +13,6 @@
 #define N_LEDS_PER_STRIP (88)
 #endif
 
+#define DMA_WIDTH (16)
+
 #endif // CONFIG_H
