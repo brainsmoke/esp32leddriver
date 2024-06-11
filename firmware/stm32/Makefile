@@ -88,11 +88,11 @@ clean:
 	-rm $(TARGETS) $(ELFS) test/*.pyc
 
 test: $(TARGETS)
-	test/test_bitbang.py dither8.elf
-	test/test_bitbang16.py dither16.elf
-	test/test_strip4.py strip4.elf
-	test/test_strip5.py strip5.elf
-	test/test_relay16.py relayball.elf
+	test/test_bitbang.py $(DITHER8_ELF)
+	test/test_bitbang16.py $(DITHER16_ELF)
+	test/test_strip4.py $(STRIP4_ELF)
+	test/test_strip5.py $(STRIP5_ELF)
+	test/test_relay16.py $(RELAYBALL_ELF)
 
 %.bin: %.elf
 	arm-none-eabi-objcopy -O binary $< $@
