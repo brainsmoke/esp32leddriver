@@ -29,7 +29,7 @@
 #include <string.h>
 #include "stm32f0xx.h"
 
-#include "ws2812_new.h"
+#include "ws2812_dma16.h"
 #include "util.h"
 
 frame_t frame_a, frame_b;

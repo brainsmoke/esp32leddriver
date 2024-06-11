@@ -3,8 +3,6 @@
 
 #include "config.h"
 
-#define PIN_MASK (0xffff)
-
 #include "ws2812_dma.h"
 
 #if PIN_MASK != 0xffff

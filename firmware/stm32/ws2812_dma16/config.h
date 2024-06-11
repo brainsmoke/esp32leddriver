@@ -15,4 +15,6 @@
 
 #define DMA_WIDTH (16)
 
+#define PIN_MASK (0xffff)
+
 #endif // CONFIG_H
