@@ -21,6 +21,11 @@ UARTRELAY_HEADERS=uartrelay/config.h uartrelay/uartrelay.h common/ws2812_dma.h c
 UARTRELAY_SRCS=uartrelay/main.c common/ws2812_dma.c common/util.c common/fsm.c $(STARTUP_SRC)
 UARTRELAY_FLAGS=-I uartrelay
 
+UARTDEMUX_ELF=uartdemux/uartdemux.elf
+UARTDEMUX_HEADERS=uartdemux/config.h common/gpio_dma.h common/util.h common/m0delay.S common/fsm.h
+UARTDEMUX_SRCS=uartdemux/main.c common/gpio_dma.c common/util.c common/fsm.c $(STARTUP_SRC)
+UARTDEMUX_FLAGS=-I uartdemux
+
 WS2801PAR_ELF=ws2801par/ws2801par.elf
 WS2801PAR_HEADERS=ws2801par/ws2801par.h common/util.h common/m0delay.S
 WS2801PAR_SRCS=ws2801par/ws2801par.c ws2801par/ws2801par_bitbang.S common/util.c $(STARTUP_SRC)
@@ -79,6 +84,7 @@ ELFS=                        \
 	$(WS2801PAR_ELF)         \
 	$(WS2812_DMA16_ELF)      \
 	$(UARTRELAY_ELF)         \
+	$(UARTDEMUX_ELF)         \
 	$(JITTER_TIMER_ELF)      \
 	$(TIMING_EXPERIMENT_ELF)
 
@@ -130,8 +136,11 @@ $(WS2801PAR_ELF): $(WS2801PAR_SRCS) $(LINKER_SCRIPT_072) $(WS2801PAR_HEADERS)
 $(WS2812_DMA16_ELF): $(WS2812_DMA16_SRCS) $(LINKER_SCRIPT_030CC) $(WS2812_DMA16_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(WS2812_DMA16_FLAGS) $(WS2812_DMA16_SRCS) -o $@
 
-$(UARTRELAY_ELF): $(UARTRELAY_SRCS) $(LINKER_SCRIPT_030CC) $(UARTRELAY_HEADERS)
+$(UARTRELAY_ELF): $(UARTRELAY_SRCS) $(LINKER_SCRIPT) $(UARTRELAY_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(UARTRELAY_FLAGS) $(UARTRELAY_SRCS) -o $@
+
+$(UARTDEMUX_ELF): $(UARTDEMUX_SRCS) $(LINKER_SCRIPT_030CC) $(UARTDEMUX_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(UARTDEMUX_FLAGS) $(UARTDEMUX_SRCS) -o $@
 
 $(JITTER_TIMER_ELF): $(JITTER_TIMER_SRCS) $(LINKER_SCRIPT) $(JITTER_TIMER_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(JITTER_TIMER_FLAGS) $(JITTER_TIMER_SRCS) -o $@
