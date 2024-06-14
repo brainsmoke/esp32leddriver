@@ -35,6 +35,7 @@
 #include <stdint.h>
 
 extern const uint8_t fsm[STATE_COUNT];
+extern const uint8_t fsm_map[256];
 
 #endif
 
