@@ -23,6 +23,8 @@
 
 #include "ws2812_common.h"
 
+#define N_TRANSFERS (N_BITS_PER_STRIP)
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>

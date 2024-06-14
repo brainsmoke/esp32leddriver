@@ -9,6 +9,11 @@
 #define SWD (ALT_FN(13)|ALT_FN(14))
 #define MASK(c) (3<<(2*(c)))
 
+#define O_MASK2(n) ((n&1)*O(0) | ((n>>1)&1)*O(1))
+#define O_MASK4(n) (O_MASK2(n) | (O_MASK2(n>>2)<<4)
+#define O_MASK8(n) (O_MASK4(n) | (O_MASK4(n>>4)<<8)
+#define O_MASK(n)  (O_MASK8(n) | (O_MASK8(n>>8)<<16)
+
 #define AFR_REG(n) ( (n)>>3 )
 #define AFR_SHIFT(n) ( 1 << ( ((n)&7) * 4 ) )
 

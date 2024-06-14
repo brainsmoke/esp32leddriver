@@ -14,6 +14,8 @@
 
 #define STATE_COUNT   (10*7)
 
+#define FSM_END(s) (s>=STATE_COUNT)
+
 #define GOOD_RETURN  0xf0
 #define ROUTE        0xf1
 #define TIMING       0xf2
