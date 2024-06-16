@@ -118,21 +118,21 @@ static void init(void)
 	uart_out_init();
 }
 
+static uint32_t dma_cur = 0, dma_end = 0;
 static uint8_t dma_getchar(void)
 {
-	static uint32_t cur = 0, end = 0;
 
-	if (cur < end)
-		return recv_buf[cur++];
+	if (dma_cur < dma_end)
+		return recv_buf[dma_cur++];
 
-	if (cur == RECV_BUF_SZ)
-		cur = 0;
+	if (dma_cur == RECV_BUF_SZ)
+		dma_cur = 0;
 
 	for (;;)
 	{
-		end = RECV_BUF_SZ - DMA1_Channel3->CNDTR;
-		if (cur < end)
-			return recv_buf[cur++];
+		dma_end = RECV_BUF_SZ - DMA1_Channel3->CNDTR;
+		if (dma_cur < dma_end)
+			return recv_buf[dma_cur++];
 	}
 }
 
@@ -159,7 +159,11 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 	const uint32_t *lookup = bit_lookup;
 	for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
 	{
-		c = dma_getchar();
+		if (dma_cur < dma_end)
+			c = recv_buf[dma_cur++];
+		else
+			c = dma_getchar();
+
 		((uint16_t *)p)[1] = lookup[c&15];
 		p[1] = lookup[(c>>2)&15];
 		((uint16_t *)p)[4] = lookup[c>>6];
@@ -168,7 +172,11 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 		if (FSM_END(s))
 			return 0;
 
-		c = dma_getchar();
+		if (dma_cur < dma_end)
+			c = recv_buf[dma_cur++];
+		else
+			c = dma_getchar();
+
 		p[3] = lookup[c&15];
 		p[4] = lookup[c>>4];
 
@@ -181,7 +189,11 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 	for (lookup+=16; lookup[0]==0; lookup+=16)
 		for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
 		{
-			c = dma_getchar();
+			if (dma_cur < dma_end)
+				c = recv_buf[dma_cur++];
+			else
+				c = dma_getchar();
+
 			((uint16_t *)p)[1] |= lookup[c&15];
 			p[1] |= lookup[(c>>2)&15];
 			((uint16_t *)p)[4] |= lookup[c>>6];
@@ -190,7 +202,11 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 			if (FSM_END(s))
 				return 0;
 
-			c = dma_getchar();
+			if (dma_cur < dma_end)
+				c = recv_buf[dma_cur++];
+			else
+				c = dma_getchar();
+
 			p[3] |= lookup[c&15];
 			p[4] |= lookup[c>>4];
 
