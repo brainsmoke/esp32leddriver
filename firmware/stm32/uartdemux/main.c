@@ -46,9 +46,11 @@
 
 #define RECV_BUF_SZ (256)
 
-typedef struct
+typedef struct __attribute__((packed,aligned(4)))
 {
+	transfer_t _unused0;
 	transfer_t bauds[N_BAUDS];
+	transfer_t _unused1;
 
 } frame_t;
 
@@ -116,49 +118,88 @@ static void init(void)
 	uart_out_init();
 }
 
-static int dma_getchar(void)
+static uint8_t dma_getchar(void)
 {
-	static uint32_t last = 0;
-	if (last == 0)
-		last = RECV_BUF_SZ;
-	while (last == DMA1_Channel3->CNDTR);
-	last--;
-	return recv_buf[RECV_BUF_SZ-1-last];
+	static uint32_t cur = 0, end = 0;
+
+	if (cur < end)
+		return recv_buf[cur++];
+
+	if (cur == RECV_BUF_SZ)
+		cur = 0;
+
+	for (;;)
+	{
+		end = RECV_BUF_SZ - DMA1_Channel3->CNDTR;
+		if (cur < end)
+			return recv_buf[cur++];
+	}
 }
 
 #include "fsm.h"
 
+static const uint32_t bit_lookup[] =
+{
+#define BIT_ROW(pin) 0x00000000<<pin, 0x00000001<<pin, 0x00000100<<pin, 0x00000101<<pin, \
+                     0x00010000<<pin, 0x00010001<<pin, 0x00010100<<pin, 0x00010101<<pin, \
+                     0x01000000<<pin, 0x01000001<<pin, 0x01000100<<pin, 0x01000101<<pin, \
+                     0x01010000<<pin, 0x01010001<<pin, 0x01010100<<pin, 0x01010101<<pin,
+	FOREACH_PIN(BIT_ROW)
+#undef BIT_ROW
+	0xff
+};
+
 int read_next_frame(frame_t *f)
 {
-	int pin,i,c,s=GOOD;
+	int s=GOOD;
+	uint8_t c;
 
-	for (pin=1; pin<STRIP_MASK; pin<<=1)
-		if (pin & STRIP_MASK)
-			for (i=0; i<N_BYTES_PER_STRIP*10; i+=10)
-			{
-				c = dma_getchar();
-				if (c & 0x01)
-					f->bauds[i+1] |= pin;
-				if (c & 0x02)
-					f->bauds[i+2] |= pin;
-				if (c & 0x04)
-					f->bauds[i+3] |= pin;
-				if (c & 0x08)
-					f->bauds[i+4] |= pin;
-				if (c & 0x10)
-					f->bauds[i+5] |= pin;
-				if (c & 0x20)
-					f->bauds[i+6] |= pin;
-				if (c & 0x40)
-					f->bauds[i+7] |= pin;
-				if (c & 0x80)
-					f->bauds[i+8] |= pin;
+_Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 
-				s=fsm[s+fsm_map[c]];
-				if (FSM_END(s))
-					return 0;
-			}
+	const uint32_t *lookup = bit_lookup;
+	for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
+	{
+		c = dma_getchar();
+		((uint16_t *)p)[1] = lookup[c&15];
+		p[1] = lookup[(c>>2)&15];
+		((uint16_t *)p)[4] = lookup[c>>6];
 
+		s=fsm[s+fsm_map[c]];
+		if (FSM_END(s))
+			return 0;
+
+		c = dma_getchar();
+		p[3] = lookup[c&15];
+		p[4] = lookup[c>>4];
+
+		s=fsm[s+fsm_map[c]];
+		if (FSM_END(s))
+			return 0;
+
+	}
+
+	for (lookup+=16; lookup[0]==0; lookup+=16)
+		for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
+		{
+			c = dma_getchar();
+			((uint16_t *)p)[1] |= lookup[c&15];
+			p[1] |= lookup[(c>>2)&15];
+			((uint16_t *)p)[4] |= lookup[c>>6];
+
+			s=fsm[s+fsm_map[c]];
+			if (FSM_END(s))
+				return 0;
+
+			c = dma_getchar();
+			p[3] |= lookup[c&15];
+			p[4] |= lookup[c>>4];
+
+			s=fsm[s+fsm_map[c]];
+			if (FSM_END(s))
+				return 0;
+		}
+
+	int i;
 	for (i=0; i<3; i++)
 	{
 		s=fsm[s+fsm_map[dma_getchar()]];
