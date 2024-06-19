@@ -167,7 +167,7 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 	 *
 	 * The first byte writes the stop bit (0) to all the outputs
 	 * The next byte writes all least significant bits, followed by the 2nd
-     * least significant bit etc.
+	 * least significant bit etc.
 	 * The tenth byte writes the stop bit (1) to all outputs.
 	 *
 	 * Speed up bit scattering by using word & half-word memory loads and a lookup table
