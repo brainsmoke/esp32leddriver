@@ -48,7 +48,7 @@
 
 typedef struct __attribute__((packed,aligned(4)))
 {
-	transfer_t _unused0;
+	transfer_t _unused0; /* padding to allow for optimisations using aligned loads/stores  */
 	transfer_t bauds[N_BAUDS];
 	transfer_t _unused1;
 
@@ -161,6 +161,21 @@ int read_next_frame(frame_t *f)
 _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 
 	const uint32_t *lookup = bit_lookup;
+	/*
+	 * Bit-scatter the bits for the first output pin into the DMA buffer & clear the old
+	 * data at the same time.
+	 *
+	 * The first byte writes the stop bit (0) to all the outputs
+	 * The next byte writes all least significant bits, followed by the 2nd
+     * least significant bit etc.
+	 * The tenth byte writes the stop bit (1) to all outputs.
+	 *
+	 * Speed up bit scattering by using word & half-word memory loads and a lookup table
+	 * instead of byte loads & if statements.
+	 *
+	 * Unroll the loop
+	 *
+	 */
 	for(uint32_t *p = (uint32_t *)f; p<(uint32_t *)&f->bauds[N_BYTES_PER_STRIP*10-1]; p+=5)
 	{
 		if (dma_cur < dma_end)
@@ -168,9 +183,18 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 		else
 			c = dma_getchar();
 
-		((uint16_t *)p)[1] = lookup[c&15];
-		p[1] = lookup[(c>>2)&15];
-		((uint16_t *)p)[4] = lookup[c>>6];
+	/*  0  1  2  3| 4  5  6  7| 8  9  10 
+	 * ...  .........................__.
+	 *   |  :  :  :  :  :  :  :  :  :  |
+	 *   | S: 0: 1: 2: 3: 4: 5: 6: 7: E|
+	 *   |__:..:..:..:..:..:..:..:..:  |...
+	 *       \___/ \_________/ \___/
+	 *         A        B        C
+	 */
+
+		((uint16_t *)p)[1] = lookup[c&15]; /* A */
+		p[1] = lookup[(c>>2)&15];          /* B */
+		((uint16_t *)p)[4] = lookup[c>>6]; /* C */
 
 		s=fsm[s+fsm_map[c]];
 		if (FSM_END(s))
@@ -181,8 +205,17 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 		else
 			c = dma_getchar();
 
-		p[3] = lookup[c&15];
-		p[4] = lookup[c>>4];
+	/* 10 11|12 13 14 15|16 17 18 19| 20 21 ..
+	 * ...  .........................__.
+	 *   |  :  :  :  :  :  :  :  :  :  |
+	 *   | S: 0: 1: 2: 3: 4: 5: 6: 7: E|
+	 *   |__:..:..:..:..:..:..:..:..:  |...
+	 *       \_________/ \_________/
+	 *            D          `E
+	 */
+
+		p[3] = lookup[c&15]; /* D */
+		p[4] = lookup[c>>4]; /* E */
 
 		s=fsm[s+fsm_map[c]];
 		if (FSM_END(s))
@@ -190,6 +223,13 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 
 	}
 
+	/*
+	 * Do the same for all the other output pins, but OR the result as not to clear
+	 * the previously read strips.
+	 *
+	 * Every pin gets its own lookup table eliminating the need for extra shifts.
+	 *
+	 */
 	for (lookup+=16; lookup[0]==0; lookup+=16)
 		for(uint32_t *p = (uint32_t *)f; p<(uint32_t *)&f->bauds[N_BYTES_PER_STRIP*10-1]; p+=5)
 		{
