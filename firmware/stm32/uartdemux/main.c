@@ -109,7 +109,7 @@ static void init(void)
 	GPIOA->ODR = 0;
 	GPIOA->MODER = SWD;
 
-    GPIOB->OSPEEDR = 0;
+	GPIOB->OSPEEDR = 0x00000155;
 	GPIOB->ODR = STRIP_MASK;
 	GPIOB->MODER = O_MASK(STRIP_MASK);
 
@@ -131,6 +131,10 @@ static uint8_t dma_getchar(void)
 	for (;;)
 	{
 		dma_end = RECV_BUF_SZ - DMA1_Channel3->CNDTR;
+
+		if (dma_end < dma_cur)
+			dma_end = RECV_BUF_SZ;
+
 		if (dma_cur < dma_end)
 			return recv_buf[dma_cur++];
 	}
@@ -157,7 +161,7 @@ int read_next_frame(frame_t *f)
 _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 
 	const uint32_t *lookup = bit_lookup;
-	for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
+	for(uint32_t *p = (uint32_t *)f; p<(uint32_t *)&f->bauds[N_BYTES_PER_STRIP*10-1]; p+=5)
 	{
 		if (dma_cur < dma_end)
 			c = recv_buf[dma_cur++];
@@ -187,7 +191,7 @@ _Static_assert( (N_BYTES_PER_STRIP & 1) == 0, "");
 	}
 
 	for (lookup+=16; lookup[0]==0; lookup+=16)
-		for(uint32_t *p = (uint32_t *)&f; p<(uint32_t *)&f->bauds[N_BAUDS-1]; p+=5)
+		for(uint32_t *p = (uint32_t *)f; p<(uint32_t *)&f->bauds[N_BYTES_PER_STRIP*10-1]; p+=5)
 		{
 			if (dma_cur < dma_end)
 				c = recv_buf[dma_cur++];
