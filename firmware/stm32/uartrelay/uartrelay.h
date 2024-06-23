@@ -11,7 +11,7 @@ _Static_assert( OUT_PIN >= 0, "bad OUTPIN" );
 
 #define N_VALUES (1*N_VALUES_PER_STRIP)
 
-#define RECV_BUF_SZ (32)
+#define RECV_BUF_SZ (256)
 
 #include <stdint.h>
 #include <stddef.h>
