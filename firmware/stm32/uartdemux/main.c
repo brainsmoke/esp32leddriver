@@ -110,8 +110,8 @@ static void init(void)
 	GPIOA->MODER = SWD;
 
 	GPIOB->OSPEEDR = 0x00000155;
-	GPIOB->ODR = STRIP_MASK;
-	GPIOB->MODER = O_MASK(STRIP_MASK);
+	GPIOB->ODR = STRIP_MASK | 0xff00;
+	GPIOB->MODER = O_MASK(STRIP_MASK) | O_MASK(0xff00);
 
 	usart1_rx_pa10_dma3_enable(recv_buf, RECV_BUF_SZ, F_CPU/UART_IN_BAUDRATE);
 	_Static_assert( F_CPU % UART_IN_BAUDRATE == 0, "baudrate not exact" );
