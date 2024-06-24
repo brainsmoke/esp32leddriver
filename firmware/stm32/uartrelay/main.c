@@ -199,7 +199,7 @@ void do_dithering_scathering(frame_t *f, int i, int end)
 	{
 		uint32_t v = f->in[i]+residual[i];
 		residual[i] = v;
-		uint32_t m = (v>>8)*a;
+		uint32_t m = ~ ( (v>>8)*a );
 		out[i].bits3210 = (m>>3)&b;
 		out[i].bits7654 = (m>>7)&b;
 		yield();
