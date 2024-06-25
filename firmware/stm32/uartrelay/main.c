@@ -117,7 +117,10 @@ void handle_input(int c)
 
 	if (FSM_END(s))
 	{
-		if ( (s == GOOD_RETURN) && (read_index >= N_VALUES*2+4) )
+		while (read_index > N_VALUES*2)
+			read_index -= N_VALUES*2;
+
+		if ( (s == GOOD_RETURN) && (read_index == 4) )
 		{
 			cur_out = cur_in;
 			cur_in += 1;
