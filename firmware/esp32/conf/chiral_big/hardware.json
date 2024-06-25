@@ -6,5 +6,6 @@
 		"rx": 35
 	},
 
-	"model": "/models/chiral_big"
+	"model": "/models/chiral_big",
+	"cutoff": 10
 }
