@@ -182,7 +182,7 @@ static void init(void)
 {
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;  // enable the clock to GPIOA
-	GPIOA->ODR = 1;
+	GPIOA->ODR = 0;
 	GPIOA->OSPEEDR = 1<<0;
 	GPIOA->MODER = O(0)|SWD;
 
