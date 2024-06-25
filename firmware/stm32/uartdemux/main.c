@@ -51,6 +51,8 @@ typedef struct __attribute__((packed,aligned(4)))
 	transfer_t _unused0; /* padding to allow for optimisations using aligned loads/stores  */
 	transfer_t bauds[N_BAUDS];
 	transfer_t _unused1;
+	transfer_t _unused2;
+	transfer_t _unused3;
 
 } frame_t;
 
