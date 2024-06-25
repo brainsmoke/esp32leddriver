@@ -39,38 +39,38 @@ volatile uint8_t recv_buf[RECV_BUF_SZ];
 
 static void usart1_rx_dma5_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale)
 {
-    RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SYSCFGEN;
+	RCC->AHBENR |= RCC_AHBENR_DMA1EN;
+	RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SYSCFGEN;
 
-    DMA1_Channel5->CPAR = (uint32_t)&USART1->RDR;
-    DMA1_Channel5->CMAR = (uint32_t)buf;
-    DMA1_Channel5->CNDTR = size;
-    DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0);
+	DMA1_Channel5->CPAR = (uint32_t)&USART1->RDR;
+	DMA1_Channel5->CMAR = (uint32_t)buf;
+	DMA1_Channel5->CNDTR = size;
+	DMA1_Channel5->CCR = DMA_CCR_MINC | DMA_CCR_CIRC | (0*DMA_CCR_MSIZE_0) | (0*DMA_CCR_PSIZE_0);
 
-    if (baudrate_prescale < 0x10)
-    {
-        USART1->CR1 = USART_CR1_OVER8;
-        USART1->BRR = baudrate_prescale+(baudrate_prescale&~7);
-    }
-    else
-    {
-        USART1->CR1 = 0;
-        USART1->BRR = baudrate_prescale;
-    }
+	if (baudrate_prescale < 0x10)
+	{
+		USART1->CR1 = USART_CR1_OVER8;
+		USART1->BRR = baudrate_prescale+(baudrate_prescale&~7);
+	}
+	else
+	{
+		USART1->CR1 = 0;
+		USART1->BRR = baudrate_prescale;
+	}
 
-    USART1->CR3 = USART_CR3_DMAR;
-    USART1->CR1 |= USART_CR1_RE | USART_CR1_UE;
-    /* enable dma on usart1_rx */
+	USART1->CR3 = USART_CR3_DMAR;
+	USART1->CR1 |= USART_CR1_RE | USART_CR1_UE;
+	/* enable dma on usart1_rx */
 	SYSCFG->CFGR1 |= SYSCFG_CFGR1_USART1RX_DMA_RMP;
-    DMA1_Channel5->CCR |= DMA_CCR_EN;
+	DMA1_Channel5->CCR |= DMA_CCR_EN;
 }
 
 static void usart1_rx_pa10_dma5_tx_pa9_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale)
 {
-    GPIOA->MODER |= ALT_FN(10) | ALT_FN(9); /* alternate function mode for PA9/10 */
-    GPIOA->AFR[AFR_REG(9)]  |= AFR_SHIFT(9);  /* mux PA9  to usart1_tx */
-    GPIOA->AFR[AFR_REG(10)] |= AFR_SHIFT(10); /* mux PA10 to usart1_rx */
-    usart1_rx_dma5_enable(buf, size, baudrate_prescale);
+	GPIOA->MODER |= ALT_FN(10) | ALT_FN(9); /* alternate function mode for PA9/10 */
+	GPIOA->AFR[AFR_REG(9)]  |= AFR_SHIFT(9);  /* mux PA9  to usart1_tx */
+	GPIOA->AFR[AFR_REG(10)] |= AFR_SHIFT(10); /* mux PA10 to usart1_rx */
+	usart1_rx_dma5_enable(buf, size, baudrate_prescale);
 	USART1->CR1 |= USART_CR1_TE;
 }
 
