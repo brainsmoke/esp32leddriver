@@ -12,12 +12,12 @@ LINKER_SCRIPT_030CC=platform/stm32f030cc.ld
 STARTUP_SRC=platform/startup_stm32f0xx.s
 
 WS2812_DMA16_ELF=ws2812_dma16/ws2812_dma16.elf
-WS2812_DMA16_HEADERS=ws2812_dma16/config.h ws2812_dma16/ws2812_dma16.h common/ws2812_dma.h common/util.h common/m0delay.S
+WS2812_DMA16_HEADERS=ws2812_dma16/config.h ws2812_dma16/ws2812_dma16.h common/ws2812_common.h common/ws2812_dma.h common/util.h common/m0delay.S
 WS2812_DMA16_SRCS=ws2812_dma16/asm_routines.S ws2812_dma16/main.c common/ws2812_dma.c common/util.c $(STARTUP_SRC)
 WS2812_DMA16_FLAGS=-I ws2812_dma16
 
 UARTRELAY_ELF=uartrelay/uartrelay.elf
-UARTRELAY_HEADERS=uartrelay/config.h uartrelay/uartrelay.h common/ws2812_dma.h common/util.h common/m0delay.S common/fsm.h
+UARTRELAY_HEADERS=uartrelay/config.h uartrelay/uartrelay.h common/ws2812_common.h common/ws2812_dma.h common/util.h common/m0delay.S common/fsm.h
 UARTRELAY_SRCS=uartrelay/main.c common/ws2812_dma.c common/util.c common/fsm.c $(STARTUP_SRC)
 UARTRELAY_FLAGS=-I uartrelay
 

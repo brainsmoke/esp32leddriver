@@ -21,7 +21,7 @@
 #define T1H      (31)
 #endif
 #ifndef T_PULSE
-#define T_PULSE  (44)
+#define T_PULSE  (45)
 #endif
 #ifndef T_LATCH
 #define T_LATCH  (13440)

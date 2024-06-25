@@ -5,6 +5,8 @@
 
 /* configurable parameters (SRAM needed: XXX) */
 
+#define T_PULSE (47)
+
 #ifndef N_VALUES_PER_LED
 #define N_VALUES_PER_LED  (3)
 #endif

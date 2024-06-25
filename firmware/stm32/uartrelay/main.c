@@ -40,7 +40,7 @@ volatile uint8_t recv_buf[RECV_BUF_SZ];
 static void usart1_rx_dma5_enable(volatile uint8_t *buf, uint32_t size, long baudrate_prescale)
 {
     RCC->AHBENR |= RCC_AHBENR_DMA1EN;
-    RCC->APB2ENR |= RCC_APB2ENR_USART1EN;
+    RCC->APB2ENR |= RCC_APB2ENR_USART1EN | RCC_APB2ENR_SYSCFGEN;
 
     DMA1_Channel5->CPAR = (uint32_t)&USART1->RDR;
     DMA1_Channel5->CMAR = (uint32_t)buf;
@@ -117,7 +117,7 @@ void handle_input(int c)
 
 	if (FSM_END(s))
 	{
-		if ( (s == GOOD_RETURN) && (read_index <= N_VALUES*2+4) )
+		if ( (s == GOOD_RETURN) && (read_index >= N_VALUES*2+4) )
 		{
 			cur_out = cur_in;
 			cur_in += 1;
@@ -175,14 +175,14 @@ static void ws2812_init(void)
 	memset(frames, 0x0, sizeof(frames));
 
 	input_init();
-	ws2812_dma_init(GPIOB, PIN_MASK, T0H, T1H, T_PULSE);
+	ws2812_dma_init(GPIOA, PIN_MASK, T0H, T1H, T_PULSE);
 }
 
 static void init(void)
 {
 	clock48mhz();
 	RCC->AHBENR |= RCC_AHBENR_GPIOAEN;  // enable the clock to GPIOA
-	GPIOA->ODR = 0;
+	GPIOA->ODR = 1;
 	GPIOA->OSPEEDR = 1<<0;
 	GPIOA->MODER = O(0)|SWD;
 
