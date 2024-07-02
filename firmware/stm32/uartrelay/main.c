@@ -174,7 +174,7 @@ static void ws2812_init(void)
 	for (i=0; i<N_VALUES; i++)
 		residual[i] = i*157;
 
-	memset(out, 0x0, sizeof(out));
+	memset(out, 0xff, sizeof(out)); /* bits are inverted */
 	memset(frames, 0x0, sizeof(frames));
 
 	input_init();
