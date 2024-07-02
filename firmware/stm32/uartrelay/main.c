@@ -195,7 +195,7 @@ static void init(void)
 	enable_sys_tick(SYSTICK_PERIOD);
 }
 
-void do_dithering_scathering(frame_t *f, int i, int end)
+void do_dithering_scattering(frame_t *f, int i, int end)
 {
 	uint32_t a=0x08040201, b=(0x01010101<<OUT_PIN);
 	for (; i<end; i++)
@@ -220,7 +220,7 @@ int main(void)
 		half=0;
 		f = &frames[cur_out];
 		yield();
-		do_dithering_scathering(f, 0, N_VALUES/2);
+		do_dithering_scattering(f, 0, N_VALUES/2);
 		yield();
 
 		while (!full)
@@ -228,7 +228,7 @@ int main(void)
 
 		full=0;
 		yield();
-		do_dithering_scathering(f, N_VALUES/2, N_VALUES);
+		do_dithering_scattering(f, N_VALUES/2, N_VALUES);
 		yield();
 	}
 }
