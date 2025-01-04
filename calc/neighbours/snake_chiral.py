@@ -19,18 +19,32 @@
 
 import sys, array, os, json
 
-leds = [x['position'] for x in json.load(open(os.path.dirname(sys.argv[0])+'./../../firmware/esp32/models/chiral_tiling/leds.json', "r"))['leds']]
+conf = {
+
+    'normal' : {
+        'filename': './../../firmware/esp32/models/chiral_tiling/leds.json',
+        'segment_count': 30,
+    },
+    'big' : {
+        'filename': './../../firmware/esp32/models/chiral_big/leds.json',
+        'segment_count': 30,
+    },
+
+}[sys.argv[1]]
+
+
+leds = [x['position'] for x in json.load(open(os.path.dirname(sys.argv[0])+conf['filename'], "r"))['leds']]
 
 N_CHOICES_PER_STEP = 3
 N_BIAS_ROWS = 8 # 2 for leds with 2 neighbours, 3 for each intersection
-N_ROWS = 510
+N_ROWS = len(leds)
+N_SEGMENTS = int(conf['segment_count'])
 
-N_LEDS_PER_STRIP=17
+N_LEDS_PER_STRIP=N_ROWS//N_SEGMENTS
 N_LEDS_PER_ARC=N_LEDS_PER_STRIP+2
 
-assert N_ROWS%N_LEDS_PER_STRIP == 0
+assert N_LEDS_PER_STRIP*N_SEGMENTS == N_ROWS
 assert (N_LEDS_PER_ARC-4)%3 == 0
-assert len(leds) == N_ROWS
 
 SPLIT_A = (N_LEDS_PER_ARC-4)//3
 SPLIT_B = SPLIT_A + 1 + SPLIT_A
@@ -51,7 +65,7 @@ NO_OPTION = 0xffff
 neighbours = [ [NO_OPTION]*3 for _ in range(len(leds)) ]
 
 def strip_index(x):
-    return x % 17
+    return x % N_LEDS_PER_STRIP
 
 def is_start_of_strip(x):
     return strip_index(x) == START
@@ -59,13 +73,13 @@ def is_start_of_strip(x):
 def is_neighbour(a, b):
     return d_expected*.99 < d(leds[a], leds[b]) < d_expected*1.01
 
-for i in range(30*17):
+for i in range(N_ROWS):
     if not is_start_of_strip(i):
         neighbours[i-1][MOVE_FW] = i
         neighbours[i]  [MOVE_BW]   = i-1
 
-for strip_a in range(0, 510, 17):
-    for strip_b in range(0, 510, 17):
+for strip_a in range(0, N_ROWS, N_LEDS_PER_STRIP):
+    for strip_b in range(0, N_ROWS, N_LEDS_PER_STRIP):
         for a in (strip_a+START, strip_a+END):
             for b in (strip_b+SPLIT_A, strip_b+SPLIT_B):
                 if is_neighbour(a, b):
@@ -76,7 +90,7 @@ for strip_a in range(0, 510, 17):
 
                     neighbours[b][MOVE_TURN] = a
 
-out = open(sys.argv[1], "wb")
+out = open(sys.argv[2], "wb")
 
 header = b'\1RANDOMWALK' + bytes( (N_CHOICES_PER_STEP, N_BIAS_ROWS&0xff, N_BIAS_ROWS>>8, N_ROWS&0xff, N_ROWS>>8) )
 
