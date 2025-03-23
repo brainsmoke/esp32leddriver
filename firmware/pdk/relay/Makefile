@@ -1,5 +1,5 @@
 
-TARGETS=relay-pdk13.ihx relay5-pdk13.ihx relay-pdk14.ihx relay5-pdk14.ihx
+TARGETS=relay_oldpcb-pdk13.ihx relay_newpcb-pdk13.ihx relay5-pdk13.ihx relay_oldpcb-pdk14.ihx relay_newpcb-pdk14.ihx relay5-pdk14.ihx
 CLEAN=$(TARGETS)
 
 AS13=sdaspdk13
