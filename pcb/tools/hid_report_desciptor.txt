@@ -1,0 +1,35 @@
+Usage Page (Generic Desktop)
+Usage (Keypad)
+Collection (Application)
+Usage Page (Keyboard)
+
+Usage (Generic Desktop, System Sleep)
+Usage (Generic Desktop, System Wake Up)
+Usage (Generic Desktop, System Power Down)
+Usage (Generic Desktop, System Warm Restart)
+
+Usage (Consumer, Play)
+Usage (Consumer, Pause)
+Usage (Consumer, Stop)
+Usage (Consumer, Record)
+
+Usage (Consumer, Rewind)
+Usage (Consumer, Fast Forward)
+Usage (Consumer, Scan Previous Track)
+Usage (Consumer, Scan Next Track)
+
+Usage (Keyboard, Volume Down)
+Usage (Keyboard, Volume Up)
+Usage (Consumer, AL Calculator)
+Usage (Keyboard, 0x04)
+
+Report Size (1)
+Report Count (16)
+Input (Data, Variable, Absolute)
+
+Report Size (8)
+Report Count (1)
+Input (Constant)
+
+End Collection
+
