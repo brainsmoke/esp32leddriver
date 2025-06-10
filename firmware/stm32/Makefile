@@ -16,6 +16,12 @@ WS2812_DMA16_HEADERS=ws2812_dma16/config.h ws2812_dma16/ws2812_dma16.h common/ws
 WS2812_DMA16_SRCS=ws2812_dma16/asm_routines.S ws2812_dma16/main.c common/ws2812_dma.c common/util.c $(STARTUP_SRC)
 WS2812_DMA16_FLAGS=-I ws2812_dma16
 
+
+PERFECTION_ELF=perfection/perfection.elf
+PERFECTION_HEADERS=perfection/config.h perfection/ws2812_dma16.h common/ws2812_common.h common/ws2812_dma.h common/util.h common/m0delay.S common/fsm.h
+PERFECTION_SRCS=perfection/asm_routines.S perfection/main.c common/ws2812_dma.c common/util.c common/fsm.c $(STARTUP_SRC)
+PERFECTION_FLAGS=-I perfection
+
 UARTRELAY_ELF=uartrelay/uartrelay.elf
 UARTRELAY_HEADERS=uartrelay/config.h uartrelay/uartrelay.h common/ws2812_common.h common/ws2812_dma.h common/util.h common/m0delay.S common/fsm.h
 UARTRELAY_SRCS=uartrelay/main.c common/ws2812_dma.c common/util.c common/fsm.c $(STARTUP_SRC)
@@ -68,6 +74,11 @@ UARTBALL16_HEADERS=uartball16/uartball16.h common/util.h
 UARTBALL16_SRCS=uartball16/uartball16.c common/util.c $(STARTUP_SRC)
 UARTBALL16_FLAGS=-I uartball16
 
+OBEGRAENSAD_ELF=obegraensad/obegraensad.elf
+OBEGRAENSAD_HEADERS=obegraensad/obegraensad.h common/util.h common/m0delay.S
+OBEGRAENSAD_SRCS=obegraensad/obegraensad.c obegraensad/bitbang.S common/util.c $(STARTUP_SRC)
+OBEGRAENSAD_FLAGS=-I obegraensad
+
 JITTER_TIMER_ELF=jitter_timer/jitter_timer.elf
 JITTER_TIMER_HEADERS=jitter_timer/jitter_timer.h common/m0delay.S
 JITTER_TIMER_SRCS=jitter_timer/jitter_timer.c jitter_timer/jitter_timer.S $(STARTUP_SRC)
@@ -85,8 +96,10 @@ ELFS=                        \
 	$(WS2812_DMA16_ELF)      \
 	$(UARTRELAY_ELF)         \
 	$(UARTDEMUX_ELF)         \
+	$(OBEGRAENSAD_ELF)       \
 	$(JITTER_TIMER_ELF)      \
-	$(TIMING_EXPERIMENT_ELF)
+	$(TIMING_EXPERIMENT_ELF) \
+	$(PERFECTION_ELF)
 
 TARGETS=$(patsubst %.elf, %.bin, $(ELFS))
 
@@ -136,11 +149,17 @@ $(WS2801PAR_ELF): $(WS2801PAR_SRCS) $(LINKER_SCRIPT_072) $(WS2801PAR_HEADERS)
 $(WS2812_DMA16_ELF): $(WS2812_DMA16_SRCS) $(LINKER_SCRIPT_030CC) $(WS2812_DMA16_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(WS2812_DMA16_FLAGS) $(WS2812_DMA16_SRCS) -o $@
 
+$(PERFECTION_ELF): $(PERFECTION_SRCS) $(LINKER_SCRIPT_030CC) $(PERFECTION_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(PERFECTION_FLAGS) $(PERFECTION_SRCS) -o $@
+
 $(UARTRELAY_ELF): $(UARTRELAY_SRCS) $(LINKER_SCRIPT) $(UARTRELAY_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(UARTRELAY_FLAGS) $(UARTRELAY_SRCS) -o $@
 
 $(UARTDEMUX_ELF): $(UARTDEMUX_SRCS) $(LINKER_SCRIPT_030CC) $(UARTDEMUX_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS_030CC) $(UARTDEMUX_FLAGS) $(UARTDEMUX_SRCS) -o $@
+
+$(OBEGRAENSAD_ELF): $(OBEGRAENSAD_SRCS) $(LINKER_SCRIPT) $(OBEGRAENSAD_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(OBEGRAENSAD_FLAGS) $(OBEGRAENSAD_SRCS) -o $@
 
 $(JITTER_TIMER_ELF): $(JITTER_TIMER_SRCS) $(LINKER_SCRIPT) $(JITTER_TIMER_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(JITTER_TIMER_FLAGS) $(JITTER_TIMER_SRCS) -o $@

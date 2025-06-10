@@ -17,6 +17,10 @@
 #define AFR_REG(n) ( (n)>>3 )
 #define AFR_SHIFT(n) ( 1 << ( ((n)&7) * 4 ) )
 
+#define OSPEED_LOW(pin) (0)
+#define OSPEED_MEDIUM(pin) (1<<(2*pin))
+#define OSPEED_HIGH(pin) (3<<(2*pin))
+
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
