@@ -164,8 +164,8 @@ static void init(void)
 	next_frame = &frame_b;
 	iter = 0;
 
-	memset(&frame_a, 0, sizeof(frame_a));
-	memset(&frame_b, 0, sizeof(frame_b));
+	memset(&frame_a, BIT_NOT_OUTPUT_ENABLE, sizeof(frame_a));
+	memset(&frame_b, BIT_NOT_OUTPUT_ENABLE, sizeof(frame_b));
 
 	enable_sys_tick(SYSTICK_PERIOD);
 }
