@@ -57,6 +57,8 @@ micropython_reset() {
 	echo $'\x04' > "$device"
 }
 
+ESPTOOL="$(which esptool esptool.py | head -1)"
+
 if [ "x$ESPTTY" != "x" ]; then
 	if [ ! -c "$ESPTTY" ]; then
 		die "Bad tty: \$ESPTTY \"$ESPTTY\""
