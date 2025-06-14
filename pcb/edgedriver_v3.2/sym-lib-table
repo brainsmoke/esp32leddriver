@@ -1,4 +1,6 @@
 (sym_lib_table
-  (lib (name esp32-wrover)(type Legacy)(uri ${KIPRJMOD}/libs/esp32-wrover.lib)(options "")(descr ""))
-  (lib (name edgedriver-rescue)(type Legacy)(uri ${KIPRJMOD}/edgedriver-rescue.lib)(options "")(descr ""))
+  (version 7)
+  (lib (name "esp32-wrover")(type "Legacy")(uri "${KIPRJMOD}/libs/esp32-wrover.lib")(options "")(descr ""))
+  (lib (name "edgedriver-rescue")(type "Legacy")(uri "${KIPRJMOD}/edgedriver-rescue.lib")(options "")(descr ""))
+  (lib (name "edgedriver-cache")(type "Legacy")(uri "${KIPRJMOD}/edgedriver-cache.lib")(options "")(descr ""))
 )
