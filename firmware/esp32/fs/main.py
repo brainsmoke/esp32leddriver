@@ -117,7 +117,6 @@ for Ani, settings in get_animations():
     if player.is_off():
         player.on()
 
-
 debug=False
 def gc_test():
     print ("gc start")
@@ -138,11 +137,7 @@ else:
     server = HTTP_Server()
 
 import webdir
-#webdir.add_webdir(server, '/script', '/webroot/script', index=True, compression='gzip')
 webdir.add_webdir(server, '/css', '/webroot/css', index=True, compression='gzip', cache_control="max-age=86400")
-#webdir.add_webdir(server, '/models', '/models', index=True)
-
-#form.print()
 
 web_header = '''<!DOCTYPE html><html><head>
 <link rel="icon" href="data:,">
@@ -173,7 +168,7 @@ def handler(req):
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
-from gpiowait import PinEvent
+from gpiowait import PinEvent, button
 
 event = PinEvent(0, trigger=machine.Pin.IRQ_FALLING)
 def wait_for_buttonpress():
@@ -186,6 +181,12 @@ def wait_for_buttonpress():
 def wait_for_interrupt():
     while True:
         utime.sleep(60)
+
+if config.button_next:
+    button(player.next, config.button_next, 0, pull=machine.Pin.PULL_UP)
+
+if config.button_previous:
+    button(player.previous, config.button_previous, 0, pull=machine.Pin.PULL_UP)
 
 # normal mode
 try:

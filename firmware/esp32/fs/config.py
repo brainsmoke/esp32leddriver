@@ -11,6 +11,8 @@ uart_baudrate, uart_rx, uart_tx = 1000000, None, None
 
 pulse_width, pulse_width_max, pulse_width_min = None, None, None
 
+button_next, button_previous = None, None
+
 model_dir = "/conf"
 led_order = "GRB"
 cutoff = 24
@@ -95,6 +97,7 @@ def reload():
     import gc
 
     global port, uart_baudrate, uart_rx, uart_tx, model_dir, led_order, cutoff, brightness, fps, use_tls, key_file, cert_file, api_key
+    global button_next, button_previous
     global pulse_width, pulse_width_min, pulse_width_max
     reload_network()
     reload_failsafe()
@@ -141,6 +144,10 @@ def reload():
             fps = int(config['fps'])
         if 'brightness' in config:
             brightness = float(config['brightness'])
+        if 'next_button' in config:
+            button_next = int(config['next_button'])
+        if 'previous_button' in config:
+            button_previous = int(config['previous_button'])
 
     del config
     gc.collect()
