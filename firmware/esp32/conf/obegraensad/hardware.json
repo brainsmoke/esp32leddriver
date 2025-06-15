@@ -6,7 +6,8 @@
 		"rx": 35
 	},
 
-	"model": "/models/greatcircles",
+	"model": "/models/obegraensad",
+	"led_order": "M",
 
 	"next_button": 2
 }
