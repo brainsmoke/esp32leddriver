@@ -8,5 +8,15 @@ from ani.materials import AlienPlanet
 from ani.snake import Snake
 
 def get_animations():
-	return ((Lorenz, {}), (Fire, {}), (Snake, {'snake_len': 12, 'snake_count': 6, 'max_speed': 800}), (Gradient, {}), (Orbit, {}), (Wobble, {}), (AlienPlanet, {}), (Spots, {}), (Chroma, {}))
+	return (
+        ("Lorenz", Lorenz, {}),
+        ("Fire", Fire, {}),
+        ("Snake", Snake, {'snake_len': 12, 'snake_count': 6, 'max_speed': 800}),
+        ("Gradient", Gradient, {}),
+        ("Orbit", Orbit, {}),
+        ("Wobble", Wobble, {}),
+        ("AlienPlanet", AlienPlanet, {}),
+        ("Spots", Spots, {}),
+        ("Chroma", Chroma, {})
+    )
 

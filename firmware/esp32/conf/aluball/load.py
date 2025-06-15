@@ -10,4 +10,17 @@ from ani.shadowwalk import ShadowWalk
 from ani.shadowplay import ShadowPlay
 
 def get_animations():
-    return ( (Lorenz, {}), (Rutherford, {}), (Fire, {}), (Gradient, {}), (Orbit, {}), (ShadowWalk, {}), (ShadowPlay, {}), (Wobble, {}), (Checkers, {}), (AlienPlanet, {}), (Spots, {}), (Chroma, {}))
+    return (
+        ("Lorenz", Lorenz, {}),
+        ("Rutherford", Rutherford, {}),
+        ("Fire", Fire, {}),
+        ("Gradient", Gradient, {}),
+        ("Orbit", Orbit, {}),
+        ("ShadowWalk", ShadowWalk, {}),
+        ("ShadowPlay", ShadowPlay, {}),
+        ("Wobble", Wobble, {}),
+        ("Checkers", Checkers, {}),
+        ("AlienPlanet", AlienPlanet, {}),
+        ("Spots", Spots, {}),
+        ("Chroma", Chroma, {})
+    )

@@ -10,5 +10,16 @@ from ani.topo import Topo
 from ani.snake import Snake
 
 def get_animations():
-	return ((Fire, {}), (Wobble, {}), (MultiWave, {}), (Snake, {}), (Lorenz, {}), (WaveSelectGradient, {}), (Topo, {}), (Spiral, {}), (Orbit, {}), (AlienPlanet, {}))
+	return (
+        ("Fire", Fire, {}),
+        ("Wobble", Wobble, {}),
+        ("MultiWave", MultiWave, {}),
+        ("Snake", Snake, {}),
+        ("Lorenz", Lorenz, {}),
+        ("WaveSelectGradient", WaveSelectGradient, {}),
+        ("Topo", Topo, {}),
+        ("Spiral", Spiral, {}),
+        ("Orbit", Orbit, {}),
+        ("AlienPlanet", AlienPlanet, {})
+    )
 

@@ -8,6 +8,8 @@
 
 	"model": "/models/obegraensad",
 	"led_order": "M",
+	"fps": 120,
+	"cutoff": 1,
 
 	"next_button": 2
 }

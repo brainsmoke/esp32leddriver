@@ -11,20 +11,24 @@ def led_desc(pos):
                ',\n\t\t\t"normal": '   + coords(normalize3(pos)) + \
                ',\n\t\t\t"inside": false\n\t\t}'
 
-dx = 20.
-dy = 30.
+def get_leds():
+    dx = 20.
+    dy = 30.
 
-w=16
-h=16
+    w=16
+    h=16
 
-z = 60.
+    z = 60.
 
-midx = (w-1)*dx/2
-midy = (h-1)*dy/2
+    midx = (w-1)*dx/2
+    midy = (h-1)*dy/2
 
-leds = [ (j*dx-midx, i*dy-midy, z) for i in range(h) for j in range(w) ]
+    return [ (j*dx-midx, i*dy-midy, z) for i in range(h) for j in range(w) ]
 
-print ('{\n\t"leds": [')
-print(',\n'.join(led_desc(pos) for pos in leds))
-print('\t]\n}')
+
+if __name__ == '__main__':
+    leds = get_leds()
+    print ('{\n\t"leds": [')
+    print(',\n'.join(led_desc(pos) for pos in leds))
+    print('\t]\n}')
 

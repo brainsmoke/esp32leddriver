@@ -104,9 +104,8 @@ tmp16 = driver.create_framebuffer16()
 
 player.start()
 
-for Ani, settings in get_animations():
-    name = Ani.__name__.lower()
-    caption = Ani.__name__
+for caption, Ani, settings in get_animations():
+    name = caption.lower()
     try:
         print (caption)
         player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=cur_animation.add_group(name, caption=caption), **settings) )

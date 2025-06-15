@@ -9,5 +9,17 @@ from ani.materials import Checkers, AlienPlanet
 from ani.shadowwalk import ShadowWalk
 
 def get_animations():
-	return (Lorenz, Rutherford, Fire, Gradient, Orbit, ShadowWalk, Wobble, Checkers, AlienPlanet, Spots, Chroma)
+    return (
+        ("Lorenz", Lorenz, {}),
+        ("Rutherford", Rutherford, {}),
+        ("Fire", Fire, {}),
+        ("Gradient", Gradient, {}),
+        ("Orbit", Orbit, {}),
+        ("ShadowWalk", ShadowWalk, {}),
+        ("Wobble", Wobble, {}),
+        ("Checkers", Checkers, {}),
+        ("AlienPlanet", AlienPlanet, {}),
+        ("Spots", Spots, {}),
+        ("Chroma", Chroma, {})
+    )
 

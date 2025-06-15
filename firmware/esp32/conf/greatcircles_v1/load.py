@@ -10,5 +10,18 @@ from ani.shadowwalk import ShadowWalk
 from ani.snake import Snake
 
 def get_animations():
-	return ((Lorenz, {}), (Rutherford, {}), (Fire, {}), (Gradient, {}), (Orbit, {}), (Snake, {'snake_len': 3, 'snake_count': 3, 'mirror_leds':True}), (ShadowWalk, {}), (Wobble, {}), (Checkers, {}), (AlienPlanet, {}), (Spots, {}), (Chroma, {}))
+	return (
+        ("Lorenz", Lorenz, {}),
+        ("Rutherford", Rutherford, {}),
+        ("Fire", Fire, {}),
+        ("Gradient", Gradient, {}),
+        ("Orbit", Orbit, {}),
+        ("Snake", Snake, {'snake_len': 3, 'snake_count': 3, 'mirror_leds':True}),
+        ("ShadowWalk", ShadowWalk, {}),
+        ("Wobble", Wobble, {}),
+        ("Checkers", Checkers, {}),
+        ("AlienPlanet", AlienPlanet, {}),
+        ("Spots", Spots, {}),
+        ("Chroma", Chroma, {})
+    )
 
