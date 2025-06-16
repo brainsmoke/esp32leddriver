@@ -6,7 +6,7 @@
 * Leave the VCC/GND/CLK/Latch/Not-output-enable wires intact
 * Connect the data-in pins to the esp32leddriver board (or another board with an stm32f0xx running this firmware)
 * Add ground wires next to the data wires for signal integrity
-* Signals need to be boosted to 5V (for example using a 74HCT245)
+* Signals to the panel need to be boosted to 5V (for example using a 74HCT245)
 
 ## Pinout:
 
