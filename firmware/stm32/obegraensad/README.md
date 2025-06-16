@@ -2,7 +2,7 @@
 # IKEA OBEGRÄNSAD driver code
 
 * Desolder the MCU on the bottom panel
-* (Only) desolder the data-out to data-in wire connecting the panels
+* (Only) desolder the data-out to data-in wires connecting the panels
 * Leave the VCC/GND/CLK/Latch/Not-output-enable wires intact
 * Connect the data-in pins to the esp32leddriver board (or another board with an stm32f0xx running this firmware)
 * Add ground wires next to the data wires for signal integrity
