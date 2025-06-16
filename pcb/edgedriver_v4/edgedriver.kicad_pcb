@@ -5938,7 +5938,7 @@
 				)
 			)
 		)
-		(property "Value" "74HC245"
+		(property "Value" "74HCT245"
 			(at 0 3.55 0)
 			(layer "F.Fab")
 			(uuid "3c0993df-8a13-4dea-aa90-05c757674ca9")
@@ -5973,7 +5973,7 @@
 				)
 			)
 		)
-		(property "LCSC" "C503362"
+		(property "LCSC" "C547496"
 			(at 0 0 0)
 			(unlocked yes)
 			(layer "F.Fab")
