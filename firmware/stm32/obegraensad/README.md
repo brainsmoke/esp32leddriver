@@ -17,11 +17,11 @@
 * PA4: Clock (wired to bottom panel)
 * PA5: Latch (wired to bottom panel)
 * PA6: Not Output Enable (wired to bottom panel)
-* PA10: UART RX, 1MBaud
+* PA10: UART RX, 1MBaud (In my case, written to by one the esp32's UARTs)
 
 ## Protocol:
 
-Data: 1MBaud
+Data rate: 1MBaud
 
 Sending a frame: `( [16 bit brightness]*256 [ FF FF FF F0 ] )*`
 
@@ -29,4 +29,9 @@ Brightness must be little endian integers in the (inclusive) range `[0 .. 0xFF00
  
 `[ FF FF FF F0 ]` is an end of frame marker and allows the protocol to synchronize
 in the event of an uneven number of bytes being written to the serial port
+
+## Button
+
+The button on the side connects to ground when pressed, and is accessable via a pad on the bottom panel.
+I've connected it to GPIO2 of the ESP32 on my driver board.
 
