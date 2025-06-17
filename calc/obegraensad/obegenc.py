@@ -79,7 +79,7 @@ def process_frame(data):
             accum[out_y*num_leds.x+out_x] += data[in_y*dim_in.x+in_x]
             weight[out_y*num_leds.x+out_x] += 255
 
-    arr = [ int(0xff00*(a+.5)//w) for a, w in zip(accum, weight) ]
+    arr = [ min(0xff00, max(0, int(.5 + 0xff00 *( (a/w)**gamma ) * brightness))) for a, w in zip(accum, weight) ]
     barr = bytearray(2*len(arr))
     for i in range(len(arr)):
         barr[i*2] = arr[i]&0xff
