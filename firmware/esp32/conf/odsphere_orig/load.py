@@ -20,7 +20,7 @@ def get_animations():
         ("Lorenz", Lorenz, {}),
         ("ShadowPlay", ShadowPlay, {}),
         ("WaveSelectGradient", WaveSelectGradient, {}),
-        ("Earth", Earth, {}),
+        ("Earth", Movie, {'filename' : 'earth.bin'}),
         ("ShadowWalk", ShadowWalk, {}),
         ("Fire", Fire, {}),
         ("Topo", Topo, {}),
