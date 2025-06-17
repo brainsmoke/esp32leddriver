@@ -8,20 +8,20 @@ class Gradient:
 
     def set_wave(self, wave):
         if wave == 0:
-            self.wave = util.get_half_duty_pwm()
+            self.wave = util.get_half_duty_pwm_blurred()
         elif wave == 1:
-            self.wave = util.get_small_duty_pwm()
+            self.wave = util.get_small_duty_pwm_blurred()
         elif wave == 2:
-            self.wave = util.get_sawtooth_wave()
+            self.wave = util.get_sawtooth_wave_blurred()
         else:
             self.wave = util.get_smooth_wave()
  
     def get_wave(self):
-        if self.wave == util.get_half_duty_pwm():
+        if self.wave == util.get_half_duty_pwm_blurred():
             return 0
-        elif self.wave == util.get_small_duty_pwm():
+        elif self.wave == util.get_small_duty_pwm_blurred():
             return 1
-        elif self.wave == util.get_sawtooth_wave():
+        elif self.wave == util.get_sawtooth_wave_blurred():
             return 2
         else:
             return 3

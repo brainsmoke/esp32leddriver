@@ -9,7 +9,7 @@ def get_animations():
         ("Tunnel", WaveSelectGradient, {'map_file':'tunnel.json'}),
         ("Fire2D", Fire2D, {'dim': (16, 16) }),
         ("Roll", Movie, {'filename':'rr.bin', 'fps':25}),
-        ("Gradient", Gradient, {'map_file':'gradient.json'}),
+        ("Spiral", WaveSelectGradient, {'map_file':'gradient.json'}),
         ("Snake", Snake, {'snake_len': 7, 'snake_count': 2, 'max_speed': 600}),
         ("Moire", Gradient, {'map_file':'moire.json'}),
     )

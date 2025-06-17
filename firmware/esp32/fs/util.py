@@ -2,42 +2,78 @@
 import uarray
 import cball
 
+_wave_size = 4096
+
 smooth_wave = None
-_smooth_wave_size = 4096
 def get_smooth_wave():
     global smooth_wave
     if not smooth_wave:
-        smooth_wave = uarray.array('H', (0 for _ in range(_smooth_wave_size)))
+        smooth_wave = uarray.array('H', (0 for _ in range(_wave_size)))
         cball.wave_for_gradient_lut(smooth_wave) # same calculation, speed up boot time
     return smooth_wave
 
 sawtooth_wave = None
-_sawtooth_wave_size = 4096
 def get_sawtooth_wave():
     global sawtooth_wave
     if not sawtooth_wave:
-        sawtooth_wave = uarray.array('H', (0 for _ in range(_sawtooth_wave_size)))
-        for i in range(_sawtooth_wave_size):
+        sawtooth_wave = uarray.array('H', (0 for _ in range(_wave_size)))
+        for i in range(_wave_size):
             ix = (1024+i)%4096
             sawtooth_wave[i] = (ix*ix)>>8
     return sawtooth_wave
 
 half_duty_pwm = None
-_half_duty_pwm_size = 4096
 def get_half_duty_pwm():
     global half_duty_pwm
     if not half_duty_pwm:
-        half_duty_pwm = uarray.array('H', (0xffff*int(1024 <= i < 3072) for i in range(_half_duty_pwm_size)))
+        half_duty_pwm = uarray.array('H', (0xffff*int(1024 <= i < 3072) for i in range(_wave_size)))
     return half_duty_pwm
 
 
 small_duty_pwm = None
-_small_duty_pwm_size = 4096
 def get_small_duty_pwm():
     global small_duty_pwm
     if not small_duty_pwm:
-        small_duty_pwm = uarray.array('H', (0xffff*int(1792 <= i < 2304) for i in range(_small_duty_pwm_size)))
+        small_duty_pwm = uarray.array('H', (0xffff*int(1792 <= i < 2304) for i in range(_wave_size)))
     return small_duty_pwm
+
+
+_blur_size = 128
+sawtooth_wave_blurred = None
+def get_sawtooth_wave_blurred():
+    global sawtooth_wave_blurred
+    if not sawtooth_wave_blurred:
+        sawtooth_wave_blurred = uarray.array('H', (0 for _ in range(_wave_size)))
+        for i in range(_wave_size):
+            sawtooth_wave_blurred[i-1024] = (i*i)>>8
+        for i in range(-_blur_size, 0):
+            v = (sawtooth_wave_blurred[i-1024]*-i)//_blur_size
+            sawtooth_wave_blurred[i-1024] = v
+    return sawtooth_wave_blurred
+
+half_duty_pwm_blurred = None
+def get_half_duty_pwm_blurred():
+    global half_duty_pwm_blurred
+    if not half_duty_pwm_blurred:
+        half_duty_pwm_blurred = uarray.array('H', (0xffff*int(1024 <= i < 3072) for i in range(_wave_size)))
+        mid = _blur_size >> 1
+        for i in range(_blur_size-1):
+            half_duty_pwm_blurred[1024-mid+i] = 0xffff*(i+1)//_blur_size
+            half_duty_pwm_blurred[3072-mid+i] = 0xffff*(_blur_size-i-1)//_blur_size
+
+    return half_duty_pwm_blurred
+
+
+small_duty_pwm_blurred = None
+def get_small_duty_pwm_blurred():
+    global small_duty_pwm_blurred
+    if not small_duty_pwm_blurred:
+        small_duty_pwm_blurred = uarray.array('H', (0xffff*int(1792 <= i < 2304) for i in range(_wave_size)))
+        mid = _blur_size >> 1
+        for i in range(_blur_size-1):
+            small_duty_pwm_blurred[1792-mid+i] = 0xffff*(i+1)//_blur_size
+            small_duty_pwm_blurred[2304-mid+i] = 0xffff*(_blur_size-i-1)//_blur_size
+    return small_duty_pwm_blurred
 
 _maps_cached=False
 inside_map=None
