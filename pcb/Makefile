@@ -1,6 +1,6 @@
 
 
-PROJECTS=edgedriver_v4
+PROJECTS=edgedriver_v4 edgedriver_v4.1
 
 BASENAME=edgedriver
 BOARDHOUSE=jlc
