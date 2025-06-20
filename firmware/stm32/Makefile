@@ -84,6 +84,16 @@ JITTER_TIMER_HEADERS=jitter_timer/jitter_timer.h common/m0delay.S
 JITTER_TIMER_SRCS=jitter_timer/jitter_timer.c jitter_timer/jitter_timer.S $(STARTUP_SRC)
 JITTER_TIMER_FLAGS=-I jitter_timer
 
+M0MATRIX_ELF=m0matrix/m0matrix.elf
+M0MATRIX_HEADERS=m0matrix/bitbang.h m0matrix/util.h common/m0delay.S
+M0MATRIX_SRCS=m0matrix/main.c m0matrix/bitbang.S m0matrix/util.c $(STARTUP_SRC)
+M0MATRIX_FLAGS=-I m0matrix
+
+M0MATRIX_8_TO_16_ELF=m0matrix_8_to_16/m0matrix_8_to_16.elf
+M0MATRIX_8_TO_16_HEADERS=m0matrix_8_to_16/bitbang.h m0matrix_8_to_16/util.h common/m0delay.S
+M0MATRIX_8_TO_16_SRCS=m0matrix_8_to_16/main.c m0matrix_8_to_16/bitbang.S m0matrix_8_to_16/util.c $(STARTUP_SRC)
+M0MATRIX_8_TO_16_FLAGS=-I m0matrix_8_to_16
+
 ELFS=                        \
 	$(DITHER8_ELF)           \
 	$(DITHER16_ELF)          \
@@ -99,7 +109,9 @@ ELFS=                        \
 	$(OBEGRAENSAD_ELF)       \
 	$(JITTER_TIMER_ELF)      \
 	$(TIMING_EXPERIMENT_ELF) \
-	$(PERFECTION_ELF)
+	$(PERFECTION_ELF)        \
+    $(M0MATRIX_ELF)          \
+    $(M0MATRIX_8_TO_16_ELF)
 
 TARGETS=$(patsubst %.elf, %.bin, $(ELFS))
 
@@ -166,4 +178,10 @@ $(JITTER_TIMER_ELF): $(JITTER_TIMER_SRCS) $(LINKER_SCRIPT) $(JITTER_TIMER_HEADER
 
 $(TIMING_EXPERIMENT_ELF): $(TIMING_EXPERIMENT_SRCS) $(LINKER_SCRIPT) $(TIMING_EXPERIMENT_HEADERS)
 	$(GCC) $(CFLAGS) $(LDFLAGS) $(TIMING_EXPERIMENT_FLAGS) $(TIMING_EXPERIMENT_SRCS) -o $@
+
+$(M0MATRIX_ELF): $(M0MATRIX_SRCS) $(LINKER_SCRIPT) $(M0MATRIX_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(M0MATRIX_FLAGS) $(M0MATRIX_SRCS) -o $@
+
+$(M0MATRIX_8_TO_16_ELF): $(M0MATRIX_8_TO_16_SRCS) $(LINKER_SCRIPT) $(M0MATRIX_8_TO_16_HEADERS)
+	$(GCC) $(CFLAGS) $(LDFLAGS) $(M0MATRIX_8_TO_16_FLAGS) $(M0MATRIX_8_TO_16_SRCS) -o $@
 
