@@ -12,7 +12,6 @@
 * The side-button is accessible via a pad on R5 on the bottom panel, it is pulled to ground when pressed.
 
 <img src="/img/obegraensad_mcu_button_pin.jpg" width="640" alt="close-up of the removed MCU footprint & pad to connect to the button">
-<img src="/img/obegraensad_bottom_overview.jpg" width="640" alt="photo giving an overview of the wiring situation">
 
 ## Pinout (panel, data-in side):
 
@@ -53,6 +52,10 @@ Brightness must be little endian integers in the (inclusive) range `[0 .. 0xFF00
  
 `[ FF FF FF F0 ]` is an end of frame marker and allows the protocol to synchronize
 in the event of an uneven number of bytes being written to the serial port
+
+## Picture of wiring setup
+
+<img src="/img/obegraensad_bottom_overview.jpg" width="640" alt="photo giving an overview of the wiring situation">
 
 ## Button
 
