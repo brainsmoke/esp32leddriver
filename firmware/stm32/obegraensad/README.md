@@ -64,5 +64,5 @@ I've connected it to GPIO2 of the ESP32 on my driver board.
 
 ## Other IKEA OBEGRÄNSAD hacks
 
-[ph1h/ikea-led-obegraensad](https://github.com/ph1p/ikea-led-obegraensad
+[ph1h/ikea-led-obegraensad](https://github.com/ph1p/ikea-led-obegraensad)
 
