@@ -19,7 +19,7 @@ Left-to-right, silkscreen orientation:
 * Not Output Enable
 * Ground
 
-<img src="/img/obegraensad_panel_pinout.jpg" width="640">
+<img src="/img/obegraensad_panel_pinout.jpg" width="640" alt="photo of pinout on the panels">
 
 ## Pinout (driver board):
 
