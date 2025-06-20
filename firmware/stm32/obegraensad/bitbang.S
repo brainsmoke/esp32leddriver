@@ -132,26 +132,6 @@ bitbang64_clk_stm32_end:
 #undef rOUT
 	.size	bitbang64_clk_stm32, .-bitbang64_clk_stm32
 
-
-
-.macro delay_reg reg scratch sub
-
-
-                                              //  [reg&3==0] [reg&3==1] [reg&3==2] [reg&3==3]
-
-   mov \scratch, \reg                         //       1          1          1          1
-   addsub \scratch, (-(\sub+5))               //       1          1          1          1
-   lsrs \scratch, \scratch, #1                //       1          1          1          1
-   bcs 1f                                     //       1          3          1          3
-   nop                                        //       1                     1
-1: lsrs \scratch, \scratch, #1                //       1          1          1          1
-   bcs 2f                                     //       1          1          3          3
-2: subs \scratch, #1                          //                    reg>>2
-   bne 2b                                     //                 3*(reg>>2)-2
-
-.endm
-
-
 	.global	bitbang64_clk_no_enable_stm32
 	.code	16
 	.thumb_func
