@@ -149,7 +149,7 @@ static void init(void)
 	GPIOA->MODER = SWD|O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7);
 
 	GPIOA->OSPEEDR = OSPEED_HIGH(13)                    |
-                     OSPEED_HIGH(PIN_LATCH)             |
+	                 OSPEED_HIGH(PIN_LATCH)             |
 	                 OSPEED_HIGH(PIN_DATA_0)            |
 	                 OSPEED_HIGH(PIN_DATA_1)            |
 	                 OSPEED_HIGH(PIN_DATA_2)            |
@@ -308,7 +308,7 @@ static int read_next_frame(void)
 			uint8_t *p = &next_frame->bit[0][module_map[i]];
 			for ( ; c ; c >>= 1 )
 			{
-	            if (c&1)
+				if (c&1)
 					*p |= bit;
 
 				p += sizeof(next_frame->bit[0])/sizeof(*p);
