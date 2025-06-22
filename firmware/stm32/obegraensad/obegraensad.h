@@ -65,8 +65,6 @@ int get_u8(void);
 int get_u16le(void);
 void init_io(void);
 
-static inline void io_poll(void) {}
-
 #endif
 
 #endif // BITBANG_H

@@ -294,7 +294,6 @@ int main(void)
 		cur_frame = next_frame;
 		next_frame = tmp;
 		while (draw_frame == next_frame);
-		io_poll();
 	}
 
 	return 0;
