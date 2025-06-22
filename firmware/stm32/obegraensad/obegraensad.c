@@ -3,7 +3,6 @@
 
 #include <stdlib.h>
 #include <string.h>
-#include "stm32f0xx.h"
 
 #include "obegraensad.h"
 #include "util.h"
@@ -20,9 +19,6 @@ static frame_t * volatile next_frame;
 static frame_t * volatile draw_frame;
 
 static uint16_t iter;
-
-#define RECV_BUF_SZ (128)
-static volatile uint8_t recv_buf[RECV_BUF_SZ];
 
 enum
 {
@@ -61,22 +57,22 @@ static const uint8_t dtable[] =
 
 #define TABLE_SIZE (sizeof(dtable)/sizeof(dtable[0]))
 
-static void bitbang_15(void)       { bitbang64_clk_stm32(cur_frame->bit[15], (void *)GPIOA); draw_frame = cur_frame; }
-static void bitbang_14(void)       { bitbang64_clk_stm32(draw_frame->bit[14], (void *)GPIOA); }
-static void bitbang_13(void)       { bitbang64_clk_stm32(draw_frame->bit[13], (void *)GPIOA); }
-static void bitbang_12(void)       { bitbang64_clk_stm32(draw_frame->bit[12], (void *)GPIOA); }
-static void bitbang_11(void)       { bitbang64_clk_stm32(draw_frame->bit[11], (void *)GPIOA); }
-static void bitbang_10(void)       { bitbang64_clk_stm32(draw_frame->bit[10], (void *)GPIOA); }
-static void bitbang_9(void)        { bitbang64_clk_stm32(draw_frame->bit[ 9], (void *)GPIOA); }
-static void bitbang_8(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[8],  (void *)GPIOA); }
-static void bitbang_7(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[7],  (void *)GPIOA); }
-static void bitbang_6(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[6],  (void *)GPIOA); }
-static void bitbang_5(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[5],  (void *)GPIOA); }
-static void bitbang_4(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[4],  (void *)GPIOA); }
-static void bitbang_3(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[3],  (void *)GPIOA); }
-static void bitbang_2(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[2],  (void *)GPIOA); }
-static void bitbang_1(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[1],  (void *)GPIOA); }
-static void bitbang_0(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[0],  (void *)GPIOA); }
+static void bitbang_15(void)       { bitbang64_clk_stm32(cur_frame->bit[15], (void *)GPIO_OUT); draw_frame = cur_frame; }
+static void bitbang_14(void)       { bitbang64_clk_stm32(draw_frame->bit[14], (void *)GPIO_OUT); }
+static void bitbang_13(void)       { bitbang64_clk_stm32(draw_frame->bit[13], (void *)GPIO_OUT); }
+static void bitbang_12(void)       { bitbang64_clk_stm32(draw_frame->bit[12], (void *)GPIO_OUT); }
+static void bitbang_11(void)       { bitbang64_clk_stm32(draw_frame->bit[11], (void *)GPIO_OUT); }
+static void bitbang_10(void)       { bitbang64_clk_stm32(draw_frame->bit[10], (void *)GPIO_OUT); }
+static void bitbang_9(void)        { bitbang64_clk_stm32(draw_frame->bit[ 9], (void *)GPIO_OUT); }
+static void bitbang_8(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[8],  (void *)GPIO_OUT); }
+static void bitbang_7(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[7],  (void *)GPIO_OUT); }
+static void bitbang_6(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[6],  (void *)GPIO_OUT); }
+static void bitbang_5(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[5],  (void *)GPIO_OUT); }
+static void bitbang_4(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[4],  (void *)GPIO_OUT); }
+static void bitbang_3(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[3],  (void *)GPIO_OUT); }
+static void bitbang_2(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[2],  (void *)GPIO_OUT); }
+static void bitbang_1(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[1],  (void *)GPIO_OUT); }
+static void bitbang_0(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[0],  (void *)GPIO_OUT); }
 
 //#define FLIP_OFF (SET(BIT_NOT_OUTPUT_ENABLE)|CLEAR(BIT_ENABLE_HIGH))
 #define FLIP_OFF (SET(BIT_NOT_OUTPUT_ENABLE))
@@ -84,15 +80,15 @@ static void bitbang_0(void) { bitbang64_clk_no_enable_stm32(draw_frame->bit[0], 
 #define SYSTICK_PERIOD ((uint32_t)(F_SYS_TICK_CLK/(TABLE_SIZE*200) ))
 #define SYSTICK_CYCLES ((uint32_t)(8*SYSTICK_PERIOD))
 
-static void enable_8(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>1); }
-static void enable_7(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>2); }
-static void enable_6(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>3); }
-static void enable_5(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>4); }
-static void enable_4(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>5); }
-static void enable_3(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>6); }
-static void enable_2(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>7); }
-static void enable_1(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>8); }
-static void enable_0(void) { write_wait_write(&GPIOA->BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>9); }
+static void enable_8(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>1); }
+static void enable_7(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>2); }
+static void enable_6(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>3); }
+static void enable_5(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>4); }
+static void enable_4(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>5); }
+static void enable_3(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>6); }
+static void enable_2(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>7); }
+static void enable_1(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>8); }
+static void enable_0(void) { write_wait_write(&GPIO_OUT_BSRR, FLIP_ON, FLIP_OFF, SYSTICK_CYCLES>>9); }
 
 static void ret(void) { }
 
@@ -144,21 +140,7 @@ void SysTick_Handler(void)
 
 static void init(void)
 {
-	RCC->AHBENR |= RCC_AHBENR_GPIOAEN | RCC_AHBENR_GPIOBEN; /* enable clock on GPIO A & B */
-	GPIOA->ODR = BIT_NOT_OUTPUT_ENABLE;
-	GPIOA->MODER = SWD|O(0)|O(1)|O(2)|O(3)|O(4)|O(5)|O(6)|O(7);
-
-	GPIOA->OSPEEDR = OSPEED_HIGH(13)                    |
-	                 OSPEED_HIGH(PIN_LATCH)             |
-	                 OSPEED_HIGH(PIN_DATA_0)            |
-	                 OSPEED_HIGH(PIN_DATA_1)            |
-	                 OSPEED_HIGH(PIN_DATA_2)            |
-	                 OSPEED_HIGH(PIN_DATA_3)            |
-	                 OSPEED_HIGH(PIN_CLK)               |
-	                 OSPEED_HIGH(PIN_NOT_OUTPUT_ENABLE) ;
-
-	clock48mhz();
-	usart1_rx_pa10_dma3_enable(recv_buf, RECV_BUF_SZ, 48e6/1e6);
+	init_io();
 
 	cur_frame = &frame_a;
 	next_frame = &frame_b;
@@ -168,24 +150,6 @@ static void init(void)
 	memset(&frame_b, BIT_NOT_OUTPUT_ENABLE, sizeof(frame_b));
 
 	enable_sys_tick(SYSTICK_PERIOD);
-}
-
-static inline int dma_getchar(void)
-{
-	static uint32_t last = 0;
-	if (last == 0)
-		last = RECV_BUF_SZ;
-	while (last == DMA1_Channel3->CNDTR);
-	last--;
-	return recv_buf[RECV_BUF_SZ-1-last];
-}
-
-static inline int dma_get_u16(void)
-{
-	int c;
-	c  =   dma_getchar();
-	c |= ( dma_getchar() << 8 );
-	return c;
 }
 
 #define GOOD          0
@@ -267,7 +231,7 @@ static int finish_frame(int c)
 
 	for(;;)
 	{
-		c = dma_getchar();
+		c = get_u8();
 
 		if (c == 0)
 			i = IN_00;
@@ -301,7 +265,7 @@ static int read_next_frame(void)
 		int bit = channel[j];
 		for (i=0; i<N_BITS_PER_CHANNEL; i++)
 		{
-			c = dma_get_u16();
+			c = get_u16le();
 			if (c > 0xff00)
 				return finish_frame(c);
 

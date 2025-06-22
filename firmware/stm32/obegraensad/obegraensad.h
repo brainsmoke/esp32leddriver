@@ -45,6 +45,10 @@
 #ifndef __ASSEMBLER__
 
 #include <stdint.h>
+#include "stm32f0xx.h"
+
+#define GPIO_OUT (GPIOA)
+#define GPIO_OUT_BSRR (GPIOA->BSRR)
 
 /* sends 64x (max 8) bits parallel at ~1/6th the clockspeed to GPIO[0-7]
  * gpio is the GPIO base address
@@ -55,6 +59,11 @@ void bitbang64_clk_stm32(uint8_t *buffer, volatile uint16_t *gpio);
 void bitbang64_clk_no_enable_stm32(uint8_t *buffer, volatile uint16_t *gpio);
 
 void write_wait_write(volatile uint32_t *addr, uint32_t pre_data, uint32_t post_data, uint32_t cycles);
+
+
+int get_u8(void);
+int get_u16le(void);
+void init_io(void);
 
 #endif
 

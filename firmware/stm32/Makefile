@@ -76,7 +76,7 @@ UARTBALL16_FLAGS=-I uartball16
 
 OBEGRAENSAD_ELF=obegraensad/obegraensad.elf
 OBEGRAENSAD_HEADERS=obegraensad/obegraensad.h common/util.h common/m0delay.S
-OBEGRAENSAD_SRCS=obegraensad/obegraensad.c obegraensad/bitbang.S common/util.c $(STARTUP_SRC)
+OBEGRAENSAD_SRCS=obegraensad/obegraensad.c obegraensad/obegraensad_io.c obegraensad/bitbang.S common/util.c $(STARTUP_SRC)
 OBEGRAENSAD_FLAGS=-I obegraensad
 
 JITTER_TIMER_ELF=jitter_timer/jitter_timer.elf
