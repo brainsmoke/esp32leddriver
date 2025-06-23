@@ -10,8 +10,10 @@
 * Add ground wires next to the data wires for signal integrity
 * The attached USB cable is data-only, but can be replaced
 * The side-button is accessible via a pad on R5 on the bottom panel, it is pulled to ground when pressed.
+* There is an alternative firmware for the STM32F042 which reads frames from USB-serial, see: [usb_proto/firmware/obegraensad](https://github.com/brainsmoke/usb_proto/tree/main/firmware/obegraensad)
 
 <img src="/img/obegraensad_mcu_button_pin.jpg" width="640" alt="close-up of the removed MCU footprint & pad to connect to the button">
+
 
 ## Pinout (panel, data-in side):
 
