@@ -8,7 +8,7 @@
 * Leave the VCC/GND/CLK/Latch/Not-output-enable wires intact
 * Connect the data-in pins to the esp32leddriver board (or another board with an stm32f0xx running this firmware)
 * Add ground wires next to the data wires for signal integrity
-* The attached USB cable is data-only, but can be replaced
+* The attached USB cable is power-only, but can be replaced
 * The side-button is accessible via a pad on R5 on the bottom panel, it is pulled to ground when pressed.
 * There is an alternative firmware for the STM32F042 which reads frames from USB-serial, see: [usb_proto/firmware/obegraensad](https://github.com/brainsmoke/usb_proto/tree/main/firmware/obegraensad)
 
