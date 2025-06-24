@@ -65,6 +65,15 @@ in the event of an uneven number of bytes being written to the serial port
 
 <img src="/img/obegraensad_bottom_overview.jpg" width="640" alt="photo giving an overview of the wiring situation">
 
+## Animations software on the ESP32
+
+My driver board contains an ESP32 which serves animations over a UART.
+GPIO13 (uart-tx) of the ESP32 is connected to PA10 on the STM32 (uart-rx)
+
+The ESP32 runs the animation software from [this repo](../../esp32).
+instead of `tools/flash.sh`, run `tools/flash.sh obegraensad` to program the right configuration for this
+project.
+
 ## Button
 
 The button on the side connects to ground when pressed, and is accessable via a pad on the bottom panel.
