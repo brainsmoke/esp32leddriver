@@ -55,7 +55,9 @@ Signal: UART at 1MBaud
 Sending a frame: `( [16 bit brightness]*256 [ FF FF FF F0 ] )*`
 
 Brightness must be little endian integers in the (inclusive) range `[0 .. 0xFF00]`
- 
+
+One brightness value per pixel. Pixels are addressed left to right, top to bottom.
+
 `[ FF FF FF F0 ]` is an end of frame marker and allows the protocol to synchronize
 in the event of an uneven number of bytes being written to the serial port
 
