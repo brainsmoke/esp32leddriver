@@ -25,7 +25,7 @@ def button(action, number, on_state=0, pull=None, debounce=20):
     def button_irq(pin):
         nonlocal state, t_prev
         t = utime.ticks_ms()
-        if t - t_prev > debounce:
+        if utime.ticks_diff(t, t_prev) > debounce:
             new_state = pin()
             if state != new_state:
                 state = new_state
