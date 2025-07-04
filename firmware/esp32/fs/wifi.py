@@ -8,8 +8,6 @@ ap = network.WLAN(network.AP_IF)
 ap.active(False)
 cur = wlan
 
-conn_type = 'OFF'
-
 def info():
     mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
     return tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
@@ -33,8 +31,6 @@ def wait_for_connection(verbose=True):
            if cur.isconnected():
                if verbose:
                    print(cur.ifconfig())
-               if cur is wlan:
-                   conn_type = 'CLIENT'
                return True
            utime.sleep(.5)
     except OSError:
@@ -60,7 +56,6 @@ def connect_client(wait=True):
             wait_for_connection()
     except OSError:
         wlan.active(False)
-        conn_type = None
         pass
 
 def connect_ap(wait=True):
@@ -75,7 +70,6 @@ def connect_ap(wait=True):
     ap.ifconfig( [ip, '255.255.255.0', ip, ip] )
     print(ap.ifconfig())
     cur=ap
-    conn_type = 'AP'
 
 def connect(wait=True):
     if is_configured():
