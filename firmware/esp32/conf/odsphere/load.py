@@ -2,7 +2,7 @@
 from ani.orbit import Orbit
 from ani.lorenz import Lorenz
 from conf.fire import Fire
-from ani.gradient import WaveSelectGradient, Spiral, Wobble
+from ani.gradient import WaveSelectGradient, Spiral, Wobble, ConfigMode
 from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
 from ani.materials import AlienPlanet
@@ -29,4 +29,7 @@ def get_animations():
         ("Wobble", Wobble, {}),
         ("AlienPlanet", AlienPlanet, {})
     )
+
+def get_config_animation():
+    return ("Config", ConfigMode, {})
 
