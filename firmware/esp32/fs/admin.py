@@ -34,7 +34,7 @@ def validate_ip(ip):
     return True
 
 class NetworkConf(configform.ConfigFormElem):
-    def __init__(self, caption='Network Config', info=None):
+    def __init__(self, caption='Network', info=None):
         super().__init__(caption=caption)
         self._set_css_class('network')
         self._info = info
@@ -99,7 +99,7 @@ class NetworkConf(configform.ConfigFormElem):
         self._update_content()
 
 class FailsafeConf(configform.ConfigFormElem):
-    def __init__(self, caption='Network Config'):
+    def __init__(self, caption='Failsafe Network'):
         super().__init__(caption=caption)
         self._set_css_class('network')
         self._update_content()
@@ -138,10 +138,11 @@ class FailsafeConf(configform.ConfigFormElem):
             config.write_failsafe_conf(essid, password, ip, auto_fallback)
             self._update_content()
 
-def get_form( network_info, reset_func ):
-    form = configform.ConfigRoot("/")
-    form['network'] = NetworkConf("Network Config", network_info)
-    form['failsafe'] = FailsafeConf("Failsafe Network Config")
+def get_form( network_info, reset_func, form=None ):
+    if form == None:
+        form = configform.ConfigRoot("/")
+    form['network'] = NetworkConf("Network", network_info)
+    form['failsafe'] = FailsafeConf("Failsafe Network")
     form['reset'] = configform.Action(reset_func, lambda: True, 'reset')
     return form
 

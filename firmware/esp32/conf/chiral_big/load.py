@@ -22,5 +22,5 @@ def get_animations():
     )
 
 def get_config_animation():
-    return ("Config", ConfigMode, {})
+    return ("Configuration", ConfigMode, {})
 

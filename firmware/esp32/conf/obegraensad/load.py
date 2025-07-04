@@ -16,5 +16,5 @@ def get_animations():
     )
 
 def get_config_animation():
-    return ("Config", Gradient, {'map_file':'gradient.json'})
+    return ("Configuration", Gradient, {'map_file':'gradient.json'})
 

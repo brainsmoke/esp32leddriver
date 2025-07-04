@@ -2,9 +2,7 @@
 import machine, utime, gc, re
 
 import config, model, uartpixel, cball, configform, csrf, wifi
-from conf.load import get_animations
-
-from ani.gradient import ConfigMode
+from conf.load import get_animations, get_config_animation
 
 import esp
 #esp.osdebug(None)
@@ -156,15 +154,16 @@ try:
     print("[dropping to failsafe mode]")
     info = wifi.info()
     wifi.connect_ap(wait=True)
-    configani = ConfigMode(leds)
-    player.set_animation(configani)
+    caption, Ani, settings = get_config_animation()
+    name = caption.lower()
+    player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=None, **settings) )
     import admin
 
     def reset():
         wifi.disconnect()
         machine.reset()
 
-    form = admin.get_form( info, reset_func=reset )
+    admin.get_form(info, reset_func=reset, form=cur_animation.add_group(name, caption=caption))
     while True:
         utime.sleep(1000) # lock with no load
 finally:
