@@ -9,7 +9,7 @@ from ani.snake import Snake
 
 def get_animations():
 	return (
-        ("Lorenz", (Lorenz, {}),
+        ("Lorenz", Lorenz, {}),
         ("Fire", Fire, {}),
         ("Snake", Snake, {'snake_len': 20, 'snake_count': 12, 'max_speed': 1600}),
         ("WaveSelectGradient", WaveSelectGradient, {}),
