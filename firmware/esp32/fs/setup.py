@@ -53,6 +53,17 @@ def failsafe_interactive():
 
     ip = query("IP", default=old_ip)
 
-    config.write_failsafe_conf(essid, password, ip)
+    if config.failsafe_auto_fallback:
+        fallback = "yes"
+    else:
+        fallback = "no"
+
+    auto_fall_back = ''
+    while auto_fall_back not in ("yes", "no"):
+        auto_fall_back = query("automatically fall back to failsafe mode if network connection fails on boot", default=fallback)
+
+    auto_fall_back = auto_fall_back == "yes"
+
+    config.write_failsafe_conf(essid, password, ip, auto_fall_back)
 
 

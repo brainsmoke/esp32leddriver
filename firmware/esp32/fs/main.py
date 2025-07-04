@@ -1,7 +1,7 @@
 
-import machine, network, utime, gc, re
+import machine, utime, gc, re
 
-import config, model, uartpixel, cball, configform, csrf
+import config, model, uartpixel, cball, configform, csrf, wifi
 from conf.load import get_animations
 
 from ani.gradient import ConfigMode
@@ -13,42 +13,6 @@ _thread.stack_size(8192)
 
 import machine
 machine.freq(240000000)
-
-wlan = network.WLAN(network.STA_IF)
-ap = network.WLAN(network.AP_IF)
-ap.active(False)
-
-def wifi_connect(essid, password, wait=True):
-    try:
-        wlan.active(True)
-        if wlan.isconnected():
-            wlan.disconnect()
-
-        print('connecting to network...')
-        wlan.connect(essid, password)
-        if wait:
-            wait_for_wifi()
-    except OSError:
-        pass
-
-def wifi_configure_ap(essid, password, ip):
-    wlan.active(False)
-    ap.active(True)
-    print([essid, password, ip])
-    ap.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
-    ap.ifconfig( [ip, '255.255.255.0', ip, ip] )
-    print(ap.ifconfig())
-
-def wait_for_wifi(verbose=True):
-    try:
-        for i in range(20):
-           if wlan.isconnected():
-               if verbose:
-                   print(wlan.ifconfig())
-               break
-           utime.sleep(.5)
-    except OSError:
-        pass
 
 config.load()
 
@@ -64,8 +28,7 @@ def failsafe():
     from setup import failsafe_interactive
     failsafe_interactive()
 
-if config.essid != None:
-    wifi_connect(config.essid, config.password, wait=False)
+wifi.connect(wait=False)
 
 leds = model.load()
 
@@ -167,64 +130,41 @@ def handler(req):
         print("[csrf verify failed!], token = {}".format(repr(token)))
     redirect(req, "/")
 
-from gpiowait import PinEvent, button
-
-event = PinEvent(0, trigger=machine.Pin.IRQ_FALLING)
-def wait_for_buttonpress():
-    while True:
-        event.wait()
-        utime.sleep(1) # don't make screen attaches trigger button presses
-        if event.pin() == 0:
-            break
+from button import button, button_timeout_wait
 
 def wait_for_interrupt():
     while True:
         utime.sleep(60)
 
 if config.button_next:
-    button(player.next, config.button_next, 0, pull=machine.Pin.PULL_UP)
+    button(config.button_next, on_down=player.next, pull=machine.Pin.PULL_UP)
 
 if config.button_previous:
-    button(player.previous, config.button_previous, 0, pull=machine.Pin.PULL_UP)
+    button(config.button_previous, on_down=player.previous, pull=machine.Pin.PULL_UP)
 
 # normal mode
 try:
     player.on()
     server.start()
     gc.collect()
-    if config.failsafe_essid == None:
-        wait_for_interrupt()
-    else:
-        wait_for_buttonpress()
-finally:
-    player.stop()
-    try:
-        server.stop()
-    except OSError as e:
-        print(e)
+    if not wifi.fallback():
+        if wifi.is_failsafe_configured():
+            button_timeout_wait(0, timeout=1000)
+        else:
+            wait_for_interrupt()
 
-# failsafe mode
-try:
     print("[dropping to failsafe mode]")
-    mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
-    info = tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
-                        (mac, ) + wlan.ifconfig() ) )
-    if wlan.active():
-        wlan.disconnect()
+    info = wifi.info()
+    wifi.connect_ap(wait=True)
     configani = ConfigMode(leds)
-    utime.sleep(.5)
-    wifi_configure_ap(config.failsafe_essid, config.failsafe_password, config.failsafe_ip)
     player.set_animation(configani)
-    player.start()
     import admin
 
     def reset():
-        ap.active(False)
+        wifi.disconnect()
         machine.reset()
 
     form = admin.get_form( info, reset_func=reset )
-    server.use_tls(False)
-    server.start()
     while True:
         utime.sleep(1000) # lock with no load
 finally:

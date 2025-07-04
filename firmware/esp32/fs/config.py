@@ -2,6 +2,7 @@
 essid, password = None, None
 
 failsafe_essid, failsafe_password, failsafe_ip = None, None, None
+failsafe_auto_fallback = True
 
 use_tls, key_file, cert_file = False, None, None
 
@@ -53,7 +54,7 @@ def reload_network():
     del config
 
 def reload_failsafe():
-    global failsafe_essid, failsafe_password, failsafe_ip
+    global failsafe_essid, failsafe_password, failsafe_ip, failsafe_auto_fallback
     config = load_json("/secret/failsafe.json")
 
     if config != None:
@@ -62,6 +63,7 @@ def reload_failsafe():
            'password' in config['wifi'] and \
            'network' in config and \
            'ip' in config['network']:
+            failsafe_auto_fallback = bool(config.get('auto_fallback', True))
             failsafe_essid = config['wifi']['essid']
             failsafe_password = config['wifi']['password']
             failsafe_ip = config['network']['ip']
@@ -82,13 +84,14 @@ def write_network_conf(essid, password):
 
     reload_network()
 
-def write_failsafe_conf(essid, password, ip):
+def write_failsafe_conf(essid, password, ip, auto_fallback):
 
     import ujson
     with open("/secret/failsafe.json", "w") as f:
         ujson.dump( {
             'wifi' : { 'essid': str(essid), 'password': str(password) },
             'network' : { 'ip': str(ip) },
+            'auto_fallback': bool(auto_fallback),
         }, f)
 
     reload_failsafe()

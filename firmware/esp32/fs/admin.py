@@ -114,18 +114,28 @@ class FailsafeConf(configform.ConfigFormElem):
         ip = config.failsafe_ip
         if not ip:
             ip = ""
+        if config.failsafe_auto_fallback:
+            checked = "checked "
+        else:
+            checked = ""
+
         self._set_form_content("""<dl>
 <dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" />
 <dt>Password<dd><input name="password" type="text" value="{}" minlength="8" maxlength="128" />
 <dt>IP<dd><input name="ip" type="text" value="{}" maxlength="24" />
 </dl>
-<input type="submit" value="set" />""".format(htmlencode(essid), htmlencode(password), htmlencode(ip)))
+<p><input name="auto_fallback" id="auto_fallback" type="checkbox" value="true" {}/><label for="auto_fallback">Automatically fall back to failsafe mode when network fails on boot</label></p>
+<input type="submit" value="set" />""".format(htmlencode(essid), htmlencode(password), htmlencode(ip), htmlencode(checked)))
 
     def _set(self, formdata):
-        if validate_essid(formdata['essid']) and \
-           validate_password(formdata['password']) and \
-           validate_ip(formdata['ip']):
-            config.write_failsafe_conf(formdata['essid'], formdata['password'], formdata['ip'])
+        essid = formdata['essid']
+        password = formdata['password']
+        ip = formdata['ip']
+        auto_fallback = formdata.get('auto_fallback', '') == 'true'
+        if validate_essid(essid) and \
+           validate_password(password) and \
+           validate_ip(ip):
+            config.write_failsafe_conf(essid, password, ip, auto_fallback)
             self._update_content()
 
 def get_form( network_info, reset_func ):
