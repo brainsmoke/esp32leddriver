@@ -89,7 +89,7 @@ if debug:
 from esphttpd import HTTP_Server, redirect, urldecode, parse_formdata
 
 if config.essid != None:
-    wait_for_wifi()
+    wifi.wait_for_connection()
 
 if config.use_tls:
     server = HTTP_Server(use_tls=True, keyfile=config.key_file, certfile=config.cert_file) # https
