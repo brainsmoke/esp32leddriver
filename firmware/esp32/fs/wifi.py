@@ -59,6 +59,7 @@ def connect_client(wait=True):
         pass
 
 def connect_ap(wait=True):
+    wlan.disconnect()
     wlan.active(False)
     if not is_failsafe_configured():
         return
@@ -70,6 +71,21 @@ def connect_ap(wait=True):
     ap.ifconfig( [ip, '255.255.255.0', ip, ip] )
     print(ap.ifconfig())
     cur=ap
+
+def get_networks():
+    networks = set()
+    pre_state = wlan.active()
+    wlan.active(True)
+
+    for x in wlan.scan():
+        try:
+            networks.add(x[0].decode('utf-8'))
+        except UnicodeError:
+            pass
+    networks.discard('')
+    wlan.active(pre_state)
+    return list(networks)
+
 
 def connect(wait=True):
     if is_configured():

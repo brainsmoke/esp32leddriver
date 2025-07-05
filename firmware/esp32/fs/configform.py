@@ -297,7 +297,7 @@ class MultipleChoice(ConfigFormElem):
     def __init__(self, choices, getter, setter, caption=None):
         self.getter = getter
         self.setter = setter
-        self._choices_esc = tuple('<button name="value" value="{}"{{}} />{}</button>'.format(i, htmlencode(v)) for i,v in enumerate(choices))
+        self._choices_esc = tuple('<button name="value" value="{}"{{}} >{}</button>'.format(i, htmlencode(v)) for i,v in enumerate(choices))
         super().__init__(caption=caption)
         self._set_css_class('multiple_choice')
         self._update_content()

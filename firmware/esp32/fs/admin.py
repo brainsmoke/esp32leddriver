@@ -34,11 +34,19 @@ def validate_ip(ip):
     return True
 
 class NetworkConf(configform.ConfigFormElem):
-    def __init__(self, caption='Network', info=None):
+    def __init__(self, caption='Network', info=None, get_networks_func=None):
         super().__init__(caption=caption)
         self._set_css_class('network')
         self._info = info
+        if get_networks_func is None:
+            get_networks_func = lambda: []
+        self._get_networks_func = get_networks_func
+        self._update_networks()
         self._update_content()
+
+    def _update_networks(self):
+        get_networks = self._get_networks_func
+        self._networks = '<datalist id="wifi_networks">\n'+ ''.join( '<option value="{}" />'.format(htmlencode(network)) for network in get_networks())+'\n</datalist>\n'
 
     def _update_content(self):
 
@@ -66,18 +74,26 @@ class NetworkConf(configform.ConfigFormElem):
 <option value="open" onchange="" {}>Open
 <option value="off" {}>Off
 </select>
-<dt>ESSID<dd><input name="essid" type="text" value="{}" maxlength="32" autocomplete="off" />
+<dt>ESSID<dd><input name="essid" type="text" value="{}" list="wifi_networks" maxlength="32" autocomplete="off" />
+<button name="action" value="rescan" >rescan</button>
+{}
 <dt>Password<dd><input name="password" type="text" value="{}" maxlength="128" autocomplete="off" />
 <dt>Conn. info<dd>{}
 </dl>
 <input type="submit" value="set" />
 <script>const f=document.currentScript.parentNode; f.elements['password'].disabled = (f.elements['type'].value!='protected');f.elements['essid'].disabled = (f.elements['type'].value=='off')</script>
-""".format(protected_sel, open_sel, off_sel, htmlencode(essid), htmlencode(password), info))
+""".format(protected_sel, open_sel, off_sel, htmlencode(essid), self._networks, htmlencode(password), info))
 
     def _set(self, formdata):
         mode = formdata.get('type', '')
         essid = formdata.get('essid', '')
         password = formdata.get('password', '')
+        action = formdata.get('action', None)
+
+        if action == 'rescan':
+            self._update_networks()
+            self._update_content()
+            return
 
         if not validate_network_type(mode):
             return
@@ -138,10 +154,10 @@ class FailsafeConf(configform.ConfigFormElem):
             config.write_failsafe_conf(essid, password, ip, auto_fallback)
             self._update_content()
 
-def get_form( network_info, reset_func, form=None ):
+def get_form( network_info, get_networks_func, reset_func, form=None ):
     if form == None:
         form = configform.ConfigRoot("/")
-    form['network'] = NetworkConf("Network", network_info)
+    form['network'] = NetworkConf("Network", network_info, get_networks_func)
     form['failsafe'] = FailsafeConf("Failsafe Network")
     form['reset'] = configform.Action(reset_func, lambda: True, 'reset')
     return form
