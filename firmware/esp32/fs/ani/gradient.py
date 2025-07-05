@@ -161,7 +161,7 @@ class ConfigMode:
             self.rotations[i*3+2] = 0
 
         self.phase = 0
-        self.phase_max = 2048
+        self.phase_max = n
         self.speed = 10
 
     def next_frame(self, fbuf):
