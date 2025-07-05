@@ -19,7 +19,7 @@ html_entities = {
 _htmlencode_regex = re.compile('[\\\"\\\'\\&\\<\\>]')
 
 def htmlencode_esc(m):
-    return html_entities[m.group()]
+    return html_entities[m.group(0)]
 
 def htmlencode(s):
     return _htmlencode_regex.sub(htmlencode_esc, s)
