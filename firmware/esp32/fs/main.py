@@ -132,7 +132,7 @@ from button import button, button_timeout_wait
 
 def wait_for_interrupt():
     while True:
-        utime.sleep(60)
+        utime.sleep(1000)
 
 if config.button_next:
     button(config.button_next, on_down=player.next, pull=machine.Pin.PULL_UP)
@@ -159,14 +159,8 @@ try:
     name = caption.lower()
     player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=None, **settings) )
     import admin
-
-    def reset():
-        wifi.disconnect()
-        machine.reset()
-
     admin.get_form(info, form=cur_animation.add_group(name, caption=caption))
-    while True:
-        utime.sleep(1000) # lock with no load
+    wait_for_interrupt()
 finally:
     player.stop()
     try:
