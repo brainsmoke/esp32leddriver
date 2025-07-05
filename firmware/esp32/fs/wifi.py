@@ -61,7 +61,8 @@ def connect_client(wait=True, n_secs=10):
         pass
 
 def connect_ap(wait=True):
-    wlan.disconnect()
+    if wlan.isconnected():
+        wlan.disconnect()
     wlan.active(False)
     if not is_failsafe_configured():
         return
