@@ -163,7 +163,7 @@ try:
         wifi.disconnect()
         machine.reset()
 
-    admin.get_form(info, get_networks_func=wifi.get_networks, reset_func=reset, form=cur_animation.add_group(name, caption=caption))
+    admin.get_form(info, form=cur_animation.add_group(name, caption=caption))
     while True:
         utime.sleep(1000) # lock with no load
 finally:

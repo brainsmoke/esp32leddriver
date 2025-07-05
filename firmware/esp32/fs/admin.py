@@ -1,7 +1,7 @@
 
 import machine
 
-import configform, config
+import configform, config, wifi
 
 from esphttpd import htmlencode
 
@@ -34,19 +34,15 @@ def validate_ip(ip):
     return True
 
 class NetworkConf(configform.ConfigFormElem):
-    def __init__(self, caption='Network', info=None, get_networks_func=None):
+    def __init__(self, caption='Network', info=None):
         super().__init__(caption=caption)
         self._set_css_class('network')
         self._info = info
-        if get_networks_func is None:
-            get_networks_func = lambda: []
-        self._get_networks_func = get_networks_func
         self._update_networks()
         self._update_content()
 
     def _update_networks(self):
-        get_networks = self._get_networks_func
-        self._networks = '<datalist id="wifi_networks">\n'+ ''.join( '<option value="{}" />'.format(htmlencode(network)) for network in get_networks())+'\n</datalist>\n'
+        self._networks = '<datalist id="wifi_networks">\n'+ ''.join( '<option value="{}" />'.format(htmlencode(network)) for network in wifi.get_networks())+'\n</datalist>\n'
 
     def _update_content(self):
 
@@ -63,7 +59,7 @@ class NetworkConf(configform.ConfigFormElem):
                 password = config.password
                 protected_sel = "selected"
 
-        info = "no connection info available"
+        info = "could not connect"
         if self._info != None:
             info = "<dl>{}</dl>".format(''.join( '<dt>{}<dd>{}'.format(
                 htmlencode(t),htmlencode(d)) for t, d in self._info ) )
@@ -111,7 +107,7 @@ class NetworkConf(configform.ConfigFormElem):
             return
 
         config.write_network_conf(essid, password)
-        self._info = None
+        self._info = wifi.test_connection()
         self._update_content()
 
 class FailsafeConf(configform.ConfigFormElem):
@@ -154,11 +150,16 @@ class FailsafeConf(configform.ConfigFormElem):
             config.write_failsafe_conf(essid, password, ip, auto_fallback)
             self._update_content()
 
-def get_form( network_info, get_networks_func, reset_func, form=None ):
+def get_form( network_info, form=None ):
     if form == None:
         form = configform.ConfigRoot("/")
-    form['network'] = NetworkConf("Network", network_info, get_networks_func)
+    form['network'] = NetworkConf("Network", network_info)
     form['failsafe'] = FailsafeConf("Failsafe Network")
-    form['reset'] = configform.Action(reset_func, lambda: True, 'reset')
+
+    def reset():
+        wifi.disconnect()
+        machine.reset()
+
+    form['reset'] = configform.Action(reset, lambda: True, 'reset')
     return form
 

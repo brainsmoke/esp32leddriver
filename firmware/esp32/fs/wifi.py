@@ -9,9 +9,12 @@ ap.active(False)
 cur = wlan
 
 def info():
-    mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
-    return tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
-                        (mac, ) + wlan.ifconfig() ) )
+    if wlan.isconnected():
+        mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
+        return tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
+                            (mac, ) + wlan.ifconfig() ) )
+    else:
+        return None
 
 def is_configured():
     return config.essid != None
@@ -25,9 +28,9 @@ def is_connected():
 def fallback():
     return is_failsafe_configured() and not is_connected() and config.failsafe_auto_fallback
 
-def wait_for_connection(verbose=True):
+def wait_for_connection(verbose=True, n_secs=10):
     try:
-        for i in range(20):
+        for i in range(2*n_secs):
            if cur.isconnected():
                if verbose:
                    print(cur.ifconfig())
@@ -39,13 +42,12 @@ def wait_for_connection(verbose=True):
     cur.active(False)
     return False
 
-def connect_client(wait=True):
+def connect_client(wait=True, n_secs=10):
     if not is_configured():
         wlan.active(False)
         return
 
     try:
-        ap.active(False)
         wlan.active(True)
         if wlan.isconnected():
             wlan.disconnect()
@@ -53,7 +55,7 @@ def connect_client(wait=True):
         print('connecting to network...')
         wlan.connect(config.essid, config.password)
         if wait:
-            wait_for_connection()
+            wait_for_connection(n_secs=n_secs)
     except OSError:
         wlan.active(False)
         pass
@@ -87,10 +89,16 @@ def get_networks():
     return list(networks)
 
 
-def connect(wait=True):
+def connect(wait=True, n_secs=10):
     if is_configured():
-        connect_client(wait)
+        connect_client(wait, n_secs)
 
 def disconnect():
     ap.active(False)
     wlan.active(False)
+
+def test_connection():
+    connect(n_secs=5)
+    _info = info()
+    wlan.active(False)
+    return _info
