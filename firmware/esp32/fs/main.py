@@ -152,6 +152,7 @@ try:
             wait_for_interrupt()
 
     print("[dropping to failsafe mode]")
+    csrf.invalidate_tokens()
     info = wifi.info()
     wifi.connect_ap(wait=True)
     caption, Ani, settings = get_config_animation()

@@ -10,6 +10,9 @@ def host_random():
         _host_random = os.urandom(16)
     return _host_random
 
+def invalidate_tokens():
+    _host_random = None
+
 # file.html?boot=<token>
 # easy cache control
 _boot_token = None
