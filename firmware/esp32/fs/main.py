@@ -142,7 +142,6 @@ if config.button_previous:
 
 # normal mode
 try:
-    player.on()
     server.start()
     gc.collect()
     if not wifi.fallback():
