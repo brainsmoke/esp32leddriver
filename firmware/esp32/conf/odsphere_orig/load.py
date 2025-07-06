@@ -7,7 +7,7 @@ from ani.spot import Spots, Chroma
 from ani.rutherford import Rutherford
 from ani.materials import AlienPlanet
 from ani.multiwave import MultiWave
-from ani.movie import Earth
+from ani.movie import Movie
 from ani.shadowplay import ShadowPlay
 from ani.shadowwalk import ShadowWalk
 from ani.topo import Topo
