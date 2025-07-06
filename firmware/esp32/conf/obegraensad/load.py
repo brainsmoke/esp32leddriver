@@ -11,7 +11,7 @@ def get_animations():
         ("Roll", Movie, {'filename':'rr.bin', 'fps':25}),
         ("Spiral", WaveSelectGradient, {'map_file':'gradient.json'}),
         ("Snake", Snake, {'snake_len': 7, 'snake_count': 2, 'max_speed': 600}),
-        ("hallway", WaveSelectGradient, {'map_file':'hallway.json'}),
+        ("Hallway", WaveSelectGradient, {'map_file':'hallway.json'}),
         ("Moire", Gradient, {'map_file':'moire.json'}),
     )
 
