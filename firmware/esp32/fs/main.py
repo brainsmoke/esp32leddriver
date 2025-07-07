@@ -146,7 +146,7 @@ try:
     gc.collect()
     if not wifi.fallback():
         if wifi.is_failsafe_configured():
-            button_timeout_wait(0, timeout=1000)
+            button_timeout_wait(0, timeout=1000, pull=machine.Pin.PULL_UP)
         else:
             wait_for_interrupt()
 
