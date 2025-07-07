@@ -8,13 +8,21 @@ ap = network.WLAN(network.AP_IF)
 ap.active(False)
 cur = wlan
 
-def info():
-    if wlan.isconnected():
-        mac = ':'.join('{:02x}'.format(b) for b in wlan.config('mac') )
+def info(network=wlan):
+    if network.isconnected():
+        mac = ':'.join('{:02x}'.format(b) for b in network.config('mac') )
         return tuple( zip( ("MAC", "IP", "Subnet", "Gateway", "DNS" ),
-                            (mac, ) + wlan.ifconfig() ) )
+                            (mac, ) + network.ifconfig() ) )
     else:
         return None
+
+def print_info(network=wlan):
+    nw_conf = info(network)
+    if nw_conf is not None:
+        print("\nNetwork:")
+        for desc, val in nw_conf:
+            print("  {}: {}".format(desc, val))
+        print("")
 
 def is_configured():
     return config.essid != None
@@ -33,7 +41,7 @@ def wait_for_connection(verbose=True, n_secs=10):
         for i in range(2*n_secs):
            if cur.isconnected():
                if verbose:
-                   print(cur.ifconfig())
+                   print_info(cur)
                return True
            utime.sleep(.5)
     except OSError:
@@ -69,10 +77,9 @@ def connect_ap(wait=True):
     essid, password, ip = config.failsafe_essid, config.failsafe_password, config.failsafe_ip
     utime.sleep(.5)
     ap.active(True)
-    print([essid, password, ip])
+    print("\n  ESSID: {}\n  Password: {}\n  IP: {}\n".format(repr(essid), repr(password), ip))
     ap.config(essid=essid, password=password, authmode=network.AUTH_WPA2_PSK, max_clients=4)
     ap.ifconfig( [ip, '255.255.255.0', ip, ip] )
-    print(ap.ifconfig())
     cur=ap
 
 def get_networks():
