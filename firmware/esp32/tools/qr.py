@@ -1,4 +1,3 @@
-#!/usr/bin/python3
 
 TOP, RIGHT, BOTTOM, LEFT = 1,2,4,8
 
