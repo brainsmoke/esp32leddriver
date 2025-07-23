@@ -16,4 +16,4 @@ mwh 0x1ffff802 0x807f
 sleep 500
 mdw 0x1ffff800
 mdw 0x40022010
-
+exit
