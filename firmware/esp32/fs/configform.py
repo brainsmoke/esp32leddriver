@@ -155,6 +155,32 @@ class ConfigGroup(ConfigElem):
         self[name] = tree
         return tree
 
+    def _get_index(self, name):
+        for i in range(len(self._list)):
+            if name == self._list[i][0]:
+                return i
+
+        return -1
+
+    def _move_to(self, name, rel_name, after):
+        item_ix = self._get_index(name)
+        rel_ix = self._get_index(rel_name)
+        if item_ix == -1 or rel_ix == -1:
+            return
+        val = self._list[item_ix]
+        del self._list[item_ix]
+        if after:
+            rel_ix += 1
+        if rel_ix > item_ix:
+            rel_ix -= 1
+        self._list.insert(rel_ix, val)
+
+    def move_before(self, name, rel_name):
+        self._move_to(name, rel_name, False)
+
+    def move_after(self, name, rel_name):
+        self._move_to(name, rel_name, True)
+
     def print(self, indent='', name=''):
         print('{}{}:'.format(indent, name))
         group_indent=indent+'    '

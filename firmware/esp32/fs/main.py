@@ -157,6 +157,8 @@ try:
     caption, Ani, settings = get_config_animation()
     name = caption.lower()
     player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=None, **settings) )
+    form.add_action('config', lambda: player.select(name), lambda: player.get_selected() != name, caption="Configuration" )
+    form.move_before('config', 'ani')
     import admin
     admin.get_form(info, form=cur_animation.add_group(name, caption=caption))
     wait_for_interrupt()
