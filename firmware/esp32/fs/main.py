@@ -153,7 +153,7 @@ try:
     print("[dropping to failsafe mode]")
     csrf.invalidate_tokens()
     info = wifi.info()
-    wifi.connect_ap(wait=True)
+    wifi.disconnect()
     caption, Ani, settings = get_config_animation()
     name = caption.lower()
     player.add_animation( name, Ani( leds, tmpfloat=tmpfloat, tmp16=tmp16, config=None, **settings) )
@@ -161,6 +161,7 @@ try:
     form.move_before('config', 'ani')
     import admin
     admin.get_form(info, form=cur_animation.add_group(name, caption=caption))
+    wifi.connect_ap(wait=True)
     wait_for_interrupt()
 finally:
     player.stop()
