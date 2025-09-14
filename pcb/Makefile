@@ -1,6 +1,7 @@
 
 
 PROJECTS=edgedriver_v4 edgedriver_v4.1 edgedriver_compact
+PCBA=edgedriver_v4 edgedriver_v4.1
 
 BASENAME=edgedriver
 BOARDHOUSE=jlc
