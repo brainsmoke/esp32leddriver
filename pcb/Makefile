@@ -1,9 +1,9 @@
 
 
-PROJECTS=edgedriver_v4 edgedriver_v4.1 edgedriver_compact
-PCBA=edgedriver_v4 edgedriver_v4.1
+PROJECTS=driver_v4 driver_v4.1 driver_compact
+PCBA=driver_v4 driver_v4.1
 
-BASENAME=edgedriver
+BASENAME=pcb
 BOARDHOUSE=jlc
 PARTNO_MARKING=JLCJLCJLCJLC
 BOM_JLC_OPTS=--fields='Value,Reference,Footprint,LCSC' --labels='Comment,Designator,Footprint,JLCPCB Part \#' --group-by=LCSC --ref-range-delimiter='' --exclude-dnp
