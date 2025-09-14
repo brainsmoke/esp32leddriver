@@ -12,22 +12,22 @@
 		(4 "In1.Cu" signal)
 		(6 "In2.Cu" signal)
 		(2 "B.Cu" signal)
-		(9 "F.Adhes" user)
-		(11 "B.Adhes" user)
+		(9 "F.Adhes" user "F.Adhesive")
+		(11 "B.Adhes" user "B.Adhesive")
 		(13 "F.Paste" user)
 		(15 "B.Paste" user)
-		(5 "F.SilkS" user)
-		(7 "B.SilkS" user)
+		(5 "F.SilkS" user "F.Silkscreen")
+		(7 "B.SilkS" user "B.Silkscreen")
 		(1 "F.Mask" user)
 		(3 "B.Mask" user)
-		(17 "Dwgs.User" user)
-		(19 "Cmts.User" user)
-		(21 "Eco1.User" user)
-		(23 "Eco2.User" user)
+		(17 "Dwgs.User" user "User.Drawings")
+		(19 "Cmts.User" user "User.Comments")
+		(21 "Eco1.User" user "User.Eco1")
+		(23 "Eco2.User" user "User.Eco2")
 		(25 "Edge.Cuts" user)
 		(27 "Margin" user)
-		(31 "F.CrtYd" user)
-		(29 "B.CrtYd" user)
+		(31 "F.CrtYd" user "F.Courtyard")
+		(29 "B.CrtYd" user "B.Courtyard")
 		(35 "F.Fab" user)
 		(33 "B.Fab" user)
 	)
@@ -236,7 +236,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005ef3bfb6")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(pad "1" thru_hole circle
 			(at 0 -8.89 90)
@@ -584,7 +584,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005ef72b41")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_text user "${REFERENCE}"
 			(at 0 3.81 180)
@@ -699,7 +699,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005eff6fe7")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_text user "${REFERENCE}"
 			(at 0 1.270001 90)
@@ -805,7 +805,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/00000000-0000-0000-0000-00005f0048e8")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.7 -1.75)
@@ -1017,7 +1017,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/00000000-0000-0000-0000-00005eff9465")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.7 1.75)
@@ -1229,7 +1229,7 @@
 		(property ki_fp_filters "QFN*4x4mm*P0.5mm*")
 		(path "/00000000-0000-0000-0000-00005ef3be6a")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_circle
 			(center -2.2 2.2)
@@ -1600,7 +1600,7 @@
 		(property ki_fp_filters "USB*C*Receptacle*")
 		(path "/00000000-0000-0000-0000-00005f8c6d1b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 5.32 -5.27)
@@ -1963,7 +1963,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ff43269")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 2.4 -1.65)
@@ -2153,7 +2153,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ff43495")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 2.4 -1.65)
@@ -2357,7 +2357,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef972cd")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 0.51)
@@ -2570,7 +2570,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0136ea")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -2763,7 +2763,7 @@
 		(property ki_fp_filters "SOT?223*TabPin2*")
 		(path "/00000000-0000-0000-0000-00005ef3bda7")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_text user "${REFERENCE}"
 			(at 0 0 270)
@@ -2894,7 +2894,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f011a6b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 0.51)
@@ -3107,7 +3107,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef97297")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 -0.51)
@@ -3320,7 +3320,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-0000600892ee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -3513,7 +3513,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0caaee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -3706,7 +3706,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0ad19e")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -3899,7 +3899,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005eff7578")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -4092,7 +4092,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0a26db")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -4285,7 +4285,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005efef351")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -4478,7 +4478,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0ec236")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -4671,7 +4671,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005eff9670")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -4864,7 +4864,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0048ee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -5057,7 +5057,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f05100b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -5250,7 +5250,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe5f67")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -5443,7 +5443,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe8183")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -5636,7 +5636,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f9384f2")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -5829,7 +5829,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f93fcab")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 -0.47)
@@ -6022,7 +6022,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff53437")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -6215,7 +6215,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff95363")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -6408,7 +6408,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff5360b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -6588,7 +6588,7 @@
 		(property ki_fp_filters "LQFP*7x7mm*P0.5mm*")
 		(path "/00000000-0000-0000-0000-00006007b2e1")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 3.56 -3.56)
@@ -7457,7 +7457,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005efec07d")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -7636,7 +7636,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ef3b8f9")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_poly
 			(pts
