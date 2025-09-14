@@ -6,3 +6,4 @@
 fp-info-cache
 *-cache.lib
 __pycache__
+*-backups

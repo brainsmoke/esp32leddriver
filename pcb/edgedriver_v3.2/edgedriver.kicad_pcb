@@ -167,18 +167,18 @@
 	(net 89 "unconnected-(U2-PB2-Pad20)")
 	(net 90 "unconnected-(U2-PB10-Pad21)")
 	(net 91 "unconnected-(U3-NC-Pad4)")
-	(net 92 "unconnected-(U4-GPIO.1-Pad13)")
-	(net 93 "unconnected-(U4-GPIO.2-Pad12)")
-	(net 94 "unconnected-(U4-VIO{slash}NC-Pad10)")
+	(net 92 "unconnected-(U4-RXT{slash}GPIO.1-Pad13)")
+	(net 93 "unconnected-(U4-RS485{slash}GPIO.2-Pad12)")
+	(net 94 "unconnected-(U4-NC-Pad10)")
 	(net 95 "unconnected-(U4-VPP-Pad16)")
 	(net 96 "unconnected-(U4-SUSPEND-Pad17)")
-	(net 97 "unconnected-(U4-RI-Pad1)")
-	(net 98 "unconnected-(U4-DCD-Pad24)")
-	(net 99 "unconnected-(U4-GPIO.0-Pad14)")
+	(net 97 "unconnected-(U4-~{RI}-Pad1)")
+	(net 98 "unconnected-(U4-~{DCD}-Pad24)")
+	(net 99 "unconnected-(U4-TXT{slash}GPIO.0-Pad14)")
 	(net 100 "unconnected-(U4-~{SUSPEND}-Pad15)")
-	(net 101 "unconnected-(U4-CTS-Pad18)")
+	(net 101 "unconnected-(U4-~{CTS}-Pad18)")
 	(net 102 "unconnected-(U4-GPIO.3-Pad11)")
-	(net 103 "unconnected-(U4-DSR-Pad22)")
+	(net 103 "unconnected-(U4-~{DSR}-Pad22)")
 	(footprint "Connector_PinHeader_2.54mm:PinHeader_1x08_P2.54mm_Vertical"
 		(layer "F.Cu")
 		(uuid "00000000-0000-0000-0000-00005ef58673")
@@ -235,7 +235,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005ef3bfb6")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(pad "1" thru_hole circle
 			(at 0 -8.89 90)
@@ -572,7 +572,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005ef72b41")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_text user "${REFERENCE}"
 			(at 0 3.81 180)
@@ -687,7 +687,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-00005eff6fe7")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_text user "${REFERENCE}"
 			(at 0 1.270001 90)
@@ -793,7 +793,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/00000000-0000-0000-0000-00005f0048e8")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.7 -1.75)
@@ -1005,7 +1005,7 @@
 		(property ki_fp_filters "SOT?23*")
 		(path "/00000000-0000-0000-0000-00005eff9465")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -1.7 1.75)
@@ -1177,7 +1177,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "https://datasheet.lcsc.com/lcsc/2108181630_WCH-Jiangsu-Qin-Heng-CH9102F_C2858418.pdf"
+		(property "Datasheet" "https://www.silabs.com/documents/public/data-sheets/cp2104.pdf"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -1189,7 +1189,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "Single-Chip USB-to-UART Bridge, USB 2.0 Full-Speed, 2Mbps UART, QFN-24"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -1217,7 +1217,7 @@
 		(property ki_fp_filters "QFN*4x4mm*P0.5mm*")
 		(path "/00000000-0000-0000-0000-00005ef3be6a")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_circle
 			(center -2.2 2.2)
@@ -1274,8 +1274,8 @@
 			(size 0.825 0.25)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 97 "unconnected-(U4-RI-Pad1)")
-			(pinfunction "RI")
+			(net 97 "unconnected-(U4-~{RI}-Pad1)")
+			(pinfunction "~{RI}")
 			(pintype "input")
 			(uuid "717105df-e6f2-4f18-8821-e0363bdd0acd")
 		)
@@ -1364,9 +1364,9 @@
 			(size 0.25 0.825)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 94 "unconnected-(U4-VIO{slash}NC-Pad10)")
-			(pinfunction "VIO/NC")
-			(pintype "power_out")
+			(net 94 "unconnected-(U4-NC-Pad10)")
+			(pinfunction "NC")
+			(pintype "no_connect")
 			(uuid "458b8d47-b432-4a4a-ad39-316d29bb09f7")
 		)
 		(pad "11" smd roundrect
@@ -1384,8 +1384,8 @@
 			(size 0.25 0.825)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 93 "unconnected-(U4-GPIO.2-Pad12)")
-			(pinfunction "GPIO.2")
+			(net 93 "unconnected-(U4-RS485{slash}GPIO.2-Pad12)")
+			(pinfunction "RS485/GPIO.2")
 			(pintype "bidirectional")
 			(uuid "339a8fc4-8523-4e28-a2c8-6f0f2c67aed6")
 		)
@@ -1394,8 +1394,8 @@
 			(size 0.825 0.25)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 92 "unconnected-(U4-GPIO.1-Pad13)")
-			(pinfunction "GPIO.1")
+			(net 92 "unconnected-(U4-RXT{slash}GPIO.1-Pad13)")
+			(pinfunction "RXT/GPIO.1")
 			(pintype "bidirectional")
 			(uuid "0f9d1f26-08ac-4bba-8490-9bab21e8020d")
 		)
@@ -1404,8 +1404,8 @@
 			(size 0.825 0.25)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 99 "unconnected-(U4-GPIO.0-Pad14)")
-			(pinfunction "GPIO.0")
+			(net 99 "unconnected-(U4-TXT{slash}GPIO.0-Pad14)")
+			(pinfunction "TXT/GPIO.0")
 			(pintype "bidirectional")
 			(uuid "ca4577d8-bb4e-4bea-bc2e-970c099f2a98")
 		)
@@ -1444,8 +1444,8 @@
 			(size 0.825 0.25)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 101 "unconnected-(U4-CTS-Pad18)")
-			(pinfunction "CTS")
+			(net 101 "unconnected-(U4-~{CTS}-Pad18)")
+			(pinfunction "~{CTS}")
 			(pintype "input")
 			(uuid "d294f962-038b-44ae-91b7-f126d311b514")
 		)
@@ -1455,7 +1455,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net 17 "Net-(Q1-S)")
-			(pinfunction "RTS")
+			(pinfunction "~{RTS}")
 			(pintype "output")
 			(uuid "23000859-8986-49e8-be04-0cc67c405bae")
 		)
@@ -1484,8 +1484,8 @@
 			(size 0.25 0.825)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 103 "unconnected-(U4-DSR-Pad22)")
-			(pinfunction "DSR")
+			(net 103 "unconnected-(U4-~{DSR}-Pad22)")
+			(pinfunction "~{DSR}")
 			(pintype "input")
 			(uuid "e3e44230-9587-4a24-ac8c-2ce80e2d9366")
 		)
@@ -1495,7 +1495,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
 			(net 18 "Net-(Q2-S)")
-			(pinfunction "DTR")
+			(pinfunction "~{DTR}")
 			(pintype "output")
 			(uuid "a591918d-cfa1-42e1-af65-6955d1319f9a")
 		)
@@ -1504,8 +1504,8 @@
 			(size 0.25 0.825)
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(roundrect_rratio 0.25)
-			(net 98 "unconnected-(U4-DCD-Pad24)")
-			(pinfunction "DCD")
+			(net 98 "unconnected-(U4-~{DCD}-Pad24)")
+			(pinfunction "~{DCD}")
 			(pintype "input")
 			(uuid "7f891424-2468-4f09-a8c9-161b132dbe83")
 		)
@@ -1515,8 +1515,8 @@
 			(layers "F.Cu" "F.Mask")
 			(roundrect_rratio 0.09615384615)
 			(net 46 "GND")
-			(pinfunction "PAD")
-			(pintype "power_in")
+			(pinfunction "GND")
+			(pintype "passive")
 			(uuid "1aa5761d-73ea-4323-8065-47645c01714a")
 		)
 		(embedded_fonts no)
@@ -1573,7 +1573,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -1601,7 +1601,7 @@
 		(property ki_fp_filters "USB*C*Receptacle*")
 		(path "/00000000-0000-0000-0000-00005f8c6d1b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 5.32 -5.27)
@@ -1714,7 +1714,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 46 "GND")
 			(pinfunction "GND")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "2ca8e68e-72f2-4a42-a3f5-71af72862df8")
 		)
 		(pad "A4" smd rect
@@ -1723,7 +1723,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 1 "Net-(U4-REGIN)")
 			(pinfunction "VBUS")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "49b4d604-704e-4016-b836-b222783c03cd")
 		)
 		(pad "A5" smd rect
@@ -1978,7 +1978,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef972cd")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 0.51)
@@ -2191,7 +2191,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0136ea")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -2384,7 +2384,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f011a6b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 0.51)
@@ -2597,7 +2597,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef97297")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.162779 -0.51)
@@ -2810,7 +2810,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-0000600892ee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -3005,7 +3005,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0caaee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -3198,7 +3198,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0ad19e")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -3391,7 +3391,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005eff7578")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -3584,7 +3584,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0a26db")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -3777,7 +3777,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005efef351")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -3970,7 +3970,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0ec236")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -4163,7 +4163,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005eff9670")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -4356,7 +4356,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0048ee")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -4549,7 +4549,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f05100b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -4742,7 +4742,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe5f67")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -4935,7 +4935,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe8183")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -5128,7 +5128,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f9384f2")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 0.47)
@@ -5321,7 +5321,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f93fcab")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 -0.47)
@@ -5514,7 +5514,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff53437")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -5707,7 +5707,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff95363")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -5860,7 +5860,7 @@
 				)
 			)
 		)
-		(property "Datasheet" "http://www.st.com/st-web-ui/static/active/en/resource/technical/document/datasheet/DM00088500.pdf"
+		(property "Datasheet" "https://www.st.com/resource/en/datasheet/stm32f030c8.pdf"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -5872,7 +5872,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "STMicroelectronics Arm Cortex-M0 MCU, 64KB flash, 8KB RAM, 48 MHz, 2.4-3.6V, 39 GPIO, LQFP48"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -5900,7 +5900,7 @@
 		(property ki_fp_filters "LQFP*7x7mm*P0.5mm*")
 		(path "/00000000-0000-0000-0000-00006007b2e1")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 3.56 -3.56)
@@ -6296,7 +6296,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 71 "unconnected-(U2-PF0-Pad5)")
 			(pinfunction "PF0")
-			(pintype "input")
+			(pintype "bidirectional")
 			(uuid "16275b4a-7619-412a-9bd4-5d6830e7461f")
 		)
 		(pad "6" smd rect
@@ -6305,7 +6305,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 77 "unconnected-(U2-PF1-Pad6)")
 			(pinfunction "PF1")
-			(pintype "input")
+			(pintype "bidirectional")
 			(uuid "52b06ae9-c288-4a6b-905c-ca6764a5580f")
 		)
 		(pad "7" smd rect
@@ -6675,7 +6675,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 46 "GND")
 			(pinfunction "VSS")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "8006d4ae-7e21-4cc4-8ee0-813e886b1c31")
 		)
 		(pad "48" smd rect
@@ -6768,7 +6768,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ff43269")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -2.8 1.8)
@@ -6983,7 +6983,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ff43495")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -2.8 1.8)
@@ -7199,7 +7199,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005efec07d")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0.93 -0.47)
@@ -7392,7 +7392,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005ff5360b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.93 0.47)
@@ -7585,7 +7585,7 @@
 		(property ki_fp_filters "SOT?23?5*")
 		(path "/00000000-0000-0000-0000-000062eb0a23")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 1.9 1.8)
@@ -7801,7 +7801,7 @@
 		)
 		(path "/00000000-0000-0000-0000-00005ef3b8f9")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/edgedriver_v3.2/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_poly
 			(pts

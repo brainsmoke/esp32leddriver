@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "esp32-wrover")(type "KiCad")(uri "${KIPRJMOD}/libs/esp32-wrover.pretty")(options "")(descr ""))
+)

@@ -632,7 +632,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
 			(at 0 0 90)
 			(layer "F.Fab")
 			(hide yes)
@@ -773,7 +773,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 26 "GND")
 			(pinfunction "GND")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "f2c9000d-fb27-4d70-85b8-225e7166e729")
 		)
 		(pad "A4" smd rect
@@ -782,7 +782,7 @@
 			(layers "F.Cu" "F.Mask" "F.Paste")
 			(net 5 "VUSB")
 			(pinfunction "VBUS")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "82f8d6d2-a555-4a7d-ae01-bf3a6f7e34b4")
 		)
 		(pad "A5" smd rect

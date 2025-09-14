@@ -10,22 +10,22 @@
 	(layers
 		(0 "F.Cu" signal)
 		(2 "B.Cu" signal)
-		(9 "F.Adhes" user)
-		(11 "B.Adhes" user)
+		(9 "F.Adhes" user "F.Adhesive")
+		(11 "B.Adhes" user "B.Adhesive")
 		(13 "F.Paste" user)
 		(15 "B.Paste" user)
-		(5 "F.SilkS" user)
-		(7 "B.SilkS" user)
+		(5 "F.SilkS" user "F.Silkscreen")
+		(7 "B.SilkS" user "B.Silkscreen")
 		(1 "F.Mask" user)
 		(3 "B.Mask" user)
-		(17 "Dwgs.User" user)
-		(19 "Cmts.User" user)
-		(21 "Eco1.User" user)
-		(23 "Eco2.User" user)
+		(17 "Dwgs.User" user "User.Drawings")
+		(19 "Cmts.User" user "User.Comments")
+		(21 "Eco1.User" user "User.Eco1")
+		(23 "Eco2.User" user "User.Eco2")
 		(25 "Edge.Cuts" user)
 		(27 "Margin" user)
-		(31 "F.CrtYd" user)
-		(29 "B.CrtYd" user)
+		(31 "F.CrtYd" user "F.Courtyard")
+		(29 "B.CrtYd" user "B.Courtyard")
 		(35 "F.Fab" user)
 		(33 "B.Fab" user)
 	)
@@ -200,7 +200,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00006250cebc")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -412,7 +412,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00006250c6cb")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -624,7 +624,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00006250c04c")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -836,7 +836,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-0000624ff419")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -1035,7 +1035,7 @@
 		(property ki_fp_filters "LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*")
 		(path "/00000000-0000-0000-0000-000062461460")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.65 -2.75)
@@ -1294,7 +1294,7 @@
 		(property ki_fp_filters "LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*")
 		(path "/00000000-0000-0000-0000-000062483c49")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.65 -2.75)
@@ -1553,7 +1553,7 @@
 		(property ki_fp_filters "LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*")
 		(path "/00000000-0000-0000-0000-00006248932f")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.65 -2.75)
@@ -1812,7 +1812,7 @@
 		(property ki_fp_filters "LED*WS2812*PLCC*5.0x5.0mm*P3.2mm*")
 		(path "/00000000-0000-0000-0000-000062489348")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -3.65 -2.75)
@@ -2084,7 +2084,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-0000624b9dc7")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -2296,7 +2296,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-0000624cac4b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -2508,7 +2508,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-0000624d01ca")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -2720,7 +2720,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-0000624d8e99")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -2919,7 +2919,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-0000626209c8")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 1.33 1.27)
@@ -3183,7 +3183,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-000062693dfc")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(pad "1" thru_hole circle
 			(at -4.980141 -1.580688)
@@ -3346,7 +3346,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0a26db")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 -0.51)
@@ -3562,7 +3562,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-0000623c31d2")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -3778,7 +3778,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef97297")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -3994,7 +3994,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005efef351")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 -0.51)
@@ -4181,7 +4181,7 @@
 				)
 			)
 		)
-		(property "Description" ""
+		(property "Description" "USB 2.0-only 16P Type-C Receptacle connector"
 			(at 0 0 180)
 			(layer "F.Fab")
 			(hide yes)
@@ -4196,7 +4196,7 @@
 		(property ki_fp_filters "USB*C*Receptacle*")
 		(path "/00000000-0000-0000-0000-00005f8c6d1b")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 4.7 1.9)
@@ -4360,7 +4360,7 @@
 			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 1 "GND")
 			(pinfunction "GND")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "c7ba9be2-07b8-4b1e-ae95-6cffe61bb565")
 		)
 		(pad "A4" smd rect
@@ -4369,7 +4369,7 @@
 			(layers "B.Cu" "B.Mask" "B.Paste")
 			(net 2 "VUSB")
 			(pinfunction "VBUS")
-			(pintype "power_in")
+			(pintype "passive")
 			(uuid "1d1a3096-669e-453d-a997-90424e37cd18")
 		)
 		(pad "A5" smd rect
@@ -4626,7 +4626,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f9384f2")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -4842,7 +4842,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f0136ea")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -5058,7 +5058,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe5f67")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 -0.5225)
@@ -5274,7 +5274,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005efe8183")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 -0.5225)
@@ -5476,7 +5476,7 @@
 		(property ki_fp_filters "SOIC*3.9x9.9mm*P1.27mm*")
 		(path "/00000000-0000-0000-0000-00006232c974")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 5.06)
@@ -5850,7 +5850,7 @@
 		(property ki_fp_filters "TSSOP*4.4x6.5mm*P0.65mm*")
 		(path "/00000000-0000-0000-0000-0000623edf50")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start 0 -3.385)
@@ -6264,7 +6264,7 @@
 		(property ki_fp_filters "SOT?23?5*")
 		(path "/00000000-0000-0000-0000-0000625e6028")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.9 -1.61)
@@ -6517,7 +6517,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-0000625ab965")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -6718,7 +6718,7 @@
 		(property ki_fp_filters "Crystal*")
 		(path "/00000000-0000-0000-0000-00006255ee3e")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(pad "1" smd rect
 			(at -1.1 -0.8 90)
@@ -6829,7 +6829,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-000062598728")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -7045,7 +7045,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005f0ad19e")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 0.51)
@@ -7247,7 +7247,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-0000626ea096")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 1.33 -1.27)
@@ -7525,7 +7525,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-000062721952")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 1.33 -1.27)
@@ -7803,7 +7803,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-000062711a5e")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -1.33 -8.95)
@@ -8081,7 +8081,7 @@
 		(property ki_fp_filters "Connector*:*_1x??_*")
 		(path "/00000000-0000-0000-0000-000062721971")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -1.33 -8.95)
@@ -8373,7 +8373,7 @@
 		(property ki_fp_filters "R_*")
 		(path "/00000000-0000-0000-0000-00005f93fcab")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.254724 0.5225)
@@ -8589,7 +8589,7 @@
 		(property ki_fp_filters "C_*")
 		(path "/00000000-0000-0000-0000-00005ef972cd")
 		(sheetname "/")
-		(sheetfile "/home/user/esp32leddriver/pcb/relay_tester/edgedriver.sch")
+		(sheetfile "edgedriver.kicad_sch")
 		(attr smd)
 		(fp_line
 			(start -0.146267 -0.51)

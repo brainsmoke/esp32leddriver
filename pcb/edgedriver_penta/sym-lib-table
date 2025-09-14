@@ -1,3 +1,4 @@
 (sym_lib_table
   (lib (name esp32-wrover)(type Legacy)(uri ${KIPRJMOD}/libs/esp32-wrover.lib)(options "")(descr ""))
+  (lib (name dcdc)(type Legacy)(uri /home/user/aluball/pcb/driver_v1/libs/dcdc.lib)(options "")(descr ""))
 )
