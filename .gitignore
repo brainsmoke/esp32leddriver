@@ -7,3 +7,4 @@
 fp-info-cache
 __pycache__
 *-backups
+pcb/tmp
