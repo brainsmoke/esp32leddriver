@@ -5,3 +5,4 @@
 *.sch-bak
 fp-info-cache
 *-cache.lib
+__pycache__
