@@ -3,6 +3,7 @@
 *.kicad_sch-bak
 *.kicad_prl
 *.sch-bak
+*.drc
 fp-info-cache
 __pycache__
 *-backups
