@@ -3128,7 +3128,7 @@
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
 		(zone_connect 2)
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_line
 			(start 5 4)
 			(end -8 4)
@@ -3663,7 +3663,7 @@
 		(path "/00000000-0000-0000-0000-000061386925")
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_line
 			(start 3 4)
 			(end 5 4)
@@ -4546,7 +4546,7 @@
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
 		(zone_connect 2)
-		(attr through_hole)
+		(attr through_hole dnp)
 		(pad "1" smd roundrect
 			(at 0 0 10)
 			(size 1.5 4)
@@ -4616,7 +4616,7 @@
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
 		(zone_connect 2)
-		(attr through_hole)
+		(attr through_hole dnp)
 		(pad "1" smd roundrect
 			(at 0 0 320)
 			(size 1.5 4)
@@ -4686,7 +4686,7 @@
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
 		(zone_connect 2)
-		(attr through_hole)
+		(attr through_hole dnp)
 		(pad "1" smd roundrect
 			(at 0 0 320)
 			(size 1.5 4)
@@ -4756,7 +4756,7 @@
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
 		(zone_connect 2)
-		(attr through_hole)
+		(attr through_hole dnp)
 		(pad "1" smd roundrect
 			(at 0 0 10)
 			(size 1.5 4)
@@ -5413,7 +5413,7 @@
 		(descr "Through hole straight pin header, 1x02, 2.54mm pitch, single row")
 		(tags "Through hole pin header THT 1x02 2.54mm single row")
 		(property "Reference" "J3"
-			(at 0 -2.330002 277)
+			(at 0 -2.330003 277)
 			(layer "F.SilkS")
 			(hide yes)
 			(uuid "d2f9f008-6e4f-4ee9-8d0d-b4ae16ba461c")
@@ -5463,7 +5463,7 @@
 		(path "/00000000-0000-0000-0000-00006140521f")
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_text user "${REFERENCE}"
 			(at 0 1.27 7)
 			(layer "F.Fab")
@@ -5554,7 +5554,7 @@
 		(path "/00000000-0000-0000-0000-0000614052ab")
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_text user "${REFERENCE}"
 			(at 0 1.270001 225)
 			(layer "F.Fab")
@@ -5645,7 +5645,7 @@
 		(path "/00000000-0000-0000-0000-00006142a2c3")
 		(sheetname "/")
 		(sheetfile "pcb.kicad_sch")
-		(attr through_hole)
+		(attr through_hole dnp)
 		(fp_text user "${REFERENCE}"
 			(at 0 2.54 0)
 			(layer "F.Fab")
